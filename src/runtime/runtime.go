@@ -13,36 +13,41 @@ const (
 )
 
 type Runtime struct {
-	Service   *task.TaskService
-	Executors map[string]executor.Executor
-	Status    int
+	TaskService *task.TaskService
+	Executors   map[string]executor.Executor
+	Status      int
 }
 
 func NewRuntime() *Runtime {
-	return &Runtime{Status: Status_Init}
+	return &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
 }
 
 func (r *Runtime) Start() {
-	r.Service = task.StartNewService()
-	registerDemoExecutors(r.Service)
-	r.Service.StartAllTask()
+	r.TaskService = task.StartNewService()
+	registerDemoExecutors(r)
+	r.TaskService.StartAllTask()
 	r.Status = Status_Run
 }
 
-func registerDemoExecutors(service *task.TaskService) {
-	goExec := executor.NewGoExecutor("go.so file")
-	httpExec := executor.NewHttpExecutor("dotweb.cn")
-	shellExec := executor.NewShellExecutor("rock.sh")
-	_, err := service.CreateCronTask("go.exec", true, "0 * * * * *", goExec.Exec, nil)
+func registerDemoExecutors(r *Runtime) {
+	goExec := executor.NewGoExecutor("go")
+	httpExec := executor.NewHttpExecutor("http")
+	shellExec := executor.NewShellExecutor("shell")
+	_, err := r.TaskService.CreateCronTask("go.exec", true, "0 * * * * *", goExec.Exec, nil)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {go.exec} error! => ", err.Error())
 	}
-	_, err = service.CreateCronTask("http.exec", true, "0 * * * * *", httpExec.Exec, nil)
+	r.Executors["go"] = goExec
+
+	_, err = r.TaskService.CreateCronTask("http.exec", true, "0 * * * * *", httpExec.Exec, nil)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {http.exec} error! => ", err.Error())
 	}
-	_, err = service.CreateCronTask("shell.exec", true, "0 * * * * *", shellExec.Exec, nil)
+	r.Executors["http"] = httpExec
+
+	_, err = r.TaskService.CreateCronTask("shell.exec", true, "0 * * * * *", shellExec.Exec, nil)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {shell.exec} error! => ", err.Error())
 	}
+	r.Executors["shell"] = shellExec
 }
