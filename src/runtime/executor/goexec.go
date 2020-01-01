@@ -7,15 +7,21 @@ import (
 
 type GoExecutor struct {
 	Name   string
+	Type   string
 	Target string
 }
 
-func NewGoExecutor(name string) Executor {
-	return &GoExecutor{Name: name}
+func NewGoExecutor(name string, target string) Executor {
+	exec := &GoExecutor{Name: name, Type: GoSoType}
+
 }
 
 func (exec *GoExecutor) GetName() string {
 	return exec.Name
+}
+
+func (exec *GoExecutor) GetType() string {
+	return exec.Type
 }
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {

@@ -29,6 +29,13 @@ func (r *Runtime) Start() {
 	r.Status = Status_Run
 }
 
+// CreateCronExecutor create new cron executor and register to task service
+// now support http\shell\go.so
+func (r *Runtime) CreateCronExecutor(taskID string, isRun bool, express string, ExecType string, ExecTarget string, taskData interface{}) error {
+
+	return nil
+}
+
 func registerDemoExecutors(r *Runtime) {
 	goExec := executor.NewGoExecutor("go")
 	httpExec := executor.NewHttpExecutor("http")

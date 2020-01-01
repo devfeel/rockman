@@ -50,7 +50,11 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		return nil, errors.New("Node Init Config error: " + err.Error())
 	}
 
+	// create runtime
 	node.Runtime = runtime.NewRuntime()
+
+	// load tasks
+	// TODO load tasks from mysql
 
 	return node, err
 
