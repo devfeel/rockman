@@ -11,6 +11,7 @@ const (
 	LoggerName_Service    = "ServiceLogger"
 	LoggerName_Repository = "RepositoryLogger"
 	LoggerName_Node       = "NodeLogger"
+	LoggerName_Runtime    = "RuntimeLogger"
 )
 
 type Logger interface {

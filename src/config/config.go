@@ -12,11 +12,16 @@ const ConfigPath = "./conf/"
 
 type (
 	Profile struct {
+		Global   *GlobalSection
 		Node     *NodeSection
 		Cluster  *ClusterSection
 		Runtime  *RuntimeSection
 		Logger   *LoggerSection
 		Registry *RegistrySection
+	}
+
+	GlobalSection struct {
+		MysqlConnectString string
 	}
 
 	LoggerSection struct {
@@ -57,6 +62,7 @@ func GetConfigPath(file string) string {
 // SingleNodeProfile return default profile used to single node
 func SingleNodeProfile() *Profile {
 	p := new(Profile)
+	p.Global = &GlobalSection{MysqlConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
 	p.Cluster = &ClusterSection{Id: "rock", Master: ""}
 	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2020, HttpPort: 8080}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
