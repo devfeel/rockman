@@ -41,7 +41,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	node := &Node{NodeId: profile.Node.NodeId}
 
 	//init logger
-	node.Logger = logger.NewFileLogger(profile.Logger.LogPath)
+	node.Logger = logger.GetLogger(logger.LoggerName_Node)
 	node.Logger.Debug("Node {" + node.NodeId + "} Start...")
 
 	//init config

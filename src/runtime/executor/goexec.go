@@ -11,9 +11,9 @@ type GoExecutor struct {
 	Target string
 }
 
-func NewGoExecutor(name string, target string) Executor {
+func NewGoExecutor(name string) Executor {
 	exec := &GoExecutor{Name: name, Type: GoSoType}
-
+	return exec
 }
 
 func (exec *GoExecutor) GetName() string {

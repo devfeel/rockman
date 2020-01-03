@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 )
 
+const ConfigPath = "./conf/"
+
 type (
 	Profile struct {
 		Node     *NodeSection
@@ -46,6 +48,12 @@ type (
 	}
 )
 
+var CurrentProfile *Profile
+
+func GetConfigPath(file string) string {
+	return ConfigPath + file
+}
+
 // SingleNodeProfile return default profile used to single node
 func SingleNodeProfile() *Profile {
 	p := new(Profile)
@@ -54,6 +62,8 @@ func SingleNodeProfile() *Profile {
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
 	p.Registry = &RegistrySection{ServerUrl: ""}
+
+	CurrentProfile = p
 	return p
 }
 
@@ -79,6 +89,7 @@ func LoadConfig(configFile string) (*Profile, error) {
 	if err == nil {
 		err = validateProfile(profile)
 	}
+	CurrentProfile = profile
 	return profile, err
 }
 
