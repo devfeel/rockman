@@ -1,6 +1,8 @@
 package executor
 
-import "github.com/devfeel/dottask"
+import (
+	"github.com/devfeel/dottask"
+)
 
 const (
 	HttpType  = "http"
@@ -9,9 +11,24 @@ const (
 )
 
 type Executor interface {
-	GetName() string
-	GetType() string
+	GetTaskID() string
+	GetTargetType() string
+	GetDotTaskConfig() task.TaskConfig
 	Exec(ctx *task.TaskContext) error
+}
+
+type TaskConfig struct {
+	task.TaskConfig
+	TargetType string
+	Target     string
+}
+
+type baseExecutor struct {
+	TaskConfig
+}
+
+func (exec *baseExecutor) GetDotTaskConfig() task.TaskConfig {
+	return exec.TaskConfig.TaskConfig
 }
 
 // ValidateExecType validate the execType is supported

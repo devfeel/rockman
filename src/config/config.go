@@ -21,7 +21,7 @@ type (
 	}
 
 	GlobalSection struct {
-		MysqlConnectString string
+		DataBaseConnectString string
 	}
 
 	LoggerSection struct {
@@ -62,7 +62,7 @@ func GetConfigPath(file string) string {
 // SingleNodeProfile return default profile used to single node
 func SingleNodeProfile() *Profile {
 	p := new(Profile)
-	p.Global = &GlobalSection{MysqlConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
+	p.Global = &GlobalSection{DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
 	p.Cluster = &ClusterSection{Id: "rock", Master: ""}
 	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2020, HttpPort: 8080}
 	p.Logger = &LoggerSection{LogPath: "./logs"}

@@ -31,30 +31,46 @@ func (r *Runtime) Start() {
 
 // CreateCronExecutor create new cron executor and register to task service
 // now support http\shell\go.so
-func (r *Runtime) CreateCronExecutor(taskID string, isRun bool, express string, ExecType string, ExecTarget string, taskData interface{}) error {
+func (r *Runtime) CreateExecutor(target string, targetType string, taskConf executor.TaskConfig) (executor.Executor, error) {
+	var exec executor.Executor
+	if targetType == executor.HttpType {
+		exec = executor.NewHttpExecutor(taskConf)
+	} else if targetType == executor.ShellType {
+		exec = executor.NewShellExecutor(taskConf)
+	} else if targetType == executor.ShellType {
+		exec = executor.NewGoExecutor(taskConf)
+	}
 
+	err := r.registerExecutor(exec)
+	return exec, err
+}
+
+func (r *Runtime) registerExecutor(exec executor.Executor) error {
+	fmt.Println(exec.GetDotTaskConfig())
+	_, err := r.TaskService.CreateTask(exec.GetDotTaskConfig())
+	if err != nil {
+		return err
+	}
+	r.Executors[exec.GetTaskID()] = exec
 	return nil
 }
 
 func registerDemoExecutors(r *Runtime) {
-	goExec := executor.NewGoExecutor("go")
-	httpExec := executor.NewHttpExecutor("http")
-	shellExec := executor.NewShellExecutor("shell")
-	_, err := r.TaskService.CreateCronTask("go.exec", true, "0 * * * * *", goExec.Exec, nil)
+	goExec := executor.NewDebugGoExecutor(("go"))
+	err := r.registerExecutor(goExec)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {go.exec} error! => ", err.Error())
 	}
-	r.Executors["go"] = goExec
 
-	_, err = r.TaskService.CreateCronTask("http.exec", true, "0 * * * * *", httpExec.Exec, nil)
+	httpExec := executor.NewDebugHttpExecutor("http")
+	err = r.registerExecutor(httpExec)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {http.exec} error! => ", err.Error())
 	}
-	r.Executors["http"] = httpExec
 
-	_, err = r.TaskService.CreateCronTask("shell.exec", true, "0 * * * * *", shellExec.Exec, nil)
+	shellExec := executor.NewDebugShellExecutor("shell")
+	err = r.registerExecutor(shellExec)
 	if err != nil {
 		fmt.Println("service.CreateCronTask {shell.exec} error! => ", err.Error())
 	}
-	r.Executors["shell"] = shellExec
 }

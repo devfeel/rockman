@@ -2,13 +2,12 @@ package repository
 
 import (
 	"github.com/devfeel/database/mysql"
-	"github.com/devfeel/dotlog"
 	"github.com/devfeel/rockman/src/logger"
 )
 
 type BaseRepository struct {
 	mysql.MySqlDBContext
-	databaseLogger dotlog.Logger
+	databaseLogger logger.Logger
 }
 
 func (base *BaseRepository) InitLogger() {
