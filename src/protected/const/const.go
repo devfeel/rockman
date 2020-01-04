@@ -1,3 +1,0 @@
-package _const
-
-const ()
