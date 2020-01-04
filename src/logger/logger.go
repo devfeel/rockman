@@ -12,6 +12,7 @@ const (
 	LoggerName_Repository = "RepositoryLogger"
 	LoggerName_Node       = "NodeLogger"
 	LoggerName_Runtime    = "RuntimeLogger"
+	LoggerName_Default    = "DefaultLogger"
 )
 
 type Logger interface {
@@ -19,9 +20,13 @@ type Logger interface {
 }
 
 func StartLogService(confPath string) error {
-	return dotlog.StartLogService(confPath + "/log.conf")
+	return dotlog.StartLogService(confPath + "/dotlog.conf")
 }
 
-func GetLogger(loggerName string) dotlog.Logger {
+func GetLogger(loggerName string) Logger {
 	return dotlog.GetLogger(loggerName)
+}
+
+func Default() Logger {
+	return GetLogger(LoggerName_Default)
 }

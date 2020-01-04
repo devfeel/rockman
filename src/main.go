@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/devfeel/rockman/src/config"
+	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
 	"time"
 )
@@ -16,6 +17,9 @@ func main() {
 
 	// load config file
 	profile := config.SingleNodeProfile()
+
+	// start log service
+	logger.StartLogService("config")
 
 	//start worker node
 	CurrentNode, err = node.NewNode(profile)

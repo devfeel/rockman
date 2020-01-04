@@ -34,9 +34,10 @@ type (
 
 	NodeSection struct {
 		NodeId      string
-		RunMode     string //single or cluster
+		RpcHost     string
 		RpcPort     int
 		RpcProtocol string //now is json-rpc
+		HttpHost    string
 		HttpPort    int
 		IsMaster    bool
 		IsWorker    bool
@@ -64,7 +65,7 @@ func SingleNodeProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
 	p.Cluster = &ClusterSection{Id: "rock", Master: ""}
-	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2020, HttpPort: 8080}
+	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2398, HttpPort: 8080, IsMaster: true, IsWorker: true}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
 	p.Registry = &RegistrySection{ServerUrl: ""}

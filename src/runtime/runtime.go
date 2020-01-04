@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/runtime/executor"
 )
 
@@ -20,10 +21,12 @@ type Runtime struct {
 func NewRuntime() *Runtime {
 	r := &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
 	r.TaskService = task.StartNewService()
+	logger.Default().Debug("Runtime Init Success!")
 	return r
 }
 
 func (r *Runtime) Start() {
+	logger.Default().Debug("Runtime Start...")
 	r.TaskService.StartAllTask()
 	r.Status = Status_Run
 }
