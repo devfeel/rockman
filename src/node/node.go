@@ -5,6 +5,7 @@ import (
 	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/runtime"
+	"github.com/devfeel/rockman/src/runtime/executor"
 )
 
 const (
@@ -14,6 +15,8 @@ const (
 	defaultRpcPort  = 2020
 	defaultHttpPort = 8080
 )
+
+var NodeLogger = logger.GetLogger(logger.LoggerName_Node)
 
 type (
 	Node struct {
@@ -50,18 +53,23 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		return nil, errors.New("Node Init Config error: " + err.Error())
 	}
 
-	// create runtime
-	node.Runtime = runtime.NewRuntime()
+	if node.Config.IsWorker {
+		// create runtime
+		node.Runtime = runtime.NewRuntime()
 
-	// load tasks
-	// TODO load tasks from mysql
+		// load tasks
+		// TODO load tasks from mysql
+		registerDemoExecutors(node.Runtime)
+	}
 
 	return node, err
 
 }
 
 func (n *Node) Start() error {
-	n.Runtime.Start()
+	if n.Config.IsWorker {
+		n.Runtime.Start()
+	}
 	return nil
 }
 
@@ -81,4 +89,24 @@ func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config.IsWorker = conf.Node.IsWorker
 
 	return nil
+}
+
+func registerDemoExecutors(r *runtime.Runtime) {
+	goExec := executor.NewDebugGoExecutor(("go"))
+	err := r.RegisterExecutor(goExec)
+	if err != nil {
+		NodeLogger.Error(err, "service.CreateCronTask {go.exec} error!")
+	}
+
+	httpExec := executor.NewDebugHttpExecutor("http")
+	err = r.RegisterExecutor(httpExec)
+	if err != nil {
+		NodeLogger.Error(err, "service.CreateCronTask {http.exec} error!")
+	}
+
+	shellExec := executor.NewDebugShellExecutor("shell")
+	err = r.RegisterExecutor(shellExec)
+	if err != nil {
+		NodeLogger.Error(err, "service.CreateCronTask {shell.exec} error!")
+	}
 }

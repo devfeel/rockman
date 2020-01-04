@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"fmt"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/rockman/src/runtime/executor"
 )
@@ -19,12 +18,12 @@ type Runtime struct {
 }
 
 func NewRuntime() *Runtime {
-	return &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
+	r := &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
+	r.TaskService = task.StartNewService()
+	return r
 }
 
 func (r *Runtime) Start() {
-	r.TaskService = task.StartNewService()
-	registerDemoExecutors(r)
 	r.TaskService.StartAllTask()
 	r.Status = Status_Run
 }
@@ -41,36 +40,15 @@ func (r *Runtime) CreateExecutor(target string, targetType string, taskConf exec
 		exec = executor.NewGoExecutor(taskConf)
 	}
 
-	err := r.registerExecutor(exec)
+	err := r.RegisterExecutor(exec)
 	return exec, err
 }
 
-func (r *Runtime) registerExecutor(exec executor.Executor) error {
-	fmt.Println(exec.GetDotTaskConfig())
+func (r *Runtime) RegisterExecutor(exec executor.Executor) error {
 	_, err := r.TaskService.CreateTask(exec.GetDotTaskConfig())
 	if err != nil {
 		return err
 	}
 	r.Executors[exec.GetTaskID()] = exec
 	return nil
-}
-
-func registerDemoExecutors(r *Runtime) {
-	goExec := executor.NewDebugGoExecutor(("go"))
-	err := r.registerExecutor(goExec)
-	if err != nil {
-		fmt.Println("service.CreateCronTask {go.exec} error! => ", err.Error())
-	}
-
-	httpExec := executor.NewDebugHttpExecutor("http")
-	err = r.registerExecutor(httpExec)
-	if err != nil {
-		fmt.Println("service.CreateCronTask {http.exec} error! => ", err.Error())
-	}
-
-	shellExec := executor.NewDebugShellExecutor("shell")
-	err = r.registerExecutor(shellExec)
-	if err != nil {
-		fmt.Println("service.CreateCronTask {shell.exec} error! => ", err.Error())
-	}
 }
