@@ -1,5 +1,7 @@
 package cluster
 
+import "github.com/devfeel/rockman/src/logger"
+
 type Cluster struct {
 	Registry *Registry
 }
@@ -11,6 +13,7 @@ type Registry struct {
 func NewCluster() *Cluster {
 	c := new(Cluster)
 	c.Registry = new(Registry)
+	logger.Default().Debug("Cluster Init Success!")
 	return c
 }
 
