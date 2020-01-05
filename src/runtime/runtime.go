@@ -21,6 +21,7 @@ type Runtime struct {
 func NewRuntime() *Runtime {
 	r := &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
 	r.TaskService = task.StartNewService()
+	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
 	logger.Default().Debug("Runtime Init Success!")
 	return r
 }

@@ -59,7 +59,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	node.RpcServer = rpc.NewRpcServer()
 
 	if node.Config.IsMaster {
-		node.WebServer = webui.NewWebServer()
+		node.WebServer = webui.NewWebServer(profile.Logger.LogPath)
 	}
 
 	if node.Config.IsWorker {
@@ -79,7 +79,7 @@ func (n *Node) Start() error {
 		go n.Runtime.Start()
 	}
 	if n.Config.IsMaster {
-		go n.WebServer.Start()
+		go n.WebServer.ListenAndServe(n.Config.HttpHost + ":" + strconv.Itoa(n.Config.HttpPort))
 	}
 
 	// start rpcserver listen

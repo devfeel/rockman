@@ -3,14 +3,13 @@ package webui
 import (
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/middleware/cors"
-	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/webui/controllers"
-	"strconv"
 )
 
 var (
 	testController = new(controllers.TestController)
+	taskController = new(controllers.TaskController)
 )
 
 type WebServer struct {
@@ -18,11 +17,10 @@ type WebServer struct {
 	listenAddr string
 }
 
-func NewWebServer() *WebServer {
+func NewWebServer(logPath string) *WebServer {
 	s := &WebServer{}
-	s.listenAddr = config.CurrentProfile.Node.HttpHost + ":" + strconv.Itoa(config.CurrentProfile.Node.HttpPort)
 	s.webApp = dotweb.New()
-	s.webApp.SetLogPath(config.CurrentProfile.Logger.LogPath + "/webui/")
+	s.webApp.SetLogPath(logPath)
 	s.webApp.SetEnabledLog(true)
 	s.webApp.UseRequestLog()
 	s.webApp.Use(cors.Middleware(cors.NewConfig().UseDefault()))
@@ -31,7 +29,8 @@ func NewWebServer() *WebServer {
 	return s
 }
 
-func (s *WebServer) Start() error {
+func (s *WebServer) ListenAndServe(listenAddr string) error {
+	s.listenAddr = listenAddr
 	logger.Default().Debug("WebServer.StartServer => " + s.listenAddr)
 	err := s.webApp.ListenAndServe(s.listenAddr)
 	if err != nil {
@@ -43,4 +42,7 @@ func (s *WebServer) Start() error {
 func (s *WebServer) initRoute() {
 	g := s.webApp.HttpServer.Group("/test")
 	g.GET("/index", testController.Echo)
+
+	g = s.webApp.HttpServer.Group("/task")
+	g.GET("/taskbynode", taskController.ShowTaskListByNodeID)
 }
