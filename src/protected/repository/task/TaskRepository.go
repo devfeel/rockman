@@ -27,14 +27,14 @@ func GetTaskRepository() *TaskRepository {
 		taskRepositoryLocker.Lock()
 		defer taskRepositoryLocker.Unlock()
 		if defaultTaskRepository == nil {
-			defaultTaskRepository = NewDemoRepository()
+			defaultTaskRepository = NewTaskRepository()
 		}
 	}
 	return defaultTaskRepository
 }
 
-// NewMessageRepository return new MessageRepository
-func NewDemoRepository() *TaskRepository {
+// NewTaskRepository return new MessageRepository
+func NewTaskRepository() *TaskRepository {
 	if config.CurrentProfile.Global.DataBaseConnectString == "" {
 		err := errors.New("no config database config")
 		panic(err)
@@ -45,7 +45,7 @@ func NewDemoRepository() *TaskRepository {
 	return repository
 }
 
-func (repository *TaskRepository) QueryTasksByNodeID(dest interface{}, taskId string) error {
+func (repository *TaskRepository) QueryTasksByNodeID(dest interface{}, nodeID string) error {
 	sql := "SELECT * FROM [Tasks] WHERE NodeID = ? "
-	return repository.FindList(dest, sql, taskId)
+	return repository.FindList(dest, sql, nodeID)
 }

@@ -1,6 +1,6 @@
 package model
 
-type DemoInfo struct {
+type TaskInfo struct {
 	ID         int
 	TargetType string //http/shell/goso
 	TaskID     string
