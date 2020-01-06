@@ -34,7 +34,7 @@ func GetHttpClient(timeout time.Duration) *http.Client {
 	return &http.Client{Transport: getTransport(timeout)}
 }
 
-func HttpHead(url string, timeout time.Duration) (body string, contentType string, intervalTime int64, errReturn error) {
+func HttpHead(url string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
 	startTime := time.Now()
 	intervalTime = 0
 	contentType = ""
@@ -49,6 +49,8 @@ func HttpHead(url string, timeout time.Duration) (body string, contentType strin
 	}
 	defer resp.Body.Close()
 
+	status = resp.Status
+
 	bytebody, err := ioutil.ReadAll(resp.Body)
 	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
 	if err != nil {
@@ -62,7 +64,7 @@ func HttpHead(url string, timeout time.Duration) (body string, contentType strin
 	return
 }
 
-func HttpGet(url string, timeout time.Duration) (body string, contentType string, intervalTime int64, errReturn error) {
+func HttpGet(url string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
 	startTime := time.Now()
 	intervalTime = 0
 	contentType = ""
@@ -77,20 +79,22 @@ func HttpGet(url string, timeout time.Duration) (body string, contentType string
 	}
 	defer resp.Body.Close()
 
-	bytebody, err := ioutil.ReadAll(resp.Body)
+	status = resp.Status
+
+	byteBody, err := ioutil.ReadAll(resp.Body)
 	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
 	if err != nil {
 		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
 		errReturn = err
 		return
 	}
-	body = string(bytebody)
+	body = string(byteBody)
 	contentType = resp.Header.Get("Content-Type")
 	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
 	return
 }
 
-func HttpPost(url string, postBody string, bodyType string, timeout time.Duration) (body string, contentType string, intervalTime int64, errReturn error) {
+func HttpPost(url string, postBody string, bodyType string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
 	startTime := time.Now()
 	intervalTime = 0
 	contentType = ""
@@ -107,6 +111,8 @@ func HttpPost(url string, postBody string, bodyType string, timeout time.Duratio
 		return
 	}
 	defer resp.Body.Close()
+
+	status = resp.Status
 
 	byteBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
