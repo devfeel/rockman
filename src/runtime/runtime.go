@@ -34,14 +34,14 @@ func (r *Runtime) Start() {
 
 // CreateCronExecutor create new cron executor and register to task service
 // now support http\shell\go.so
-func (r *Runtime) CreateExecutor(target string, targetType string, taskConf executor.TaskConfig) (executor.Executor, error) {
+func (r *Runtime) CreateExecutor(target string, targetType string, taskConf interface{}) (executor.Executor, error) {
 	var exec executor.Executor
 	if targetType == executor.HttpType {
-		exec = executor.NewHttpExecutor(taskConf)
+		exec = executor.NewHttpExecutor(taskConf.(*executor.HttpTaskConfig))
 	} else if targetType == executor.ShellType {
-		exec = executor.NewShellExecutor(taskConf)
+		exec = executor.NewShellExecutor(taskConf.(*executor.ShellTaskConfig))
 	} else if targetType == executor.ShellType {
-		exec = executor.NewGoExecutor(taskConf)
+		exec = executor.NewGoExecutor(taskConf.(*executor.GoTaskConfig))
 	}
 
 	err := r.RegisterExecutor(exec)
@@ -49,10 +49,23 @@ func (r *Runtime) CreateExecutor(target string, targetType string, taskConf exec
 }
 
 func (r *Runtime) RegisterExecutor(exec executor.Executor) error {
-	_, err := r.TaskService.CreateTask(exec.GetDotTaskConfig())
+	_, err := r.TaskService.CreateTask(convertToDotTaskConfig(exec.GetTaskConfig()))
 	if err != nil {
 		return err
 	}
 	r.Executors[exec.GetTaskID()] = exec
 	return nil
+}
+
+func convertToDotTaskConfig(conf executor.TaskConfig) task.TaskConfig {
+	return task.TaskConfig{
+		TaskID:   conf.TaskID,
+		TaskType: conf.TaskType,
+		IsRun:    conf.IsRun,
+		DueTime:  conf.DueTime,
+		Interval: conf.Interval,
+		Express:  conf.Express,
+		TaskData: conf.TaskData,
+		Handler:  conf.Handler,
+	}
 }

@@ -13,22 +13,20 @@ const (
 type Executor interface {
 	GetTaskID() string
 	GetTargetType() string
-	GetDotTaskConfig() task.TaskConfig
+	GetTaskConfig() TaskConfig
 	Exec(ctx *task.TaskContext) error
 }
 
 type TaskConfig struct {
 	task.TaskConfig
-	TargetType string
-	Target     string
 }
 
 type baseExecutor struct {
-	TaskConfig
+	TargetType string
 }
 
-func (exec *baseExecutor) GetDotTaskConfig() task.TaskConfig {
-	return exec.TaskConfig.TaskConfig
+func (exec *baseExecutor) GetTargetType() string {
+	return exec.TargetType
 }
 
 // ValidateExecType validate the execType is supported

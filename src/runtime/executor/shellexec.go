@@ -7,12 +7,18 @@ import (
 	"os/exec"
 )
 
+type ShellTaskConfig struct {
+	TaskConfig
+	ShellFile string
+}
+
 type ShellExecutor struct {
 	baseExecutor
+	TaskConfig *ShellTaskConfig
 }
 
 func NewDebugShellExecutor(taskID string) Executor {
-	conf := TaskConfig{}
+	conf := &ShellTaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -23,33 +29,25 @@ func NewDebugShellExecutor(taskID string) Executor {
 	return NewShellExecutor(conf)
 }
 
-func NewShellExecutor(conf TaskConfig) *ShellExecutor {
+func NewShellExecutor(conf *ShellTaskConfig) *ShellExecutor {
 	exec := new(ShellExecutor)
-	exec.TaskID = conf.TaskID
-	exec.TaskType = conf.TaskType
-	exec.IsRun = conf.IsRun
-	exec.DueTime = conf.DueTime
-	exec.Interval = conf.Interval
-	exec.Express = conf.Express
-	exec.Handler = exec.Exec
-	exec.TaskData = conf.TaskData
-
-	exec.Target = conf.TaskData.(string)
 	exec.TargetType = ShellType
+	exec.TaskConfig = conf
+	exec.TaskConfig.Handler = exec.Exec
 	return exec
 }
 
 func (exec *ShellExecutor) GetTaskID() string {
-	return exec.TaskID
+	return exec.TaskConfig.TaskID
 }
 
-func (exec *ShellExecutor) GetTargetType() string {
-	return exec.TargetType
+func (exec *ShellExecutor) GetTaskConfig() TaskConfig {
+	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
-	fmt.Println("ShellExecutor exec", exec.TaskID)
-	result, err := execShell(exec.Target)
+	fmt.Println("ShellExecutor exec", exec.TaskConfig.TaskID)
+	result, err := execShell(exec.TaskConfig.ShellFile)
 	//TODO log exec result
 	//1.file
 	//2.mysql

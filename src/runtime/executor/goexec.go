@@ -5,12 +5,18 @@ import (
 	"github.com/devfeel/dottask"
 )
 
+type GoTaskConfig struct {
+	TaskConfig
+	GoSoFile string
+}
+
 type GoExecutor struct {
 	baseExecutor
+	TaskConfig *GoTaskConfig
 }
 
 func NewDebugGoExecutor(taskID string) Executor {
-	conf := TaskConfig{}
+	conf := &GoTaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -21,31 +27,23 @@ func NewDebugGoExecutor(taskID string) Executor {
 	return NewGoExecutor(conf)
 }
 
-func NewGoExecutor(conf TaskConfig) *GoExecutor {
+func NewGoExecutor(conf *GoTaskConfig) *GoExecutor {
 	exec := new(GoExecutor)
-	exec.TaskID = conf.TaskID
-	exec.TaskType = conf.TaskType
-	exec.IsRun = conf.IsRun
-	exec.DueTime = conf.DueTime
-	exec.Interval = conf.Interval
-	exec.Express = conf.Express
-	exec.Handler = exec.Exec
-	exec.TaskData = conf.TaskData
-
-	exec.Target = conf.TaskData.(string)
 	exec.TargetType = GoSoType
+	exec.TaskConfig = conf
+	exec.TaskConfig.Handler = exec.Exec
 	return exec
 }
 
 func (exec *GoExecutor) GetTaskID() string {
-	return exec.TaskID
+	return exec.TaskConfig.TaskID
 }
 
-func (exec *GoExecutor) GetTargetType() string {
-	return exec.TargetType
+func (exec *GoExecutor) GetTaskConfig() TaskConfig {
+	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
-	fmt.Println("GoExceutor exec", exec.TaskID)
+	fmt.Println("GoExceutor exec", exec.TaskConfig.TaskID)
 	return nil
 }

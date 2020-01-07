@@ -11,3 +11,12 @@ type TaskInfo struct {
 	Express    string
 	TaskData   string
 }
+
+type HttpTaskInfo struct {
+	TaskInfo
+	Url         string
+	Method      string
+	ContentType string
+	PostBody    string
+	Timeout     int //单位为秒
+}

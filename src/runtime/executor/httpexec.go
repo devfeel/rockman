@@ -5,12 +5,22 @@ import (
 	"github.com/devfeel/dottask"
 )
 
+type HttpTaskConfig struct {
+	TaskConfig
+	Url         string
+	Method      string
+	ContentType string
+	PostBody    string
+	Timeout     int //单位为秒
+}
+
 type HttpExecutor struct {
 	baseExecutor
+	TaskConfig *HttpTaskConfig
 }
 
 func NewDebugHttpExecutor(taskID string) Executor {
-	conf := TaskConfig{}
+	conf := &HttpTaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -21,31 +31,23 @@ func NewDebugHttpExecutor(taskID string) Executor {
 	return NewHttpExecutor(conf)
 }
 
-func NewHttpExecutor(conf TaskConfig) *HttpExecutor {
+func NewHttpExecutor(conf *HttpTaskConfig) *HttpExecutor {
 	exec := new(HttpExecutor)
-	exec.TaskID = conf.TaskID
-	exec.TaskType = conf.TaskType
-	exec.IsRun = conf.IsRun
-	exec.DueTime = conf.DueTime
-	exec.Interval = conf.Interval
-	exec.Express = conf.Express
-	exec.Handler = exec.Exec
-	exec.TaskData = conf.TaskData
-
-	exec.Target = conf.TaskData.(string)
 	exec.TargetType = HttpType
+	exec.TaskConfig = conf
+	exec.TaskConfig.Handler = exec.Exec
 	return exec
 }
 
 func (exec *HttpExecutor) GetTaskID() string {
-	return exec.TaskID
+	return exec.TaskConfig.TaskID
 }
 
-func (exec *HttpExecutor) GetTargetType() string {
-	return exec.TargetType
+func (exec *HttpExecutor) GetTaskConfig() TaskConfig {
+	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {
-	fmt.Println("HttpExecutor exec", exec.TaskID)
+	fmt.Println("HttpExecutor exec", exec.TaskConfig.TaskID)
 	return nil
 }
