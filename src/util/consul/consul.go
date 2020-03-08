@@ -13,6 +13,10 @@ type (
 		addr   string
 	}
 
+	ConsulLocker struct {
+		Locker *consulapi.Lock
+	}
+
 	ServiceConfig struct {
 		Name     string
 		Tags     []string
@@ -37,15 +41,7 @@ func NewConsulClient(addr string) (*ConsulClient, error) {
 	return client, nil
 }
 
-func (c *ConsulClient) RegisteService(addr string, service *ServiceConfig) error {
-	config := consulapi.DefaultConfig()
-	config.Address = addr
-
-	client, err := consulapi.NewClient(config)
-	if err != nil {
-		return err
-	}
-
+func (c *ConsulClient) RegisterService(service *ServiceConfig) error {
 	registration := new(consulapi.AgentServiceRegistration)
 	registration.ID = hashService(service)
 	registration.Name = service.Name
@@ -59,12 +55,12 @@ func (c *ConsulClient) RegisteService(addr string, service *ServiceConfig) error
 		Interval:                       "10s",
 		DeregisterCriticalServiceAfter: "30s", //check失败后30秒删除本服务
 	}
-	err = client.Agent().ServiceRegister(registration)
+	err := c.GetClient().Agent().ServiceRegister(registration)
 	return err
 
 }
 
-func (c *ConsulClient) FindService(addr string, serviceName string, tag string) ([]*ServiceConfig, error) {
+func (c *ConsulClient) SearchService(addr string, serviceName string, tag string) ([]*ServiceConfig, error) {
 	services, _, err := c.GetClient().Catalog().Service(serviceName, tag, nil)
 	if err != nil {
 		return nil, err
@@ -82,14 +78,20 @@ func (c *ConsulClient) FindService(addr string, serviceName string, tag string) 
 	return appServices, nil
 }
 
-func (c *ConsulClient) CreateLockerOpts(addr string, opts *consulapi.LockOptions) (*consulapi.Lock, error) {
-	lock, err := c.GetClient().LockOpts(opts)
-	return lock, err
+func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*ConsulLocker, error) {
+	locker, err := c.GetClient().LockOpts(opts)
+	if err != nil {
+		return nil, err
+	}
+	return &ConsulLocker{Locker: locker}, nil
 }
 
-func (c *ConsulClient) CreateLocker(addr string, key string) (*consulapi.Lock, error) {
-	lock, err := c.GetClient().LockKey(key)
-	return lock, err
+func (c *ConsulClient) CreateLocker(addr string, key string) (*ConsulLocker, error) {
+	locker, err := c.GetClient().LockKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return &ConsulLocker{Locker: locker}, nil
 }
 
 func (c *ConsulClient) GetClient() *consulapi.Client {

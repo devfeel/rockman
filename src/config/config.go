@@ -68,7 +68,7 @@ func SingleNodeProfile() *Profile {
 	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2398, HttpPort: 8080, IsMaster: true, IsWorker: true}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
-	p.Registry = &RegistrySection{ServerUrl: ""}
+	p.Registry = &RegistrySection{ServerUrl: "116.62.16.66:8500"}
 
 	CurrentProfile = p
 	return p

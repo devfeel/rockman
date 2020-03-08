@@ -23,13 +23,13 @@ func TestCreateLocker(t *testing.T) {
 				fmt.Println(time.Now(), i, "create lock err", err)
 				return
 			}
-			_, err = lock.Lock(nil)
+			_, err = lock.Locker.Lock(nil)
 			if err != nil {
 				fmt.Println(time.Now(), i, "lock err", err)
 			} else {
 				fmt.Println(time.Now(), i, "lock success")
 				time.Sleep(time.Minute)
-				err = lock.Unlock()
+				err = lock.Locker.Unlock()
 				fmt.Println(time.Now(), i, "unlock success")
 			}
 		}(i)

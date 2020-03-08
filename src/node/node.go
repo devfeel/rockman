@@ -55,7 +55,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		return nil, errors.New("Node Init Config error: " + err.Error())
 	}
 
-	node.Cluster = cluster.NewCluster()
+	node.Cluster, err = cluster.NewCluster(profile.Registry.ServerUrl)
+	if err != nil {
+		return nil, errors.New("Node New Cluster error: " + err.Error())
+	}
 	node.RpcServer = rpc.NewRpcServer()
 
 	if node.Config.IsMaster {
@@ -85,7 +88,7 @@ func (n *Node) Start() error {
 	// start rpcserver listen
 	go n.RpcServer.Listen(n.Config.RpcHost, strconv.Itoa(n.Config.RpcPort))
 
-	n.Cluster.Registry.Register()
+	//n.Cluster.Registry.Register(n.Config.RegistryServer)
 	return nil
 }
 
