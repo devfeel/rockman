@@ -13,6 +13,7 @@ const (
 
 type Cluster struct {
 	Registry *Registry
+	IsMaster bool
 }
 
 type Registry struct {

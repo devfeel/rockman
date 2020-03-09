@@ -46,7 +46,6 @@ type (
 func NewNode(profile *config.Profile) (*Node, error) {
 	node := &Node{NodeId: profile.Node.NodeId}
 
-	//init logger
 	logger.Default().Debug("Node {" + node.NodeId + "} Start...")
 
 	//init config
@@ -63,6 +62,8 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 	if node.Config.IsMaster {
 		node.WebServer = webui.NewWebServer(profile.Logger.LogPath)
+		//register master role
+		go node.registerMaster()
 	}
 
 	if node.Config.IsWorker {
@@ -89,6 +90,21 @@ func (n *Node) Start() error {
 	go n.RpcServer.Listen(n.Config.RpcHost, strconv.Itoa(n.Config.RpcPort))
 
 	//n.Cluster.Registry.Register(n.Config.RegistryServer)
+	return nil
+}
+
+func (n *Node) registerMaster() error {
+	isMaster, err := n.Cluster.RegisterMaster(n.Config.RpcHost, strconv.Itoa(n.Config.RpcPort), "")
+	if err == nil {
+		n.Cluster.IsMaster = isMaster
+	} else {
+		logger.Default().Error(err, "Node {"+n.NodeId+"} RegisterMaster error:"+err.Error())
+	}
+
+	if n.Cluster.IsMaster {
+		//TODO do something when change to master
+		logger.Default().Debug("Node {" + n.NodeId + "} register master role success")
+	}
 	return nil
 }
 

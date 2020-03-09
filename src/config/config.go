@@ -65,7 +65,7 @@ func SingleNodeProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
 	p.Cluster = &ClusterSection{Id: "rock", Master: ""}
-	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcPort: 2398, HttpPort: 8080, IsMaster: true, IsWorker: true}
+	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), RpcHost: "127.0.0.1", RpcPort: 2398, HttpPort: 8080, IsMaster: true, IsWorker: true}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
 	p.Registry = &RegistrySection{ServerUrl: "116.62.16.66:8500"}
