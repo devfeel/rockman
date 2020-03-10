@@ -8,16 +8,22 @@ import (
 )
 
 type RpcServer struct {
+	RpcHost     string
+	RpcPort     string
+	RpcProtocol string
 }
 
-func NewRpcServer() *RpcServer {
+func NewRpcServer(host, port, protocol string) *RpcServer {
 	s := new(RpcServer)
+	s.RpcHost = host
+	s.RpcPort = port
+	s.RpcProtocol = protocol
 	logger.Default().Debug("RpcServer Init Success!")
 	return s
 }
 
-func (s *RpcServer) Listen(host, port string) error {
-	lis, err := net.Listen("tcp", host+":"+port)
+func (s *RpcServer) Listen() error {
+	lis, err := net.Listen("tcp", s.RpcHost+":"+s.RpcPort)
 	if err != nil {
 		return err
 	}

@@ -2,18 +2,21 @@ package cluster
 
 import (
 	"fmt"
+	"github.com/devfeel/rockman/src/core"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/util/consul"
 	"github.com/hashicorp/consul/api"
 )
 
 const (
-	registryLockerKey = "RockMan:Master:Locker"
+	registryLockerKey = "master:locker"
 )
 
 type Cluster struct {
+	Id       string
 	Registry *Registry
 	IsMaster bool
+	Workers  []*core.ServerInfo
 }
 
 type Registry struct {
@@ -21,9 +24,10 @@ type Registry struct {
 	RegServer *consul.ConsulClient
 }
 
-func NewCluster(serverUrl string) (*Cluster, error) {
+func NewCluster(clusterId string, serverUrl string) (*Cluster, error) {
 	c := new(Cluster)
 	c.Registry = new(Registry)
+	c.Id = clusterId
 	c.Registry.ServerUrl = serverUrl
 	regServer, err := consul.NewConsulClient(c.Registry.ServerUrl)
 	if err != nil {
@@ -33,6 +37,8 @@ func NewCluster(serverUrl string) (*Cluster, error) {
 
 	c.Registry.RegServer = regServer
 
+	fmt.Println(c.Workers)
+
 	logger.Default().Debug("Cluster Init Success!")
 	return c, nil
 }
@@ -40,7 +46,7 @@ func NewCluster(serverUrl string) (*Cluster, error) {
 // RegisterMaster register master role to registry server
 func (c *Cluster) RegisterMaster(address string, port string, checkUrl string) (bool, error) {
 	opts := &api.LockOptions{
-		Key:         registryLockerKey,
+		Key:         c.getRegistryLockerKey(),
 		Value:       []byte(address + "," + port),
 		SessionTTL:  "10s",
 		SessionName: address + "," + port,
@@ -59,4 +65,8 @@ func (c *Cluster) RegisterMaster(address string, port string, checkUrl string) (
 
 func (reg *Registry) Register(address string, port string, checkUrl string) error {
 	return nil
+}
+
+func (c *Cluster) getRegistryLockerKey() string {
+	return "devfeel/rockman:" + c.Id + ":" + registryLockerKey
 }

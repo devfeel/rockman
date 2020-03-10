@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
-	"github.com/devfeel/rockman/src/node"
+	"github.com/devfeel/rockman/src/node/node"
 	"time"
 )
 

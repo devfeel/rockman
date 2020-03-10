@@ -14,7 +14,7 @@ import (
 
 const (
 	defaultHost     = "127.0.0.1"
-	defaultRpcPort  = 2398 //2398 = 1983+0415 my birthday!
+	defaultRpcPort  = "2398" //2398 = 1983+0415 my birthday!
 	defaultHttpPort = 8080
 )
 
@@ -32,7 +32,7 @@ type (
 
 	NodeConfig struct {
 		RpcHost        string
-		RpcPort        int
+		RpcPort        string
 		RpcProtocol    string
 		HttpHost       string
 		HttpPort       int
@@ -54,11 +54,11 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		return nil, errors.New("Node Init Config error: " + err.Error())
 	}
 
-	node.Cluster, err = cluster.NewCluster(profile.Registry.ServerUrl)
+	node.Cluster, err = cluster.NewCluster(profile.Cluster.Id, profile.Registry.ServerUrl)
 	if err != nil {
 		return nil, errors.New("Node New Cluster error: " + err.Error())
 	}
-	node.RpcServer = rpc.NewRpcServer()
+	node.RpcServer = rpc.NewRpcServer(profile.Node.RpcHost, profile.Node.RpcPort, profile.Node.RpcProtocol)
 
 	if node.Config.IsMaster {
 		node.WebServer = webui.NewWebServer(profile.Logger.LogPath)
@@ -87,14 +87,14 @@ func (n *Node) Start() error {
 	}
 
 	// start rpcserver listen
-	go n.RpcServer.Listen(n.Config.RpcHost, strconv.Itoa(n.Config.RpcPort))
+	go n.RpcServer.Listen()
 
 	//n.Cluster.Registry.Register(n.Config.RegistryServer)
 	return nil
 }
 
 func (n *Node) registerMaster() error {
-	isMaster, err := n.Cluster.RegisterMaster(n.Config.RpcHost, strconv.Itoa(n.Config.RpcPort), "")
+	isMaster, err := n.Cluster.RegisterMaster(n.Config.RpcHost, n.Config.RpcPort, "")
 	if err == nil {
 		n.Cluster.IsMaster = isMaster
 	} else {
@@ -116,7 +116,7 @@ func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config.RpcPort = defaultRpcPort
 	n.Config.RpcProtocol = conf.Node.RpcProtocol
 
-	if conf.Node.RpcPort > 0 {
+	if conf.Node.RpcPort != "" {
 		n.Config.RpcPort = conf.Node.RpcPort
 	}
 
