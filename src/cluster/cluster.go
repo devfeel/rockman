@@ -24,11 +24,11 @@ type Registry struct {
 	RegServer *consul.ConsulClient
 }
 
-func NewCluster(clusterId string, serverUrl string) (*Cluster, error) {
+func NewCluster(clusterId string, registryUrl string) (*Cluster, error) {
 	c := new(Cluster)
 	c.Registry = new(Registry)
 	c.Id = clusterId
-	c.Registry.ServerUrl = serverUrl
+	c.Registry.ServerUrl = registryUrl
 	regServer, err := consul.NewConsulClient(c.Registry.ServerUrl)
 	if err != nil {
 		logger.Default().Debug(fmt.Sprint("Cluster Init error", err.Error()))
@@ -44,12 +44,12 @@ func NewCluster(clusterId string, serverUrl string) (*Cluster, error) {
 }
 
 // RegisterMaster register master role to registry server
-func (c *Cluster) RegisterMaster(address string, port string, checkUrl string) (bool, error) {
+func (c *Cluster) RegisterMaster(serverUrl string, checkUrl string) (bool, error) {
 	opts := &api.LockOptions{
 		Key:         c.getRegistryLockerKey(),
-		Value:       []byte(address + "," + port),
+		Value:       []byte(serverUrl),
 		SessionTTL:  "10s",
-		SessionName: address + "," + port,
+		SessionName: serverUrl,
 	}
 	locker, err := c.Registry.RegServer.CreateLockerOpts(opts)
 	if err != nil {

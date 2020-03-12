@@ -5,11 +5,9 @@ import (
 	"github.com/devfeel/rockman/src/cluster"
 	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
-	"github.com/devfeel/rockman/src/node/rpc"
 	"github.com/devfeel/rockman/src/runtime"
 	"github.com/devfeel/rockman/src/runtime/executor"
 	"github.com/devfeel/rockman/src/webui"
-	"strconv"
 )
 
 const (
@@ -27,17 +25,12 @@ type (
 		Runtime   *runtime.Runtime
 		Cluster   *cluster.Cluster
 		WebServer *webui.WebServer
-		RpcServer *rpc.RpcServer
 	}
 
 	NodeConfig struct {
-		RpcHost        string
-		RpcPort        string
-		RpcProtocol    string
-		HttpHost       string
-		HttpPort       int
 		IsMaster       bool
 		IsWorker       bool
+		ServerUrl      string
 		LogFilePath    string
 		RegistryServer string
 	}
@@ -58,10 +51,8 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	if err != nil {
 		return nil, errors.New("Node New Cluster error: " + err.Error())
 	}
-	node.RpcServer = rpc.NewRpcServer(profile.Node.RpcHost, profile.Node.RpcPort, profile.Node.RpcProtocol)
 
 	if node.Config.IsMaster {
-		node.WebServer = webui.NewWebServer(profile.Logger.LogPath)
 		//register master role
 		go node.registerMaster()
 	}
@@ -82,19 +73,12 @@ func (n *Node) Start() error {
 	if n.Config.IsWorker {
 		go n.Runtime.Start()
 	}
-	if n.Config.IsMaster {
-		go n.WebServer.ListenAndServe(n.Config.HttpHost + ":" + strconv.Itoa(n.Config.HttpPort))
-	}
-
-	// start rpcserver listen
-	go n.RpcServer.Listen()
-
 	//n.Cluster.Registry.Register(n.Config.RegistryServer)
 	return nil
 }
 
 func (n *Node) registerMaster() error {
-	isMaster, err := n.Cluster.RegisterMaster(n.Config.RpcHost, n.Config.RpcPort, "")
+	isMaster, err := n.Cluster.RegisterMaster(n.Config.ServerUrl, "")
 	if err == nil {
 		n.Cluster.IsMaster = isMaster
 	} else {
@@ -110,20 +94,8 @@ func (n *Node) registerMaster() error {
 
 func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config = new(NodeConfig)
-	n.Config.HttpHost = defaultHost
-	n.Config.HttpPort = defaultHttpPort
-	n.Config.RpcHost = conf.Node.RpcHost
-	n.Config.RpcPort = defaultRpcPort
-	n.Config.RpcProtocol = conf.Node.RpcProtocol
 
-	if conf.Node.RpcPort != "" {
-		n.Config.RpcPort = conf.Node.RpcPort
-	}
-
-	n.Config.HttpHost = conf.Node.HttpHost
-	if conf.Node.HttpPort > 0 {
-		n.Config.HttpPort = conf.Node.HttpPort
-	}
+	n.Config.ServerUrl = conf.Rpc.RpcHost + ":" + conf.Rpc.RpcPort
 
 	n.Config.IsMaster = conf.Node.IsMaster
 	n.Config.IsWorker = conf.Node.IsWorker
