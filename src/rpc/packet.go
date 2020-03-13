@@ -11,11 +11,3 @@ type JsonResult struct {
 	RetMsg  string
 	Message interface{}
 }
-
-type NodeInfo struct {
-	Host     string
-	Port     string
-	NodeID   string
-	IsWorker bool
-	IsMaster bool
-}
