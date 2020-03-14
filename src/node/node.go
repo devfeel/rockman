@@ -60,10 +60,6 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	if node.Config.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime()
-
-		// load tasks
-		// TODO load tasks from mysql
-		registerDemoExecutors(node.Runtime)
 	}
 
 	return node, err
@@ -71,6 +67,11 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 func (n *Node) Start() error {
 	if n.Config.IsWorker {
+
+		// load tasks
+		// TODO load tasks from mysql
+		//registerDemoExecutors(n.Runtime)
+
 		go n.Runtime.Start()
 	}
 	//n.Cluster.Registry.Register(n.Config.RegistryServer)

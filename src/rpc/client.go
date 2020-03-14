@@ -59,16 +59,16 @@ func (c *RpcClient) CallRegisterNode(nodeInfo packets.NodeInfo) (error, map[stri
 	return nil, reply.Message.(map[string]interface{})
 }
 
-func (c *RpcClient) CallRegisterExecutor(config interface{}) (error, string) {
+func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, interface{}) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
 	var reply packet.JsonResult
-	err = client.Call("Rpc.RegisterExecutor", config, &reply)
+	err = client.Call("Rpc.RegisterExecutor", conf, &reply)
 	if err != nil {
 		return err, ""
 	}
-	return nil, reply.Message.(string)
+	return nil, reply
 }

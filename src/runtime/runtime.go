@@ -49,15 +49,16 @@ func (r *Runtime) CreateExecutor(target string, targetType string, taskConf inte
 }
 
 func (r *Runtime) RegisterExecutor(exec executor.Executor) error {
-	_, err := r.TaskService.CreateTask(convertToDotTaskConfig(exec.GetTaskConfig()))
+	task, err := r.TaskService.CreateTask(convertToDotTaskConfig(exec.GetTaskConfig()))
 	if err != nil {
 		return err
 	}
+	exec.SetTask(task)
 	r.Executors[exec.GetTaskID()] = exec
 	return nil
 }
 
-func convertToDotTaskConfig(conf executor.TaskConfig) task.TaskConfig {
+func convertToDotTaskConfig(conf *executor.TaskConfig) task.TaskConfig {
 	return task.TaskConfig{
 		TaskID:   conf.TaskID,
 		TaskType: conf.TaskType,

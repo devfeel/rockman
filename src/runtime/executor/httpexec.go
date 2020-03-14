@@ -33,18 +33,11 @@ func NewDebugHttpExecutor(taskID string) Executor {
 
 func NewHttpExecutor(conf *HttpTaskConfig) *HttpExecutor {
 	exec := new(HttpExecutor)
-	exec.TargetType = HttpType
+	conf.TargetType = HttpType
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	exec.baseTaskConfig = &conf.TaskConfig
 	return exec
-}
-
-func (exec *HttpExecutor) GetTaskID() string {
-	return exec.TaskConfig.TaskID
-}
-
-func (exec *HttpExecutor) GetTaskConfig() TaskConfig {
-	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {

@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/json"
 	"github.com/devfeel/rockman/src/core/packets"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
@@ -44,16 +45,44 @@ func (h *RpcHandler) RegisterNode(nodeInfo packets.NodeInfo, result *JsonResult)
 }
 
 func (h *RpcHandler) RegisterExecutor(config interface{}, result *JsonResult) error {
-	taskConfig, isOk := config.(executor.TaskConfig)
-	if !isOk {
-		*result = JsonResult{-1001, "Invalid config type", nil}
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn("unworker node can not register executor")
+		*result = JsonResult{-1001, "unworker node can not register executor", nil}
 		return nil
 	}
-	_, err := h.getNode().Runtime.CreateExecutor(taskConfig.TaskID, taskConfig.TaskType, taskConfig)
+
+	jsonStr, err := json.Marshal(config)
 	if err != nil {
+		logger.Default().Error(err, "Marshal config error:"+err.Error())
+		*result = JsonResult{-2001, "Marshal config error:" + err.Error(), nil}
+		return nil
+	}
+	taskConfig := &executor.TaskConfig{}
+	err = json.Unmarshal([]byte(jsonStr), taskConfig)
+	if err != nil {
+		logger.Default().Error(err, "Marshal config error:"+err.Error())
+		*result = JsonResult{-2002, "Invalid config type", nil}
+		return nil
+	}
+	realTaskConfig, err := executor.ConvertRealTaskConfig(taskConfig)
+	if err != nil {
+		logger.Default().Error(err, "convert real task config err:"+err.Error())
+		*result = JsonResult{-2002, "convert real task config err:" + err.Error(), nil}
+		return nil
+	}
+
+	exec, err := h.getNode().Runtime.CreateExecutor(taskConfig.TaskID, taskConfig.TargetType, realTaskConfig)
+	if err != nil {
+		logger.Default().Error(err, "CreateExecutor error:"+err.Error())
 		*result = JsonResult{-9001, "CreateExecutor error:" + err.Error(), nil}
 		return nil
+	} else {
+		if exec.GetTaskConfig().IsRun {
+			exec.GetTask().Start()
+		}
 	}
+
+	logger.Default().DebugS("RegisterExecutor success", config)
 	*result = JsonResult{0, "ok", nil}
 	return nil
 }

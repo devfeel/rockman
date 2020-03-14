@@ -16,8 +16,7 @@ var CurRpcServer *rpc.RpcServer
 var CurWebServer *webui.WebServer
 
 func main() {
-	println("Welcome to RockMan!")
-
+	printLogo()
 	var err error
 
 	// load config file
@@ -57,4 +56,13 @@ func main() {
 	for {
 		time.Sleep(time.Hour)
 	}
+}
+
+func printLogo() {
+	fmt.Println(".______        ______     ______  __  ___ .___  ___.      ___      .__   __. ")
+	fmt.Println("|   _  \\      /  __  \\   /      ||  |/  / |   \\/   |     /   \\     |  \\ |  | ")
+	fmt.Println("|  |_)  |    |  |  |  | |  ,----'|  '  /  |  \\  /  |    /  ^  \\    |   \\|  | ")
+	fmt.Println("|      /     |  |  |  | |  |     |    <   |  |\\/|  |   /  /_\\  \\   |  . `  | ")
+	fmt.Println("|  |\\  \\----.|  `--'  | |  `----.|  .  \\  |  |  |  |  /  _____  \\  |  |\\   | ")
+	fmt.Println("| _| `._____| \\______/   \\______||__|\\__\\ |__|  |__| /__/     \\__\\ |__| \\__| ")
 }

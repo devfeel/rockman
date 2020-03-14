@@ -29,18 +29,11 @@ func NewDebugGoExecutor(taskID string) Executor {
 
 func NewGoExecutor(conf *GoTaskConfig) *GoExecutor {
 	exec := new(GoExecutor)
-	exec.TargetType = GoSoType
+	conf.TargetType = GoSoType
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	exec.baseTaskConfig = &conf.TaskConfig
 	return exec
-}
-
-func (exec *GoExecutor) GetTaskID() string {
-	return exec.TaskConfig.TaskID
-}
-
-func (exec *GoExecutor) GetTaskConfig() TaskConfig {
-	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {

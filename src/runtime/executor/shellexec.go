@@ -31,18 +31,11 @@ func NewDebugShellExecutor(taskID string) Executor {
 
 func NewShellExecutor(conf *ShellTaskConfig) *ShellExecutor {
 	exec := new(ShellExecutor)
-	exec.TargetType = ShellType
+	conf.TargetType = ShellType
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	exec.baseTaskConfig = &conf.TaskConfig
 	return exec
-}
-
-func (exec *ShellExecutor) GetTaskID() string {
-	return exec.TaskConfig.TaskID
-}
-
-func (exec *ShellExecutor) GetTaskConfig() TaskConfig {
-	return exec.TaskConfig.TaskConfig
 }
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
