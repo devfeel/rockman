@@ -1,7 +1,8 @@
 package rpc
 
 import (
-	"encoding/json"
+	"fmt"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/src/core/packets"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
@@ -25,6 +26,7 @@ func (h *RpcHandler) Echo(content string, result *JsonResult) error {
 
 // RegisterNode
 func (h *RpcHandler) RegisterNode(nodeInfo packets.NodeInfo, result *JsonResult) error {
+	fmt.Println(nodeInfo)
 	if !h.getNode().Cluster.IsMaster {
 		*result = JsonResult{-1001, "can not register to unmaster node", nil}
 		return nil
@@ -51,17 +53,11 @@ func (h *RpcHandler) RegisterExecutor(config interface{}, result *JsonResult) er
 		return nil
 	}
 
-	jsonStr, err := json.Marshal(config)
-	if err != nil {
-		logger.Default().Error(err, "Marshal config error:"+err.Error())
-		*result = JsonResult{-2001, "Marshal config error:" + err.Error(), nil}
-		return nil
-	}
 	taskConfig := &executor.TaskConfig{}
-	err = json.Unmarshal([]byte(jsonStr), taskConfig)
+	err := mapper.MapperMap(config.(map[string]interface{}), taskConfig)
 	if err != nil {
-		logger.Default().Error(err, "Marshal config error:"+err.Error())
-		*result = JsonResult{-2002, "Invalid config type", nil}
+		logger.Default().Error(err, "mapper config to TaskConfig error:"+err.Error())
+		*result = JsonResult{-2001, "mapper config to TaskConfig error:" + err.Error(), nil}
 		return nil
 	}
 	realTaskConfig, err := executor.ConvertRealTaskConfig(taskConfig)
