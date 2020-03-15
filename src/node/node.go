@@ -154,12 +154,12 @@ func (n *Node) initRegistry() error {
 	n.Registry.ServerUrl = n.Config.RegistryServer
 	regServer, err := consul.NewConsulClient(n.Registry.ServerUrl)
 	if err != nil {
-		logger.Node().Debug(fmt.Sprint("Node Registry init error", err.Error()))
-		logger.Node().Error(err, "Node Registry init error")
+		logger.Node().Debug(fmt.Sprint("Registry init error", err.Error()))
+		logger.Node().Error(err, "Registry init error")
 		return err
 	}
 	n.Registry.RegServer = regServer
-	logger.Node().Debug("Node Registry init success.")
+	logger.Node().Debug("Registry init success.")
 	return nil
 }
 
