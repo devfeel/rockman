@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	consulapi "github.com/hashicorp/consul/api"
 )
 
@@ -25,6 +26,8 @@ type (
 		ChechUrl string
 	}
 )
+
+var ErrorNotExistsKey = errors.New("not exists this key")
 
 func NewConsulClient(addr string) (*ConsulClient, error) {
 	client := &ConsulClient{}
@@ -76,6 +79,19 @@ func (c *ConsulClient) SearchService(addr string, serviceName string, tag string
 		})
 	}
 	return appServices, nil
+}
+
+func (c *ConsulClient) Get(key string) (*consulapi.KVPair, error) {
+	client := c.GetClient()
+
+	kvPair, _, err := client.KV().Get(key, nil)
+	if err != nil {
+		return nil, err
+	}
+	if kvPair == nil {
+		return nil, ErrorNotExistsKey
+	}
+	return kvPair, nil
 }
 
 func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*ConsulLocker, error) {

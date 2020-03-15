@@ -5,15 +5,10 @@ import (
 	"fmt"
 	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
+	"github.com/devfeel/rockman/src/rpc"
 	"github.com/devfeel/rockman/src/runtime"
 	"github.com/devfeel/rockman/src/runtime/executor"
-	"github.com/devfeel/rockman/src/util/consul"
-	"github.com/hashicorp/consul/api"
 	"sync"
-)
-
-const (
-	registryLockerKey = "master:locker"
 )
 
 type (
@@ -33,15 +28,10 @@ type (
 	NodeConfig struct {
 		IsMaster       bool
 		IsWorker       bool
-		ServerUrl      string
+		RpcServer      string //current node's rpc server info
 		LogFilePath    string
 		RegistryServer string
 		Profile        *config.Profile
-	}
-
-	Registry struct {
-		ServerUrl string
-		RegServer *consul.ConsulClient
 	}
 
 	WorkerInfo struct {
@@ -52,7 +42,7 @@ type (
 )
 
 func NewNode(profile *config.Profile) (*Node, error) {
-	node := &Node{NodeId: profile.Node.NodeId}
+	node := &Node{NodeId: profile.Node.NodeId, NodeName: profile.Node.NodeName, ClusterId: profile.Node.ClusterId}
 
 	logger.Default().Debug("Node {" + node.NodeId + "} start...")
 
@@ -63,10 +53,11 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	}
 
 	//init Registry
-	err = node.initRegistry()
+	register, err := initRegistry(profile.Registry.ServerUrl, getLeaderKey(profile.Node.ClusterId))
 	if err != nil {
 		return nil, err
 	}
+	node.Registry = register
 
 	//init workers
 	node.Workers = make(map[string]*WorkerInfo)
@@ -80,6 +71,25 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	if node.Config.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime()
+
+		// get leader info
+		leaderServer, err := node.Registry.GetLeaderInfo()
+		if err != nil {
+			logger.Node().DebugS("Node GetLeaderInfo error:", err.Error())
+			logger.Node().Error(err, "Node GetLeaderInfo error.")
+		} else {
+			logger.Node().DebugS("Node GetLeaderInfo success:", leaderServer)
+			//register worker
+			rpcClient := rpc.NewRpcClient(leaderServer)
+			worker := WorkerInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort}
+			err, _ := rpcClient.CallRegisterWorker(worker)
+			if err != nil {
+				logger.Node().DebugS("Node RegisterWorker error:", err.Error())
+				logger.Node().Error(err, "Node RegisterWorker error.")
+			} else {
+				logger.Node().DebugS("Node RegisterWorker success:", worker)
+			}
+		}
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -88,7 +98,6 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 func (n *Node) Start() error {
 	if n.Config.IsWorker {
-
 		// load self tasks
 		// TODO load self tasks
 
@@ -99,16 +108,16 @@ func (n *Node) Start() error {
 }
 
 func (n *Node) ElectionLeader() error {
-	isLeader, err := n.electionLeader(n.Config.ServerUrl, "")
+	isLeader, err := n.Registry.electionLeader(n.Config.RpcServer, "")
 	if err == nil {
 		n.IsLeader = isLeader
 	} else {
-		logger.Default().Error(err, "Node {"+n.NodeId+"} ElectionLeader error:"+err.Error())
+		logger.Default().Error(err, "Node {"+n.NodeId+"} election leader role with key {"+n.Registry.LeaderKey+"} error:"+err.Error())
 	}
 
 	if n.IsLeader {
 		//TODO do something when change to leader
-		logger.Default().Debug("Node {" + n.NodeId + "} election leader role success")
+		logger.Default().Debug("Node {" + n.NodeId + "} election leader role success with key {" + n.Registry.LeaderKey + "}")
 	}
 	return nil
 }
@@ -128,49 +137,15 @@ func (n *Node) AddWorker(worker *WorkerInfo) error {
 	return nil
 }
 
-// electionLeader election leader role to registry server
-func (n *Node) electionLeader(serverUrl string, checkUrl string) (bool, error) {
-	opts := &api.LockOptions{
-		Key:         getRegistryLockerKey(n.ClusterId),
-		Value:       []byte(serverUrl),
-		SessionTTL:  "10s",
-		SessionName: serverUrl,
-	}
-	locker, err := n.Registry.RegServer.CreateLockerOpts(opts)
-	if err != nil {
-		return false, err
-	}
-
-	_, err = locker.Locker.Lock(nil)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-// initRegistry init Registry and reg server
-func (n *Node) initRegistry() error {
-	n.Registry = new(Registry)
-	n.Registry.ServerUrl = n.Config.RegistryServer
-	regServer, err := consul.NewConsulClient(n.Registry.ServerUrl)
-	if err != nil {
-		logger.Node().Debug(fmt.Sprint("Registry init error", err.Error()))
-		logger.Node().Error(err, "Registry init error")
-		return err
-	}
-	n.Registry.RegServer = regServer
-	logger.Node().Debug("Registry init success.")
-	return nil
-}
-
 // initConfig init node config from config profile
 func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config = new(NodeConfig)
-	n.Config.ServerUrl = conf.Rpc.RpcHost + ":" + conf.Rpc.RpcPort
+	n.Config.RpcServer = conf.Rpc.RpcHost + ":" + conf.Rpc.RpcPort
 	n.Config.RegistryServer = conf.Registry.ServerUrl
 	n.Config.IsMaster = conf.Node.IsMaster
 	n.Config.IsWorker = conf.Node.IsWorker
 	n.Config.Profile = conf
+
 	logger.Default().Debug("Node Config init success.")
 	return nil
 }
@@ -212,6 +187,6 @@ func loadGoTaskConfigs() []*executor.GoTaskConfig {
 	return []*executor.GoTaskConfig{}
 }
 
-func getRegistryLockerKey(clusterId string) string {
-	return "devfeel/rockman:" + clusterId + ":" + registryLockerKey
+func getLeaderKey(clusterId string) string {
+	return "devfeel/rockman:" + clusterId + ":leader:locker"
 }
