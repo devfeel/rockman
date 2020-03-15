@@ -1,9 +1,7 @@
 package rpc
 
 import (
-	"fmt"
 	"github.com/devfeel/mapper"
-	"github.com/devfeel/rockman/src/core/packets"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
 	"github.com/devfeel/rockman/src/runtime/executor"
@@ -24,25 +22,20 @@ func (h *RpcHandler) Echo(content string, result *JsonResult) error {
 	return nil
 }
 
-// RegisterNode
-func (h *RpcHandler) RegisterNode(nodeInfo packets.NodeInfo, result *JsonResult) error {
-	fmt.Println(nodeInfo)
-	if !h.getNode().Cluster.IsMaster {
-		*result = JsonResult{-1001, "can not register to unmaster node", nil}
-		return nil
-	}
-	if h.server.RpcHost == nodeInfo.Host && h.server.RpcPort == nodeInfo.Port {
-		*result = JsonResult{-1002, "can not register node to self", nil}
+// RegisterWorker register worker node to leader node
+func (h *RpcHandler) RegisterWorker(worker node.WorkerInfo, result *JsonResult) error {
+	if !h.getNode().IsLeader {
+		*result = JsonResult{-1001, "can not register to not leader node", nil}
 		return nil
 	}
 
-	err := h.getNode().Cluster.AddNode(&nodeInfo)
+	err := h.getNode().AddWorker(&worker)
 	if err != nil {
 		*result = JsonResult{-9001, "can not add node to cluster:" + err.Error(), nil}
 		return nil
 	}
 
-	*result = JsonResult{0, "ok", h.getNode().Cluster.Workers}
+	*result = JsonResult{0, "ok", h.getNode().Workers}
 	return nil
 }
 

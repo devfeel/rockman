@@ -9,6 +9,11 @@ import (
 	"net/rpc/jsonrpc"
 )
 
+const (
+	DefaultHost    = "127.0.0.1"
+	DefaultRpcPort = "2398" //2398 = 1983+0415 my birthday!
+)
+
 type RpcServer struct {
 	RpcHost     string
 	RpcPort     string
@@ -22,7 +27,7 @@ func NewRpcServer(profile *config.Profile, node *node.Node) *RpcServer {
 	s.RpcHost = profile.Rpc.RpcHost
 	s.RpcPort = profile.Rpc.RpcPort
 	s.RpcProtocol = profile.Rpc.RpcProtocol
-	logger.Default().Debug("RpcServer Init Success!")
+	logger.Default().Debug("RpcServer init success.")
 	return s
 }
 

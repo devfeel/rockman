@@ -30,3 +30,11 @@ func GetLogger(loggerName string) Logger {
 func Default() Logger {
 	return GetLogger(LoggerName_Default)
 }
+
+func Runtime() Logger {
+	return GetLogger(LoggerName_Runtime)
+}
+
+func Node() Logger {
+	return GetLogger(LoggerName_Node)
+}

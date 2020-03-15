@@ -16,7 +16,6 @@ type (
 		Node     *NodeSection
 		Rpc      *RpcSection
 		WebUI    *WebUISection
-		Cluster  *ClusterSection
 		Runtime  *RuntimeSection
 		Logger   *LoggerSection
 		Registry *RegistrySection
@@ -35,9 +34,11 @@ type (
 	}
 
 	NodeSection struct {
-		NodeId   string
-		IsMaster bool
-		IsWorker bool
+		NodeId    string
+		NodeName  string
+		ClusterId string //cluster Id
+		IsMaster  bool
+		IsWorker  bool
 	}
 
 	RpcSection struct {
@@ -49,10 +50,6 @@ type (
 	WebUISection struct {
 		HttpHost string
 		HttpPort string
-	}
-
-	ClusterSection struct {
-		Id string //cluster Id
 	}
 
 	RuntimeSection struct {
@@ -71,8 +68,7 @@ func GetConfigPath(file string) string {
 func SingleNodeProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
-	p.Cluster = &ClusterSection{Id: "rock"}
-	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
+	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), ClusterId: "rock", IsMaster: true, IsWorker: true}
 	p.Rpc = &RpcSection{RpcHost: "127.0.0.1", RpcPort: "2398"}
 	p.WebUI = &WebUISection{HttpHost: "127.0.0.1", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}

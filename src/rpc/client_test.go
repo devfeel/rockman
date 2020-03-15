@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/devfeel/rockman/src/core/packets"
+	"github.com/devfeel/rockman/src/node"
 	"github.com/devfeel/rockman/src/runtime/executor"
 	"testing"
 )
@@ -26,10 +26,10 @@ func TestRpcClient_CallEcho(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallRegisterNode(t *testing.T) {
+func TestRpcClient_CallRegisterWorker(t *testing.T) {
 	client := getRpcClient()
-	nodeInfo := packets.NodeInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode", IsMaster: true, IsWorker: true}
-	err, result := client.CallRegisterNode(nodeInfo)
+	worker := node.WorkerInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
+	err, result := client.CallRegisterWorker(worker)
 	if err != nil {
 		t.Error(err)
 	} else {

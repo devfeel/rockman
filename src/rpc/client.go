@@ -1,8 +1,8 @@
 package rpc
 
 import (
-	"github.com/devfeel/rockman/src/core/packets"
 	"github.com/devfeel/rockman/src/logger"
+	"github.com/devfeel/rockman/src/node"
 	"github.com/michain/dotcoin/server/packet"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -45,14 +45,14 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, reply.Message.(string)
 }
 
-func (c *RpcClient) CallRegisterNode(nodeInfo packets.NodeInfo) (error, map[string]interface{}) {
+func (c *RpcClient) CallRegisterWorker(worker node.WorkerInfo) (error, map[string]interface{}) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
 	var reply packet.JsonResult
-	err = client.Call("Rpc.RegisterNode", nodeInfo, &reply)
+	err = client.Call("Rpc.RegisterWorker", worker, &reply)
 	if err != nil {
 		return err, nil
 	}

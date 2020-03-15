@@ -10,6 +10,7 @@ const (
 	HttpType  = "http"
 	ShellType = "shell"
 	GoSoType  = "goso"
+	CodeType  = "code"
 )
 
 type Executor interface {
@@ -20,6 +21,8 @@ type Executor interface {
 	GetTaskConfig() *TaskConfig
 	Exec(ctx *task.TaskContext) error
 }
+
+type Exec func(ctx *task.TaskContext) error
 
 type TaskConfig struct {
 	TaskID     string

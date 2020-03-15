@@ -12,22 +12,24 @@ const (
 	Status_Stop = 2
 )
 
-type Runtime struct {
-	TaskService *task.TaskService
-	Executors   map[string]executor.Executor
-	Status      int
-}
+type (
+	Runtime struct {
+		TaskService *task.TaskService
+		Executors   map[string]executor.Executor
+		Status      int
+	}
+)
 
 func NewRuntime() *Runtime {
 	r := &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
 	r.TaskService = task.StartNewService()
 	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
-	logger.Default().Debug("Runtime Init Success!")
+	logger.Default().Debug("Runtime init success.")
 	return r
 }
 
 func (r *Runtime) Start() {
-	logger.Default().Debug("Runtime Start...")
+	logger.Default().Debug("Runtime start...")
 	r.TaskService.StartAllTask()
 	r.Status = Status_Run
 }
