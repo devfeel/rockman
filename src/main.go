@@ -31,8 +31,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	CurNode.Start()
 
+	//start rpc server
 	CurRpcServer = rpc.NewRpcServer(profile, CurNode)
 	go func() {
 		err := CurRpcServer.Listen()
@@ -42,6 +42,7 @@ func main() {
 		}
 	}()
 
+	//start web server
 	if profile.Node.IsMaster {
 		CurWebServer = webui.NewWebServer(profile.Logger.LogPath)
 		go func() {
@@ -52,6 +53,8 @@ func main() {
 			}
 		}()
 	}
+	//start node
+	CurNode.Start()
 
 	for {
 		time.Sleep(time.Hour)

@@ -11,6 +11,7 @@ const (
 	LoggerName_Service    = "ServiceLogger"
 	LoggerName_Repository = "RepositoryLogger"
 	LoggerName_Node       = "NodeLogger"
+	LoggerName_Cluster    = "ClusterLogger"
 	LoggerName_Runtime    = "RuntimeLogger"
 	LoggerName_Default    = "DefaultLogger"
 )
@@ -37,4 +38,8 @@ func Runtime() Logger {
 
 func Node() Logger {
 	return GetLogger(LoggerName_Node)
+}
+
+func Cluster() Logger {
+	return GetLogger(LoggerName_Cluster)
 }

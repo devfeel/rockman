@@ -1,8 +1,9 @@
-package rpc
+package client
 
 import (
 	"github.com/devfeel/rockman/src/logger"
-	"github.com/devfeel/rockman/src/node"
+	"github.com/devfeel/rockman/src/packets"
+	"github.com/devfeel/rockman/src/rpc/packet"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
@@ -36,7 +37,7 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply JsonResult
+	var reply packet.JsonResult
 	err = client.Call("Rpc.Echo", message, &reply)
 	if err != nil {
 		return err, ""
@@ -44,18 +45,22 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, reply.Message.(string)
 }
 
-func (c *RpcClient) CallRegisterWorker(worker node.WorkerInfo) (error, map[string]interface{}) {
+func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, map[string]interface{}) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply JsonResult
+	var reply packet.JsonResult
 	err = client.Call("Rpc.RegisterWorker", worker, &reply)
 	if err != nil {
 		return err, nil
 	}
-	return nil, reply.Message.(map[string]interface{})
+	if reply.Message == nil {
+		return nil, make(map[string]interface{})
+	} else {
+		return nil, reply.Message.(map[string]interface{})
+	}
 }
 
 func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, interface{}) {
@@ -64,7 +69,7 @@ func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, interface{}) 
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply JsonResult
+	var reply packet.JsonResult
 	err = client.Call("Rpc.RegisterExecutor", conf, &reply)
 	if err != nil {
 		return err, ""

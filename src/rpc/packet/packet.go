@@ -1,4 +1,4 @@
-package rpc
+package packet
 
 type JsonRequest struct {
 	Version string

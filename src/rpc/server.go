@@ -4,6 +4,7 @@ import (
 	"github.com/devfeel/rockman/src/config"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
+	"github.com/devfeel/rockman/src/rpc/handler"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -39,7 +40,7 @@ func (s *RpcServer) Listen() error {
 	defer lis.Close()
 
 	srv := rpc.NewServer()
-	if err := srv.RegisterName("Rpc", NewRpcHandler(s)); err != nil {
+	if err := srv.RegisterName("Rpc", handler.NewRpcHandler(s.Node)); err != nil {
 		logger.Default().Error(err, "lis.RegisterName error")
 		return err
 	}

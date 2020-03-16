@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"github.com/devfeel/rockman/src/node"
