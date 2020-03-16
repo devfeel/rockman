@@ -1,4 +1,4 @@
-Leader与Worker交互：
+Leader\Worker协议：
 1. ElectionLeader
 2. GetLeaderInfo
 3. RegisterWorker
