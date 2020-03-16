@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/devfeel/rockman/src/node"
+	"github.com/devfeel/rockman/src/packets"
 	"github.com/devfeel/rockman/src/runtime/executor"
 	"testing"
 )
@@ -28,7 +28,7 @@ func TestRpcClient_CallEcho(t *testing.T) {
 
 func TestRpcClient_CallRegisterWorker(t *testing.T) {
 	client := getRpcClient()
-	worker := node.WorkerInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
+	worker := &packets.WorkerInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
 	err, result := client.CallRegisterWorker(worker)
 	if err != nil {
 		t.Error(err)
