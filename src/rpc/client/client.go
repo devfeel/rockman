@@ -3,7 +3,6 @@ package client
 import (
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/packets"
-	"github.com/devfeel/rockman/src/rpc/packet"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
@@ -37,7 +36,7 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply packet.JsonResult
+	var reply packets.JsonResult
 	err = client.Call("Rpc.Echo", message, &reply)
 	if err != nil {
 		return err, ""
@@ -45,34 +44,72 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, reply.Message.(string)
 }
 
-func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, map[string]interface{}) {
+func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply packet.JsonResult
+	var reply packets.JsonResult
 	err = client.Call("Rpc.RegisterWorker", worker, &reply)
 	if err != nil {
 		return err, nil
 	}
-	if reply.Message == nil {
-		return nil, make(map[string]interface{})
-	} else {
-		return nil, reply.Message.(map[string]interface{})
-	}
+	return nil, &reply
 }
 
-func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, interface{}) {
+func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
-		return err, ""
+		return err, nil
 	}
-	var reply packet.JsonResult
+	var reply packets.JsonResult
 	err = client.Call("Rpc.RegisterExecutor", conf, &reply)
 	if err != nil {
-		return err, ""
+		return err, nil
 	}
-	return nil, reply
+	return nil, &reply
+}
+
+func (c *RpcClient) CallStartExecutor(taskId string) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.StartExecutor", taskId, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
+func (c *RpcClient) CallStopExecutor(taskId string) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.StopExecutor", taskId, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
+func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.RemoveExecutor", taskId, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
 }

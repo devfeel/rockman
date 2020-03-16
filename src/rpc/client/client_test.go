@@ -57,6 +57,42 @@ func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	}
 }
 
+func TestRpcClient_CallStartExecutor(t *testing.T) {
+	client := getRpcClient()
+	taskId := "TestRpcClient-http-debug"
+
+	err, result := client.CallStartExecutor(taskId)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallStopExecutor(t *testing.T) {
+	client := getRpcClient()
+	taskId := "TestRpcClient-http-debug"
+
+	err, result := client.CallStopExecutor(taskId)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallRemoveExecutor(t *testing.T) {
+	client := getRpcClient()
+	taskId := "TestRpcClient-http-debug"
+
+	err, result := client.CallRemoveExecutor(taskId)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
 func getRpcClient() *RpcClient {
 	return NewRpcClient(serverUrl)
 }

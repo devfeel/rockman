@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/runtime/executor"
@@ -57,6 +58,33 @@ func (r *Runtime) RegisterExecutor(exec executor.Executor) error {
 	}
 	exec.SetTask(task)
 	r.Executors[exec.GetTaskID()] = exec
+	return nil
+}
+
+func (r *Runtime) StartExecutor(taskId string) error {
+	task, exists := r.TaskService.GetTask(taskId)
+	if !exists {
+		return errors.New("not exists this task")
+	}
+	task.Start()
+	return nil
+}
+
+func (r *Runtime) StopExecutor(taskId string) error {
+	task, exists := r.TaskService.GetTask(taskId)
+	if !exists {
+		return errors.New("not exists this task")
+	}
+	task.Stop()
+	return nil
+}
+func (r *Runtime) RemoveExecutor(taskId string) error {
+	task, exists := r.TaskService.GetTask(taskId)
+	if !exists {
+		return errors.New("not exists this task")
+	}
+	task.Stop()
+	r.TaskService.RemoveTask(taskId)
 	return nil
 }
 

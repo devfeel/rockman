@@ -5,9 +5,3 @@ type JsonRequest struct {
 	Command string
 	Message interface{}
 }
-
-type JsonResult struct {
-	RetCode int
-	RetMsg  string
-	Message interface{}
-}
