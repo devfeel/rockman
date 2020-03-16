@@ -3,3 +3,4 @@ Leader与Worker交互：
 2. GetLeaderInfo
 3. RegisterWorker
 4. RegisterExecutor
+5. QueryWorkers
