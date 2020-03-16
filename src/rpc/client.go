@@ -3,7 +3,6 @@ package rpc
 import (
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/node"
-	"github.com/michain/dotcoin/server/packet"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
@@ -37,7 +36,7 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply packet.JsonResult
+	var reply JsonResult
 	err = client.Call("Rpc.Echo", message, &reply)
 	if err != nil {
 		return err, ""
@@ -51,7 +50,7 @@ func (c *RpcClient) CallRegisterWorker(worker node.WorkerInfo) (error, map[strin
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply packet.JsonResult
+	var reply JsonResult
 	err = client.Call("Rpc.RegisterWorker", worker, &reply)
 	if err != nil {
 		return err, nil
@@ -65,7 +64,7 @@ func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, interface{}) 
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply packet.JsonResult
+	var reply JsonResult
 	err = client.Call("Rpc.RegisterExecutor", conf, &reply)
 	if err != nil {
 		return err, ""
