@@ -34,6 +34,11 @@ func main() {
 
 	//start rpc server
 	CurRpcServer = rpc.NewRpcServer(profile, CurNode)
+	//start web server
+	if profile.Node.IsMaster {
+		CurWebServer = webui.NewWebServer(profile.Logger.LogPath)
+	}
+
 	go func() {
 		err := CurRpcServer.Listen()
 		if err != nil {
@@ -42,9 +47,7 @@ func main() {
 		}
 	}()
 
-	//start web server
 	if profile.Node.IsMaster {
-		CurWebServer = webui.NewWebServer(profile.Logger.LogPath)
 		go func() {
 			err := CurWebServer.ListenAndServe(profile.WebUI.HttpHost + ":" + profile.WebUI.HttpPort)
 			if err != nil {
@@ -53,6 +56,7 @@ func main() {
 			}
 		}()
 	}
+
 	//start node
 	CurNode.Start()
 

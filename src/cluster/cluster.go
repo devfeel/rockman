@@ -34,14 +34,14 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 	cluster.LeaderKey = leaderKey
 	regClient, err := consul.NewConsulClient(registryServer)
 	if err != nil {
-		logger.Node().Debug(fmt.Sprint("Registry init error", err.Error()))
-		logger.Node().Error(err, "Registry init error")
+		logger.Node().Debug(fmt.Sprint("Cluster init error", err.Error()))
+		logger.Node().Error(err, "Cluster init error")
 		return nil, err
 	}
 	cluster.RegistryClient = regClient
 	cluster.Workers = make(map[string]*packets.WorkerInfo)
 	cluster.workerLocker = new(sync.RWMutex)
-	logger.Node().Debug("Registry init success.")
+	logger.Node().Debug("Cluster init success.")
 	return cluster, nil
 }
 
