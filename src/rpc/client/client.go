@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/devfeel/rockman/src/logger"
 	"github.com/devfeel/rockman/src/packets"
 	"net/rpc"
@@ -36,12 +37,12 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply packets.JsonResult
+	var reply string
 	err = client.Call("Rpc.Echo", message, &reply)
 	if err != nil {
 		return err, ""
 	}
-	return nil, reply.Message.(string)
+	return nil, reply
 }
 
 func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, *packets.JsonResult) {
@@ -111,5 +112,20 @@ func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *packets.JsonResul
 	if err != nil {
 		return err, nil
 	}
+	return nil, &reply
+}
+
+func (c *RpcClient) CallQueryExecutorConfig(taskId string) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.QueryExecutorConfig", taskId, &reply)
+	if err != nil {
+		return err, nil
+	}
+	fmt.Println(reply.Message)
 	return nil, &reply
 }

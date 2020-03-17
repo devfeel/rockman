@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/src/node"
 	"github.com/devfeel/rockman/src/packets"
 	"github.com/devfeel/rockman/src/runtime/executor"
+	"strconv"
 )
 
 type RpcHandler struct {
@@ -17,9 +18,9 @@ func NewRpcHandler(node *node.Node) *RpcHandler {
 }
 
 // Echo
-func (h *RpcHandler) Echo(content string, result *packets.JsonResult) error {
+func (h *RpcHandler) Echo(content string, result *string) error {
 	logger.Default().Debug("RpcHandler:Echo:" + content)
-	result = &packets.JsonResult{0, "ok", content}
+	result = &content
 	return nil
 }
 
@@ -40,6 +41,7 @@ func (h *RpcHandler) RegisterWorker(worker *packets.WorkerInfo, result *packets.
 	return nil
 }
 
+// RegisterExecutor register executor to runtime
 func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonResult) error {
 	if !h.getNode().Config.IsWorker {
 		logger.Default().Warn("unworker node can not register executor")
@@ -73,10 +75,11 @@ func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonRe
 	}
 
 	logger.Default().DebugS("RegisterExecutor success", config)
-	result = &packets.JsonResult{0, "ok", h.getNode().Runtime.Executors}
+	result = &packets.JsonResult{1, "ok", h.getNode().Runtime.Executors}
 	return nil
 }
 
+// StartExecutor start executor by taskId
 func (h *RpcHandler) StartExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "StartExecutor[" + taskId + "] "
 	err := h.getNode().Runtime.StartExecutor(taskId)
@@ -90,6 +93,7 @@ func (h *RpcHandler) StartExecutor(taskId string, result *packets.JsonResult) er
 	return nil
 }
 
+// StopExecutor stop executor by taskId
 func (h *RpcHandler) StopExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "StopExecutor[" + taskId + "] "
 	err := h.getNode().Runtime.StopExecutor(taskId)
@@ -103,6 +107,8 @@ func (h *RpcHandler) StopExecutor(taskId string, result *packets.JsonResult) err
 	return nil
 }
 
+// RemoveExecutor remove executor by taskId
+// if task is running, auto stop it first
 func (h *RpcHandler) RemoveExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "RemoveExecutor[" + taskId + "] "
 	err := h.getNode().Runtime.RemoveExecutor(taskId)
@@ -113,6 +119,28 @@ func (h *RpcHandler) RemoveExecutor(taskId string, result *packets.JsonResult) e
 	}
 	logger.Default().Debug(logTitle + "success")
 	result = &packets.JsonResult{0, "ok", h.getNode().Runtime.Executors}
+	return nil
+}
+
+// QueryExecutors return executors in runtime by taskId
+// if taskId is nil, return all executors
+func (h *RpcHandler) QueryExecutorConfig(taskId string, result *packets.JsonResult) error {
+	logTitle := "QueryExecutors [" + taskId + "] "
+	configs := h.getNode().Runtime.QueryAllExecutorConfig()
+	if taskId != "" {
+		exec, isOk := configs[taskId]
+		if !isOk {
+			result = &packets.JsonResult{-1001, "not exists this taskId", nil}
+		} else {
+			logger.Default().Debug(logTitle + "success")
+			configs = make(map[string]executor.TaskConfig)
+			configs[taskId] = exec
+			result = &packets.JsonResult{0, "ok", configs}
+		}
+	} else {
+		logger.Default().Debug(logTitle + "success, config count = " + strconv.Itoa(len(configs)))
+		result = &packets.JsonResult{1, "ok", configs}
+	}
 	return nil
 }
 

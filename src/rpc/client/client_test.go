@@ -93,6 +93,17 @@ func TestRpcClient_CallRemoveExecutor(t *testing.T) {
 	}
 }
 
+func TestRpcClient_CallQueryExecutors(t *testing.T) {
+	client := getRpcClient()
+
+	err, result := client.CallQueryExecutorConfig("")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
 func getRpcClient() *RpcClient {
 	return NewRpcClient(serverUrl)
 }

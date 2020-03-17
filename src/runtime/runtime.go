@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	Status_Init = 0
-	Status_Run  = 1
-	Status_Stop = 2
+	RuntimeStatus_Init = 0
+	RuntimeStatus_Run  = 1
+	RuntimeStatus_Stop = 2
 )
 
 type (
@@ -22,7 +22,7 @@ type (
 )
 
 func NewRuntime() *Runtime {
-	r := &Runtime{Status: Status_Init, Executors: make(map[string]executor.Executor)}
+	r := &Runtime{Status: RuntimeStatus_Init, Executors: make(map[string]executor.Executor)}
 	r.TaskService = task.StartNewService()
 	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
 	logger.Default().Debug("Runtime init success.")
@@ -32,7 +32,7 @@ func NewRuntime() *Runtime {
 func (r *Runtime) Start() {
 	logger.Default().Debug("Runtime start...")
 	r.TaskService.StartAllTask()
-	r.Status = Status_Run
+	r.Status = RuntimeStatus_Run
 }
 
 // CreateCronExecutor create new cron executor and register to task service
@@ -86,6 +86,14 @@ func (r *Runtime) RemoveExecutor(taskId string) error {
 	task.Stop()
 	r.TaskService.RemoveTask(taskId)
 	return nil
+}
+
+func (r *Runtime) QueryAllExecutorConfig() map[string]executor.TaskConfig {
+	confs := make(map[string]executor.TaskConfig)
+	for key, value := range r.Executors {
+		confs[key] = *value.GetTaskConfig()
+	}
+	return confs
 }
 
 func convertToDotTaskConfig(conf *executor.TaskConfig) task.TaskConfig {
