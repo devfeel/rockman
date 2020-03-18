@@ -13,14 +13,16 @@ import (
 
 type (
 	Node struct {
-		NodeId    string
-		NodeName  string
-		ClusterId string
-		IsLeader  bool
-		Status    int
-		Config    *NodeConfig
-		Cluster   *cluster.Cluster
-		Runtime   *runtime.Runtime
+		NodeId              string
+		NodeName            string
+		ClusterId           string
+		IsLeader            bool
+		Status              int
+		Config              *NodeConfig
+		SubmitExecutors     map[string]executor.Executor
+		submitExecutorQueue chan executor.Executor
+		Cluster             *cluster.Cluster
+		Runtime             *runtime.Runtime
 	}
 
 	NodeConfig struct {
@@ -34,10 +36,14 @@ type (
 )
 
 func NewNode(profile *config.Profile) (*Node, error) {
-	node := &Node{NodeId: profile.Node.NodeId, NodeName: profile.Node.NodeName}
+	logger.Default().Debug("Node {" + profile.Node.NodeId + "} start...")
 
-	logger.Default().Debug("Node {" + node.NodeId + "} start...")
-
+	node := &Node{
+		NodeId:              profile.Node.NodeId,
+		NodeName:            profile.Node.NodeName,
+		SubmitExecutors:     make(map[string]executor.Executor),
+		submitExecutorQueue: make(chan executor.Executor),
+	}
 	//init config
 	err := node.initConfig(profile)
 	if err != nil {
@@ -91,7 +97,10 @@ func (n *Node) Start() error {
 
 		go n.Runtime.Start()
 	}
-	//n.Cluster.Registry.Register(n.Config.RegistryServer)
+
+	if n.IsLeader {
+		go n.distributeExecutor()
+	}
 	return nil
 }
 
@@ -108,6 +117,10 @@ func (n *Node) ElectionLeader() error {
 		logger.Default().Debug("Node {" + n.NodeId + "} election leader role success with key {" + n.Cluster.LeaderKey + "}")
 	}
 	return nil
+}
+
+func (n *Node) distributeExecutor() {
+	//TODO distribute executors to worker node
 }
 
 // initConfig init node config from config profile

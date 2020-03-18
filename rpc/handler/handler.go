@@ -26,23 +26,44 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 
 // RegisterWorker register worker node to leader node
 func (h *RpcHandler) RegisterWorker(worker *packets.WorkerInfo, result *packets.JsonResult) error {
+	logTitle := "RegisterWorker[" + worker.Host + "," + worker.Port + "] "
 	if !h.getNode().IsLeader {
-		*result = packets.JsonResult{-1001, "can not register to not leader node", nil}
+		logger.Default().Warn(logTitle + "can not register to not leader node")
+		*result = createResult(-1001, "can not register to not leader node", nil)
 		return nil
 	}
 
 	err := h.getNode().Cluster.AddWorker(worker)
 	if err != nil {
-		*result = packets.JsonResult{-9001, "can not add node to cluster:" + err.Error(), nil}
+		logger.Default().Error(err, logTitle+"can not add node to cluster:"+err.Error())
+		*result = createResult(-9001, "can not add node to cluster:"+err.Error(), nil)
 		return nil
 	}
 
-	*result = packets.JsonResult{0, "ok", h.getNode().Cluster.Workers}
+	logger.Default().DebugS(logTitle + "success")
+	*result = createResult(0, "ok", h.getNode().Cluster.Workers)
 	return nil
 }
 
-// RegisterExecutor register executor to runtime
+// SubmitExecutor submit executor to leader node, then register to worker node
+func (h *RpcHandler) SubmitExecutor(config interface{}, result *packets.JsonResult) error {
+	logTitle := "SubmitExecutor: "
+	if !h.getNode().IsLeader {
+		logger.Default().Warn("can not submit to not leader node")
+		*result = createResult(-1001, "can not submit to not leader node", nil)
+		return nil
+	}
+
+	//TODO async send executor to worker node
+
+	logger.Default().DebugS(logTitle+"success", config)
+	*result = createResult(0, "ok", h.getNode().Runtime.Executors)
+	return nil
+}
+
+// RegisterExecutor register executor to runtime in worker node
 func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonResult) error {
+	logTitle := "RegisterExecutor: "
 	if !h.getNode().Config.IsWorker {
 		logger.Default().Warn("unworker node can not register executor")
 		*result = packets.JsonResult{-1001, "unworker node can not register executor", nil}
@@ -52,20 +73,20 @@ func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonRe
 	taskConfig := &executor.TaskConfig{}
 	err := mapper.MapperMap(config.(map[string]interface{}), taskConfig)
 	if err != nil {
-		logger.Default().Error(err, "mapper config to TaskConfig error:"+err.Error())
+		logger.Default().Error(err, logTitle+"mapper config to TaskConfig error:"+err.Error())
 		*result = packets.JsonResult{-2001, "mapper config to TaskConfig error:" + err.Error(), nil}
 		return nil
 	}
 	realTaskConfig, err := executor.ConvertRealTaskConfig(taskConfig)
 	if err != nil {
-		logger.Default().Error(err, "convert real task config err:"+err.Error())
+		logger.Default().Error(err, logTitle+"convert real task config err:"+err.Error())
 		*result = packets.JsonResult{-2002, "convert real task config err:" + err.Error(), nil}
 		return nil
 	}
 
 	exec, err := h.getNode().Runtime.CreateExecutor(taskConfig.TaskID, taskConfig.TargetType, realTaskConfig)
 	if err != nil {
-		logger.Default().Error(err, "CreateExecutor error:"+err.Error())
+		logger.Default().Error(err, logTitle+"CreateExecutor error:"+err.Error())
 		*result = packets.JsonResult{-9001, "CreateExecutor error:" + err.Error(), nil}
 		return nil
 	} else {
@@ -74,28 +95,44 @@ func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonRe
 		}
 	}
 
-	logger.Default().DebugS("RegisterExecutor success", config)
-	*result = packets.JsonResult{1, "ok", h.getNode().Runtime.Executors}
+	logger.Default().DebugS(logTitle+"success", config)
+	*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: h.getNode().Runtime.Executors}
 	return nil
 }
 
 // StartExecutor start executor by taskId
 func (h *RpcHandler) StartExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "StartExecutor[" + taskId + "] "
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn("unworker node can not start executor")
+		*result = packets.JsonResult{-1001, "unworker node can not start executor", nil}
+		return nil
+	}
 	err := h.getNode().Runtime.StartExecutor(taskId)
 	if err != nil {
 		logger.Default().Debug(logTitle + "error:" + err.Error())
 		logger.Default().Error(err, logTitle+"error")
-		*result = packets.JsonResult{-2001, logTitle + "error:" + err.Error(), nil}
+		*result = packets.JsonResult{-2001, err.Error(), nil}
 	}
 	logger.Default().Debug(logTitle + "success")
-	*result = packets.JsonResult{0, "ok", nil}
+	*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: nil}
 	return nil
 }
 
 // StopExecutor stop executor by taskId
 func (h *RpcHandler) StopExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "StopExecutor[" + taskId + "] "
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn(logTitle + "unworker node can not start executor")
+		*result = packets.JsonResult{-1001, "unworker node can not start executor", nil}
+		return nil
+	}
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn(logTitle + "unworker node can not start executor")
+		*result = packets.JsonResult{-1001, "unworker node can not start executor", nil}
+		return nil
+	}
+
 	err := h.getNode().Runtime.StopExecutor(taskId)
 	if err != nil {
 		logger.Default().Debug(logTitle + "error:" + err.Error())
@@ -103,7 +140,7 @@ func (h *RpcHandler) StopExecutor(taskId string, result *packets.JsonResult) err
 		*result = packets.JsonResult{-2001, logTitle + "error:" + err.Error(), nil}
 	}
 	logger.Default().Debug(logTitle + "success")
-	*result = packets.JsonResult{0, "ok", nil}
+	*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: nil}
 	return nil
 }
 
@@ -111,6 +148,11 @@ func (h *RpcHandler) StopExecutor(taskId string, result *packets.JsonResult) err
 // if task is running, auto stop it first
 func (h *RpcHandler) RemoveExecutor(taskId string, result *packets.JsonResult) error {
 	logTitle := "RemoveExecutor[" + taskId + "] "
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn(logTitle + "unworker node can not start executor")
+		*result = packets.JsonResult{-1001, "unworker node can not start executor", nil}
+		return nil
+	}
 	err := h.getNode().Runtime.RemoveExecutor(taskId)
 	if err != nil {
 		logger.Default().Debug(logTitle + "error:" + err.Error())
@@ -118,7 +160,7 @@ func (h *RpcHandler) RemoveExecutor(taskId string, result *packets.JsonResult) e
 		*result = packets.JsonResult{-2001, logTitle + "error:" + err.Error(), nil}
 	}
 	logger.Default().Debug(logTitle + "success")
-	*result = packets.JsonResult{0, "ok", h.getNode().Runtime.Executors}
+	*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: h.getNode().Runtime.Executors}
 	return nil
 }
 
@@ -126,6 +168,11 @@ func (h *RpcHandler) RemoveExecutor(taskId string, result *packets.JsonResult) e
 // if taskId is nil, return all executors
 func (h *RpcHandler) QueryExecutorConfig(taskId string, result *packets.JsonResult) error {
 	logTitle := "QueryExecutors [" + taskId + "] "
+	if !h.getNode().Config.IsWorker {
+		logger.Default().Warn(logTitle + "unworker node can not start executor")
+		*result = packets.JsonResult{-1001, "unworker node can not start executor", nil}
+		return nil
+	}
 	configs := h.getNode().Runtime.QueryAllExecutorConfig()
 	if taskId != "" {
 		exec, isOk := configs[taskId]
@@ -139,11 +186,19 @@ func (h *RpcHandler) QueryExecutorConfig(taskId string, result *packets.JsonResu
 		}
 	} else {
 		logger.Default().Debug(logTitle + "success, config count = " + strconv.Itoa(len(configs)))
-		*result = packets.JsonResult{1, "ok", configs}
+		*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: configs}
 	}
 	return nil
 }
 
 func (h *RpcHandler) getNode() *node.Node {
 	return h.node
+}
+
+func createResult(retCode int, retMsg string, message interface{}) packets.JsonResult {
+	return packets.JsonResult{
+		RetCode: retCode,
+		RetMsg:  retMsg,
+		Message: message,
+	}
 }
