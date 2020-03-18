@@ -37,12 +37,13 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 		logger.Default().Error(err, "getConnClient error")
 		return err, ""
 	}
-	var reply string
-	err = client.Call("Rpc.Echo", message, &reply)
+	reply := new(string)
+	err = client.Call("Rpc.Echo", message, reply)
+	fmt.Println(*reply)
 	if err != nil {
 		return err, ""
 	}
-	return nil, reply
+	return nil, *reply
 }
 
 func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, *packets.JsonResult) {
@@ -126,6 +127,5 @@ func (c *RpcClient) CallQueryExecutorConfig(taskId string) (error, *packets.Json
 	if err != nil {
 		return err, nil
 	}
-	fmt.Println(reply.Message)
 	return nil, &reply
 }
