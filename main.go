@@ -7,7 +7,9 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/rpc"
+	"github.com/devfeel/rockman/util/exception"
 	"github.com/devfeel/rockman/webui"
+	"os"
 	"time"
 )
 
@@ -15,7 +17,19 @@ var CurNode *node.Node
 var CurRpcServer *rpc.RpcServer
 var CurWebServer *webui.WebServer
 
+const (
+	ProjectName = "rockman"
+)
+
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			exMsg := exception.CatchError(ProjectName+":main", err)
+			logger.Default().Error(errors.New(exMsg), "")
+			os.Stdout.Write([]byte(exMsg))
+		}
+	}()
+
 	printLogo()
 	var err error
 

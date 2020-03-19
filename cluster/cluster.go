@@ -23,6 +23,8 @@ type (
 		Workers               map[string]*packets.WorkerInfo
 		workerLocker          *sync.RWMutex
 		isRegisterWorker      bool
+		rpcClients            map[string]*client.RpcClient
+		rpcClientLocker       *sync.RWMutex
 	}
 )
 
@@ -41,6 +43,8 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 	cluster.RegistryClient = regClient
 	cluster.Workers = make(map[string]*packets.WorkerInfo)
 	cluster.workerLocker = new(sync.RWMutex)
+	cluster.rpcClients = make(map[string]*client.RpcClient)
+	cluster.rpcClientLocker = new(sync.RWMutex)
 	logger.Node().Debug("Cluster init success.")
 	return cluster, nil
 }
@@ -127,4 +131,17 @@ func (c *Cluster) AddWorker(worker *packets.WorkerInfo) error {
 	}
 	c.Workers[key] = worker
 	return nil
+}
+
+func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
+	serverUrl := host + ":" + port
+	defer c.rpcClientLocker.Unlock()
+	c.rpcClientLocker.Lock()
+	var rpcClient *client.RpcClient
+	var isExists bool
+	if rpcClient, isExists = c.rpcClients[serverUrl]; !isExists {
+		rpcClient = client.NewRpcClient(serverUrl)
+		c.rpcClients[serverUrl] = rpcClient
+	}
+	return rpcClient
 }

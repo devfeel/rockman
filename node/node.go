@@ -2,6 +2,7 @@ package node
 
 import (
 	"errors"
+	"fmt"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
@@ -13,16 +14,17 @@ import (
 
 type (
 	Node struct {
-		NodeId              string
-		NodeName            string
-		ClusterId           string
-		IsLeader            bool
-		Status              int
-		Config              *NodeConfig
-		SubmitExecutors     map[string]executor.Executor
-		submitExecutorQueue chan executor.Executor
-		Cluster             *cluster.Cluster
-		Runtime             *runtime.Runtime
+		NodeId      string
+		NodeName    string
+		ClusterId   string
+		IsLeader    bool
+		Status      int
+		Config      *NodeConfig
+		submitList  map[string]*packets.SubmitInfo
+		submitQueue chan *packets.SubmitInfo
+
+		Cluster *cluster.Cluster
+		Runtime *runtime.Runtime
 	}
 
 	NodeConfig struct {
@@ -39,10 +41,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	logger.Default().Debug("Node {" + profile.Node.NodeId + "} start...")
 
 	node := &Node{
-		NodeId:              profile.Node.NodeId,
-		NodeName:            profile.Node.NodeName,
-		SubmitExecutors:     make(map[string]executor.Executor),
-		submitExecutorQueue: make(chan executor.Executor),
+		NodeId:      profile.Node.NodeId,
+		NodeName:    profile.Node.NodeName,
+		submitList:  make(map[string]*packets.SubmitInfo),
+		submitQueue: make(chan *packets.SubmitInfo),
 	}
 	//init config
 	err := node.initConfig(profile)
@@ -58,31 +60,17 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	node.Cluster = cluster
 
 	if node.Config.IsMaster {
-		//register master role
+		//election leader role
 		go node.ElectionLeader()
 	}
 
 	if node.Config.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime()
-
 		//register worker
 		go func() {
 			worker := &packets.WorkerInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort}
-		RegisterWorker:
-			for {
-				err := node.Cluster.RegisterWorker(worker)
-				if err != nil {
-					logger.Node().DebugS("Node RegisterWorker error, will retry after 10 seconds")
-					logger.Node().Error(err, "Node RegisterWorker error.")
-					time.Sleep(time.Second * 10)
-					continue RegisterWorker
-				} else {
-					logger.Node().DebugS("Node RegisterWorker success:", worker)
-					break
-				}
-			}
-
+			node.registerWorker(worker)
 		}()
 	}
 
@@ -94,12 +82,11 @@ func (n *Node) Start() error {
 	if n.Config.IsWorker {
 		// load self tasks
 		// TODO load self tasks
-
 		go n.Runtime.Start()
 	}
 
 	if n.IsLeader {
-		go n.distributeExecutor()
+		go n.distributeSubmit()
 	}
 	return nil
 }
@@ -119,8 +106,48 @@ func (n *Node) ElectionLeader() error {
 	return nil
 }
 
-func (n *Node) distributeExecutor() {
-	//TODO distribute executors to worker node
+// registerWorker register worker node to cluster
+func (n *Node) registerWorker(worker *packets.WorkerInfo) {
+RegisterWorker:
+	for {
+		err := n.Cluster.RegisterWorker(worker)
+		if err != nil {
+			logger.Node().DebugS("Node RegisterWorker error, will retry after 10 seconds")
+			logger.Node().Error(err, "Node RegisterWorker error.")
+			time.Sleep(time.Second * 10)
+			continue RegisterWorker
+		} else {
+			logger.Node().DebugS("Node RegisterWorker success:", worker)
+			break
+		}
+	}
+}
+
+// distributeSubmit distribute submit from queue, send to worker node
+func (n *Node) distributeSubmit() {
+	for {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Node().Error(errInfo, "distributeSubmit error")
+			}
+		}()
+		for {
+			//TODO distribute executors to worker node
+			submit := <-n.submitQueue
+			fmt.Println(*submit)
+			if submit.Worker != nil {
+				rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
+				err, reply := rpcClient.CallRegisterExecutor(submit.Executor)
+				fmt.Println(err, reply)
+				if err != nil {
+					//TODO: do something when call error
+				}
+			} else {
+				//TODO do distribute by auto scheduler
+			}
+		}
+	}
 }
 
 // initConfig init node config from config profile
