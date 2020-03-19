@@ -38,7 +38,7 @@ type (
 )
 
 func NewNode(profile *config.Profile) (*Node, error) {
-	logger.Default().Debug("Node {" + profile.Node.NodeId + "} start...")
+	logger.Node().Debug("Node {" + profile.Node.NodeId + "} start...")
 
 	node := &Node{
 		NodeId:      profile.Node.NodeId,
@@ -49,7 +49,8 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	//init config
 	err := node.initConfig(profile)
 	if err != nil {
-		return nil, errors.New("Node Config init error: " + err.Error())
+		logger.Node().Debug("Node init config error: " + err.Error())
+		return nil, err
 	}
 
 	//init Registry
@@ -96,12 +97,12 @@ func (n *Node) ElectionLeader() error {
 	if err == nil {
 		n.IsLeader = isLeader
 	} else {
-		logger.Default().Error(err, "Node {"+n.NodeId+"} election leader role with key {"+n.Cluster.LeaderKey+"} error:"+err.Error())
+		logger.Node().Error(err, "Node {"+n.NodeId+"} election leader role with key {"+n.Cluster.LeaderKey+"} error:"+err.Error())
 	}
 
 	if n.IsLeader {
 		//TODO do something when change to leader
-		logger.Default().Debug("Node {" + n.NodeId + "} election leader role success with key {" + n.Cluster.LeaderKey + "}")
+		logger.Node().Debug("Node {" + n.NodeId + "} election leader role success with key {" + n.Cluster.LeaderKey + "}")
 	}
 	return nil
 }
@@ -159,30 +160,30 @@ func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config.IsWorker = conf.Node.IsWorker
 	n.Config.Profile = conf
 
-	logger.Default().Debug("Node Config init success.")
+	logger.Node().Debug("Node Config init success.")
 	return nil
 }
 
 func registerDemoExecutors(r *runtime.Runtime) {
-	logger.Default().Debug("Register Demo Executors Begin")
+	logger.Node().Debug("Register Demo Executors Begin")
 	goExec := executor.NewDebugGoExecutor(("go"))
 	err := r.RegisterExecutor(goExec)
 	if err != nil {
-		logger.Default().Error(err, "service.CreateCronTask {go.exec} error!")
+		logger.Node().Error(err, "service.CreateCronTask {go.exec} error!")
 	}
 
 	httpExec := executor.NewDebugHttpExecutor("http")
 	err = r.RegisterExecutor(httpExec)
 	if err != nil {
-		logger.Default().Error(err, "service.CreateCronTask {http.exec} error!")
+		logger.Node().Error(err, "service.CreateCronTask {http.exec} error!")
 	}
 
 	shellExec := executor.NewDebugShellExecutor("shell")
 	err = r.RegisterExecutor(shellExec)
 	if err != nil {
-		logger.Default().Error(err, "service.CreateCronTask {shell.exec} error!")
+		logger.Node().Error(err, "service.CreateCronTask {shell.exec} error!")
 	}
-	logger.Default().Debug("Register Demo Executors Success!")
+	logger.Node().Debug("Register Demo Executors Success!")
 }
 
 func loadHttpTaskConfigs() []*executor.HttpTaskConfig {
