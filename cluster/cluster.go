@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
+	"github.com/devfeel/rockman/schedule"
 	"github.com/devfeel/rockman/state"
 	"github.com/devfeel/rockman/util/consul"
 	"github.com/hashicorp/consul/api"
@@ -27,6 +28,7 @@ type (
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
 		state                 *state.State
+		scheduler             *schedule.Scheduler
 	}
 )
 
@@ -49,6 +51,7 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
 	cluster.state = state.NewState()
+	cluster.scheduler = new(schedule.Scheduler)
 	logger.Node().Debug("Cluster init success.")
 	return cluster, nil
 }
@@ -150,36 +153,37 @@ func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
 	return rpcClient
 }
 
-// GetLowerLoadWorker get lower load worker, if not match, it will try 3 times
-func (c *Cluster) GetLowerLoadWorker() *packets.WorkerInfo {
-	resources := c.state.GetSortResources()
-	if resources.Len() <= 0 {
-		return nil
+// GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
+func (c *Cluster) GetLowBalanceWorker() (*packets.WorkerInfo, error) {
+	resources, err := c.scheduler.Schedule(schedule.Balance_LowerLoad, c.state.Resources)
+	if err != nil {
+		return nil, err
 	}
+
 	c.workerLocker.RLock()
 	defer c.workerLocker.RUnlock()
 
 	resource := resources[0]
 	rawWorker, isExists := c.Workers[resource.EndPoint]
 	if isExists {
-		return rawWorker
+		return rawWorker, nil
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 1 times, try get next")
-	if resources.Len() > 1 {
+	if len(resources) > 1 {
 		resource := resources[1]
 		rawWorker, isExists := c.Workers[resource.EndPoint]
 		if isExists {
-			return rawWorker
+			return rawWorker, nil
 		}
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 2 times, try get next.")
-	if resources.Len() > 2 {
+	if len(resources) > 2 {
 		resource := resources[2]
 		rawWorker, isExists := c.Workers[resource.EndPoint]
 		if isExists {
-			return rawWorker
+			return rawWorker, nil
 		}
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 3 times.")
-	return nil
+	return nil, errors.New("no match resource with worker")
 }

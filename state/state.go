@@ -1,7 +1,6 @@
 package state
 
 import (
-	"sort"
 	"sync"
 )
 
@@ -18,8 +17,6 @@ type (
 		JobCount   int //job count
 		LoadValue  int //load value = cpu * 30 + memory * 30 + jobs * 40
 	}
-
-	Resources []*ResourceInfo
 )
 
 func NewState() *State {
@@ -65,27 +62,6 @@ func (s *State) LoadResource(endPoint string) *ResourceInfo {
 		s.Resources[endPoint] = resource
 	}
 	return resource
-}
-
-func (s *State) GetSortResources() Resources {
-	defer s.resourceLocker.RUnlock()
-	s.resourceLocker.RLock()
-	var resources Resources
-	for _, resource := range s.Resources {
-		resources = append(resources, resource)
-	}
-	sort.Sort(resources)
-	return resources
-}
-
-func (rs Resources) Len() int {
-	return len(rs)
-}
-func (rs Resources) Less(i, j int) bool {
-	return rs[i].LoadValue > rs[j].LoadValue
-}
-func (rs Resources) Swap(i, j int) {
-	rs[i], rs[j] = rs[j], rs[i]
 }
 
 // refreshLoadValue refresh resource's load value
