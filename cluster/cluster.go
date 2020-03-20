@@ -149,3 +149,37 @@ func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
 	}
 	return rpcClient
 }
+
+// GetLowerLoadWorker get lower load worker, if not match, it will try 3 times
+func (c *Cluster) GetLowerLoadWorker() *packets.WorkerInfo {
+	resources := c.state.GetSortResources()
+	if resources.Len() <= 0 {
+		return nil
+	}
+	c.workerLocker.RLock()
+	defer c.workerLocker.RUnlock()
+
+	resource := resources[0]
+	rawWorker, isExists := c.Workers[resource.EndPoint]
+	if isExists {
+		return rawWorker
+	}
+	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 1 times, try get next")
+	if resources.Len() > 1 {
+		resource := resources[1]
+		rawWorker, isExists := c.Workers[resource.EndPoint]
+		if isExists {
+			return rawWorker
+		}
+	}
+	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 2 times, try get next.")
+	if resources.Len() > 2 {
+		resource := resources[2]
+		rawWorker, isExists := c.Workers[resource.EndPoint]
+		if isExists {
+			return rawWorker
+		}
+	}
+	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 3 times.")
+	return nil
+}
