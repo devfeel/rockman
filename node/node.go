@@ -22,9 +22,8 @@ type (
 		Config      *NodeConfig
 		submitList  map[string]*packets.SubmitInfo
 		submitQueue chan *packets.SubmitInfo
-
-		Cluster *cluster.Cluster
-		Runtime *runtime.Runtime
+		Cluster     *cluster.Cluster
+		Runtime     *runtime.Runtime
 	}
 
 	NodeConfig struct {

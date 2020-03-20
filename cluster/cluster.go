@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
+	"github.com/devfeel/rockman/state"
 	"github.com/devfeel/rockman/util/consul"
 	"github.com/hashicorp/consul/api"
 	"sync"
@@ -25,6 +26,7 @@ type (
 		isRegisterWorker      bool
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
+		state                 *state.State
 	}
 )
 
@@ -45,6 +47,8 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 	cluster.workerLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
+
+	cluster.state = state.NewState()
 	logger.Node().Debug("Cluster init success.")
 	return cluster, nil
 }
