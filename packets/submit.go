@@ -1,9 +1,7 @@
 package packets
 
-import "github.com/devfeel/rockman/runtime/executor"
-
 type SubmitInfo struct {
-	Executor       executor.Executor
+	ExecutorConfig interface{}
 	Worker         *WorkerInfo
 	DistributeType int ``
 }

@@ -26,7 +26,7 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 
 // RegisterWorker register worker node to leader node
 func (h *RpcHandler) RegisterWorker(worker *packets.WorkerInfo, result *packets.JsonResult) error {
-	logTitle := "RegisterWorker[" + worker.Host + "," + worker.Port + "] "
+	logTitle := "RegisterWorker[" + worker.EndPoint() + "] "
 	if !h.getNode().IsLeader {
 		logger.Default().Warn(logTitle + "can not register to not leader node")
 		*result = createResult(-1001, "can not register to not leader node", nil)
@@ -46,7 +46,7 @@ func (h *RpcHandler) RegisterWorker(worker *packets.WorkerInfo, result *packets.
 }
 
 // SubmitExecutor submit executor to leader node, then register to worker node
-func (h *RpcHandler) SubmitExecutor(config interface{}, result *packets.JsonResult) error {
+func (h *RpcHandler) SubmitExecutor(submit *packets.SubmitInfo, result *packets.JsonResult) error {
 	logTitle := "SubmitExecutor: "
 	if !h.getNode().IsLeader {
 		logger.Default().Warn("can not submit to not leader node")
@@ -54,10 +54,15 @@ func (h *RpcHandler) SubmitExecutor(config interface{}, result *packets.JsonResu
 		return nil
 	}
 
-	//TODO async send executor to worker node
-
-	logger.Default().DebugS(logTitle+"success", config)
-	*result = createResult(0, "ok", h.getNode().Runtime.Executors)
+	//async send executor to worker node
+	err := h.getNode().SubmitExecutor(submit)
+	if err != nil {
+		logger.Default().DebugS(logTitle+"error:", err.Error())
+		*result = createResult(-2001, "submit error", nil)
+	} else {
+		logger.Default().DebugS(logTitle+"success", submit)
+		*result = createResult(0, "ok", h.getNode().Runtime.Executors)
+	}
 	return nil
 }
 
@@ -94,7 +99,6 @@ func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonRe
 			exec.GetTask().Start()
 		}
 	}
-
 	logger.Default().DebugS(logTitle+"success", config)
 	*result = packets.JsonResult{RetCode: 0, RetMsg: "ok", Message: h.getNode().Runtime.Executors}
 	return nil

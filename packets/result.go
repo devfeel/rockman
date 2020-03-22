@@ -5,3 +5,7 @@ type JsonResult struct {
 	RetMsg  string
 	Message interface{}
 }
+
+func (r *JsonResult) CorrectCode() int {
+	return 0
+}

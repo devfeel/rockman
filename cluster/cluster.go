@@ -6,8 +6,7 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
-	"github.com/devfeel/rockman/schedule"
-	"github.com/devfeel/rockman/state"
+	"github.com/devfeel/rockman/scheduler"
 	"github.com/devfeel/rockman/util/consul"
 	"github.com/hashicorp/consul/api"
 	"sync"
@@ -27,8 +26,7 @@ type (
 		isRegisterWorker      bool
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
-		state                 *state.State
-		scheduler             *schedule.Scheduler
+		Scheduler             *scheduler.Scheduler
 	}
 )
 
@@ -50,8 +48,7 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
-	cluster.state = state.NewState()
-	cluster.scheduler = new(schedule.Scheduler)
+	cluster.Scheduler = scheduler.NewScheduler()
 	logger.Node().Debug("Cluster init success.")
 	return cluster, nil
 }
@@ -127,7 +124,7 @@ GetLeader:
 
 // AddWorker add worker into workers
 func (c *Cluster) AddWorker(worker *packets.WorkerInfo) error {
-	key := worker.Host + "," + worker.Port
+	key := worker.EndPoint()
 	c.workerLocker.Lock()
 	defer c.workerLocker.Unlock()
 	rawWorker, isExists := c.Workers[key]
@@ -136,6 +133,8 @@ func (c *Cluster) AddWorker(worker *packets.WorkerInfo) error {
 	} else {
 		logger.Cluster().Debug("Cluster add worker node:" + fmt.Sprint(worker))
 	}
+	//TODO get remote worker's resource
+	c.Scheduler.SetResource(key, 0, 0, 0)
 	c.Workers[key] = worker
 	return nil
 }
@@ -155,7 +154,7 @@ func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
 
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
 func (c *Cluster) GetLowBalanceWorker() (*packets.WorkerInfo, error) {
-	resources, err := c.scheduler.Schedule(schedule.Balance_LowerLoad, c.state.Resources)
+	resources, err := c.Scheduler.Schedule(scheduler.Balance_LowerLoad)
 	if err != nil {
 		return nil, err
 	}

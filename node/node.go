@@ -14,16 +14,17 @@ import (
 
 type (
 	Node struct {
-		NodeId      string
-		NodeName    string
-		ClusterId   string
-		IsLeader    bool
-		Status      int
-		Config      *NodeConfig
-		submitList  map[string]*packets.SubmitInfo
-		submitQueue chan *packets.SubmitInfo
-		Cluster     *cluster.Cluster
-		Runtime     *runtime.Runtime
+		NodeId           string
+		NodeName         string
+		ClusterId        string
+		IsLeader         bool
+		Status           int
+		Config           *NodeConfig
+		submitList       map[string]*packets.SubmitInfo
+		submitQueue      chan *packets.SubmitInfo
+		submitRetryQueue chan *packets.SubmitInfo
+		Cluster          *cluster.Cluster
+		Runtime          *runtime.Runtime
 	}
 
 	NodeConfig struct {
@@ -36,14 +37,19 @@ type (
 	}
 )
 
+var (
+	ErrorCanNotSubmitToNotLeaderNode = errors.New("can not submit to not leader node")
+)
+
 func NewNode(profile *config.Profile) (*Node, error) {
 	logger.Node().Debug("Node {" + profile.Node.NodeId + "} start...")
 
 	node := &Node{
-		NodeId:      profile.Node.NodeId,
-		NodeName:    profile.Node.NodeName,
-		submitList:  make(map[string]*packets.SubmitInfo),
-		submitQueue: make(chan *packets.SubmitInfo),
+		NodeId:           profile.Node.NodeId,
+		NodeName:         profile.Node.NodeName,
+		submitList:       make(map[string]*packets.SubmitInfo),
+		submitQueue:      make(chan *packets.SubmitInfo),
+		submitRetryQueue: make(chan *packets.SubmitInfo),
 	}
 	//init config
 	err := node.initConfig(profile)
@@ -106,6 +112,16 @@ func (n *Node) ElectionLeader() error {
 	return nil
 }
 
+func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
+	if !n.IsLeader {
+		return ErrorCanNotSubmitToNotLeaderNode
+	}
+	n.submitQueue <- submit
+	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.ExecutorConfig) + "] into queue success")
+	//TODO log submit to db log
+	return nil
+}
+
 // registerWorker register worker node to cluster
 func (n *Node) registerWorker(worker *packets.WorkerInfo) {
 RegisterWorker:
@@ -133,18 +149,36 @@ func (n *Node) distributeSubmit() {
 			}
 		}()
 		for {
-			//TODO distribute executors to worker node
 			submit := <-n.submitQueue
-			fmt.Println(*submit)
-			if submit.Worker != nil {
-				rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
-				err, reply := rpcClient.CallRegisterExecutor(submit.Executor)
-				fmt.Println(err, reply)
+			worker := submit.Worker
+			var err error
+
+			// get low balance worker
+			if worker == nil {
+				worker, err = n.Cluster.GetLowBalanceWorker()
 				if err != nil {
-					//TODO: do something when call error
+					logger.Node().Error(err, "GetLowBalanceWorker error")
+					//TODO log submit result to db log
+					return
 				}
+			}
+
+			//submit executor to the specified worker node
+			rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
+			err, reply := rpcClient.CallRegisterExecutor(submit.ExecutorConfig)
+			if err != nil {
+				n.submitRetryQueue <- submit
+				logger.Node().DebugS("distributeSubmit into retry queue, error:", err.Error())
+				//TODO log submit result to db log
 			} else {
-				//TODO do distribute by auto scheduler
+				if reply.RetCode != reply.CorrectCode() {
+					n.submitRetryQueue <- submit
+					logger.Node().DebugS("distributeSubmit into retry queue, failed:", reply.RetCode)
+					//TODO log submit result to db log
+				} else {
+					n.Cluster.Scheduler.AddJobInfo(worker.EndPoint(), 1)
+					//TODO log submit result to db log
+				}
 			}
 		}
 	}

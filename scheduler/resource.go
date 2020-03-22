@@ -1,11 +1,25 @@
-package state
+package scheduler
 
 type (
+	ResourceInfo struct {
+		EndPoint   string
+		CpuRate    int //cpu rate, refresh per 1 minute
+		MemoryRate int //memory rate, refresh per 1 minute
+		JobCount   int //job count
+		LoadValue  int //load value = cpu * 30 + memory * 30 + jobs * 40
+	}
+
 	LoadResources   []*ResourceInfo
 	CpuResources    []*ResourceInfo
 	MemoryResources []*ResourceInfo
 	JobResources    []*ResourceInfo
 )
+
+// refreshLoadValue refresh resource's load value
+func (r *ResourceInfo) refreshLoadValue() int {
+	r.LoadValue = r.CpuRate*30 + r.MemoryRate*30 + r.JobCount*40
+	return r.LoadValue
+}
 
 func (rs LoadResources) Len() int {
 	return len(rs)
