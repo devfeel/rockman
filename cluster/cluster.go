@@ -21,7 +21,7 @@ type (
 		LeaderKey             string
 		LeaderServer          string
 		lastGetLeaderInfoTime time.Time
-		Workers               map[string]*packets.WorkerInfo
+		Workers               map[string]*packets.NodeInfo
 		workerLocker          *sync.RWMutex
 		isRegisterWorker      bool
 		rpcClients            map[string]*client.RpcClient
@@ -43,7 +43,7 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 		return nil, err
 	}
 	cluster.RegistryClient = regClient
-	cluster.Workers = make(map[string]*packets.WorkerInfo)
+	cluster.Workers = make(map[string]*packets.NodeInfo)
 	cluster.workerLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
@@ -73,6 +73,26 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, er
 	return true, nil
 }
 
+// RegisterNode register node info to registry server
+func (c *Cluster) RegisterNode(nodeKey string, node *packets.NodeInfo) error {
+	opts := &api.LockOptions{
+		Key:         nodeKey,
+		Value:       []byte(node.EndPoint()),
+		SessionTTL:  "10s",
+		SessionName: nodeKey,
+	}
+	locker, err := c.RegistryClient.CreateLockerOpts(opts)
+	if err != nil {
+		return err
+	}
+
+	_, err = locker.Locker.Lock(nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetLeaderInfo get leader info from leader key
 // must check is locked by leader session
 // cache in memory with 1 minute
@@ -95,7 +115,7 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 }
 
 // RegisterWorker register worker node to leader server
-func (c *Cluster) RegisterWorker(worker *packets.WorkerInfo) error {
+func (c *Cluster) RegisterWorker(worker *packets.NodeInfo) error {
 	if c.isRegisterWorker {
 		return nil
 	}
@@ -123,7 +143,7 @@ GetLeader:
 }
 
 // AddWorker add worker into workers
-func (c *Cluster) AddWorker(worker *packets.WorkerInfo) error {
+func (c *Cluster) AddWorker(worker *packets.NodeInfo) error {
 	key := worker.EndPoint()
 	c.workerLocker.Lock()
 	defer c.workerLocker.Unlock()
@@ -153,7 +173,7 @@ func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
 }
 
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
-func (c *Cluster) GetLowBalanceWorker() (*packets.WorkerInfo, error) {
+func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 	resources, err := c.Scheduler.Schedule(scheduler.Balance_LowerLoad)
 	if err != nil {
 		return nil, err

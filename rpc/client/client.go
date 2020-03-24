@@ -46,7 +46,7 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, *reply
 }
 
-func (c *RpcClient) CallRegisterWorker(worker *packets.WorkerInfo) (error, *packets.JsonResult) {
+func (c *RpcClient) CallRegisterWorker(worker *packets.NodeInfo) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")

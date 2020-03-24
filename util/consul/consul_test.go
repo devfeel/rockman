@@ -18,7 +18,7 @@ func TestCreateLocker(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		go func(i int) {
-			lock, err := client.CreateLocker(consulServer, lockKey)
+			lock, err := client.CreateLocker(lockKey)
 			if err != nil {
 				fmt.Println(time.Now(), i, "create lock err", err)
 				return

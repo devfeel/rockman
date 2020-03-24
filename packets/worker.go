@@ -1,11 +1,15 @@
 package packets
 
-type WorkerInfo struct {
+type NodeInfo struct {
 	NodeID string
 	Host   string
 	Port   string
 }
 
-func (w *WorkerInfo) EndPoint() string {
-	return w.Host + ":" + w.Port
+func (n *NodeInfo) EndPoint() string {
+	return n.Host + ":" + n.Port
+}
+
+func (n *NodeInfo) GetNodeKey(clusterId string) string {
+	return "devfeel/rockman:" + clusterId + ":node:" + n.EndPoint()
 }

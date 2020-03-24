@@ -2,6 +2,6 @@ package packets
 
 type SubmitInfo struct {
 	ExecutorConfig interface{}
-	Worker         *WorkerInfo
+	Worker         *NodeInfo
 	DistributeType int ``
 }

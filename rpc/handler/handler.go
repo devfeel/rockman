@@ -25,7 +25,7 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 }
 
 // RegisterWorker register worker node to leader node
-func (h *RpcHandler) RegisterWorker(worker *packets.WorkerInfo, result *packets.JsonResult) error {
+func (h *RpcHandler) RegisterWorker(worker *packets.NodeInfo, result *packets.JsonResult) error {
 	logTitle := "RegisterWorker[" + worker.EndPoint() + "] "
 	if !h.getNode().IsLeader {
 		logger.Default().Warn(logTitle + "can not register to not leader node")

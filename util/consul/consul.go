@@ -102,7 +102,7 @@ func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*ConsulLoc
 	return &ConsulLocker{Locker: locker}, nil
 }
 
-func (c *ConsulClient) CreateLocker(addr string, key string) (*ConsulLocker, error) {
+func (c *ConsulClient) CreateLocker(key string) (*ConsulLocker, error) {
 	locker, err := c.GetClient().LockKey(key)
 	if err != nil {
 		return nil, err

@@ -16,7 +16,6 @@ type (
 	Node struct {
 		NodeId           string
 		NodeName         string
-		ClusterId        string
 		IsLeader         bool
 		Status           int
 		Config           *NodeConfig
@@ -51,6 +50,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		submitQueue:      make(chan *packets.SubmitInfo),
 		submitRetryQueue: make(chan *packets.SubmitInfo),
 	}
+
+	nodeInfo := &packets.NodeInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort}
+	nodeKey := nodeInfo.GetNodeKey(profile.Cluster.ClusterId)
+
 	//init config
 	err := node.initConfig(profile)
 	if err != nil {
@@ -75,9 +78,16 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		node.Runtime = runtime.NewRuntime()
 		//register worker
 		go func() {
-			worker := &packets.WorkerInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort}
-			node.registerWorker(worker)
+			node.registerWorker(nodeInfo)
 		}()
+	}
+
+	//reg node to registry
+	err = node.Cluster.RegisterNode(nodeKey, nodeInfo)
+	if err != nil {
+		logger.Node().Debug("Node register to registry error: " + err.Error())
+	} else {
+		logger.Node().Debug("Node register to registry success with key {" + nodeKey + "}")
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -94,6 +104,7 @@ func (n *Node) Start() error {
 	if n.IsLeader {
 		go n.distributeSubmit()
 	}
+
 	return nil
 }
 
@@ -123,7 +134,7 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 }
 
 // registerWorker register worker node to cluster
-func (n *Node) registerWorker(worker *packets.WorkerInfo) {
+func (n *Node) registerWorker(worker *packets.NodeInfo) {
 RegisterWorker:
 	for {
 		err := n.Cluster.RegisterWorker(worker)
@@ -134,6 +145,7 @@ RegisterWorker:
 			continue RegisterWorker
 		} else {
 			logger.Node().DebugS("Node RegisterWorker success:", worker)
+
 			break
 		}
 	}
