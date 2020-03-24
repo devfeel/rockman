@@ -56,10 +56,13 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 // electionLeader election leader role to registry server
 func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, error) {
 	opts := &api.LockOptions{
-		Key:         c.LeaderKey,
-		Value:       []byte(leaderServer),
-		SessionTTL:  "10s",
-		SessionName: leaderServer,
+		Key:   c.LeaderKey,
+		Value: []byte(leaderServer),
+		SessionOpts: &api.SessionEntry{
+			Name:     leaderServer,
+			TTL:      "10s",
+			Behavior: "delete",
+		},
 	}
 	locker, err := c.RegistryClient.CreateLockerOpts(opts)
 	if err != nil {
@@ -76,10 +79,13 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, er
 // RegisterNode register node info to registry server
 func (c *Cluster) RegisterNode(nodeKey string, node *packets.NodeInfo) error {
 	opts := &api.LockOptions{
-		Key:         nodeKey,
-		Value:       []byte(node.EndPoint()),
-		SessionTTL:  "10s",
-		SessionName: nodeKey,
+		Key:   nodeKey,
+		Value: []byte(node.EndPoint()),
+		SessionOpts: &api.SessionEntry{
+			Name:     nodeKey,
+			TTL:      "10s",
+			Behavior: "delete",
+		},
 	}
 	locker, err := c.RegistryClient.CreateLockerOpts(opts)
 	if err != nil {
