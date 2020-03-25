@@ -1,9 +1,11 @@
 package packets
 
 type NodeInfo struct {
-	NodeID string
-	Host   string
-	Port   string
+	NodeID   string
+	Host     string
+	Port     string
+	IsMaster bool
+	IsWorker bool
 }
 
 func (n *NodeInfo) EndPoint() string {

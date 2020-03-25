@@ -46,14 +46,14 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, *reply
 }
 
-func (c *RpcClient) CallRegisterWorker(worker *packets.NodeInfo) (error, *packets.JsonResult) {
+func (c *RpcClient) CallRegisterNode(worker *packets.NodeInfo) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
 	var reply packets.JsonResult
-	err = client.Call("Rpc.RegisterWorker", worker, &reply)
+	err = client.Call("Rpc.RegisterNode", worker, &reply)
 	if err != nil {
 		return err, nil
 	}

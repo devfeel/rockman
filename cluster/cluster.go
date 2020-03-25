@@ -21,9 +21,8 @@ type (
 		LeaderKey             string
 		LeaderServer          string
 		lastGetLeaderInfoTime time.Time
-		Workers               map[string]*packets.NodeInfo
-		workerLocker          *sync.RWMutex
-		isRegisterWorker      bool
+		Nodes                 map[string]*packets.NodeInfo
+		nodeLocker            *sync.RWMutex
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
 		Scheduler             *scheduler.Scheduler
@@ -43,8 +42,8 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 		return nil, err
 	}
 	cluster.RegistryClient = regClient
-	cluster.Workers = make(map[string]*packets.NodeInfo)
-	cluster.workerLocker = new(sync.RWMutex)
+	cluster.Nodes = make(map[string]*packets.NodeInfo)
+	cluster.nodeLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
@@ -76,11 +75,11 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, er
 	return true, nil
 }
 
-// RegisterNode register node info to registry server
-func (c *Cluster) RegisterNode(nodeKey string, node *packets.NodeInfo) error {
+// CreateSession create session to registry with node info
+func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) error {
 	opts := &api.LockOptions{
 		Key:   nodeKey,
-		Value: []byte(node.EndPoint()),
+		Value: []byte(nodeInfo.EndPoint()),
 		SessionOpts: &api.SessionEntry{
 			Name:     nodeKey,
 			TTL:      "10s",
@@ -120,11 +119,9 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 	}
 }
 
-// RegisterWorker register worker node to leader server
-func (c *Cluster) RegisterWorker(worker *packets.NodeInfo) error {
-	if c.isRegisterWorker {
-		return nil
-	}
+// RegisterNode register node to leader server
+func (c *Cluster) RegisterNode(nodeInfo *packets.NodeInfo) error {
+	logTitle := "Cluster.RegisterNode[" + nodeInfo.EndPoint() + "] "
 	var leaderServer string
 	var err error
 GetLeader:
@@ -132,37 +129,29 @@ GetLeader:
 		// get leader info
 		leaderServer, err = c.GetLeaderInfo()
 		if err != nil {
-			logger.Cluster().Debug("Cluster.RegisterWorker GetLeaderInfo error, will retry 10 seconds after.")
+			logger.Cluster().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
 			time.Sleep(time.Second * 10)
 			continue GetLeader
 		} else {
-			logger.Cluster().Debug("Cluster.RegisterWorker GetLeaderInfo success.")
 			break
 		}
 	}
 	rpcClient := client.NewRpcClient(leaderServer)
-	err, _ = rpcClient.CallRegisterWorker(worker)
-	if err == nil {
-		c.isRegisterWorker = true
+	err, _ = rpcClient.CallRegisterNode(nodeInfo)
+	if err != nil {
+		logger.Cluster().Debug(logTitle + "CallRegisterNode error: " + err.Error())
 	}
 	return err
 }
 
-// AddWorker add worker into workers
-func (c *Cluster) AddWorker(worker *packets.NodeInfo) error {
-	key := worker.EndPoint()
-	c.workerLocker.Lock()
-	defer c.workerLocker.Unlock()
-	rawWorker, isExists := c.Workers[key]
-	if isExists {
-		logger.Cluster().Debug("Cluster replace worker node:" + fmt.Sprint(rawWorker, worker))
-	} else {
-		logger.Cluster().Debug("Cluster add worker node:" + fmt.Sprint(worker))
-	}
+// addNodeToList add node into node list
+func (c *Cluster) AddNodeInfo(nodeInfo *packets.NodeInfo) {
+	key := nodeInfo.EndPoint()
+	c.nodeLocker.Lock()
+	defer c.nodeLocker.Unlock()
 	//TODO get remote worker's resource
 	c.Scheduler.SetResource(key, 0, 0, 0)
-	c.Workers[key] = worker
-	return nil
+	c.Nodes[key] = nodeInfo
 }
 
 func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
@@ -185,18 +174,18 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 		return nil, err
 	}
 
-	c.workerLocker.RLock()
-	defer c.workerLocker.RUnlock()
+	c.nodeLocker.RLock()
+	defer c.nodeLocker.RUnlock()
 
 	resource := resources[0]
-	rawWorker, isExists := c.Workers[resource.EndPoint]
+	rawWorker, isExists := c.Nodes[resource.EndPoint]
 	if isExists {
 		return rawWorker, nil
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 1 times, try get next")
 	if len(resources) > 1 {
 		resource := resources[1]
-		rawWorker, isExists := c.Workers[resource.EndPoint]
+		rawWorker, isExists := c.Nodes[resource.EndPoint]
 		if isExists {
 			return rawWorker, nil
 		}
@@ -204,7 +193,7 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 2 times, try get next.")
 	if len(resources) > 2 {
 		resource := resources[2]
-		rawWorker, isExists := c.Workers[resource.EndPoint]
+		rawWorker, isExists := c.Nodes[resource.EndPoint]
 		if isExists {
 			return rawWorker, nil
 		}

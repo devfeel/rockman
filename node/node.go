@@ -69,26 +69,29 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	node.Cluster = cluster
 
 	if node.Config.IsMaster {
-		//election leader role
+		// election leader role
 		go node.ElectionLeader()
 	}
 
 	if node.Config.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime()
-		//register worker
-		go func() {
-			node.registerWorker(nodeInfo)
-		}()
 	}
 
-	//reg node to registry
-	err = node.Cluster.RegisterNode(nodeKey, nodeInfo)
-	if err != nil {
-		logger.Node().Debug("Node register to registry error: " + err.Error())
-	} else {
-		logger.Node().Debug("Node register to registry success with key {" + nodeKey + "}")
-	}
+	// create session with node info
+	go func() {
+		err := node.Cluster.CreateSession(nodeKey, nodeInfo)
+		if err != nil {
+			logger.Node().Debug("Node{" + node.NodeId + "} create session to registry error: " + err.Error())
+		} else {
+			logger.Node().Debug("Node{" + node.NodeId + "} create session to registry success with key {" + nodeKey + "}")
+		}
+	}()
+
+	// register node to cluster
+	go func() {
+		node.registerNode(nodeInfo)
+	}()
 
 	logger.Node().Debug("Node init success.")
 	return node, err
@@ -133,19 +136,18 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 	return nil
 }
 
-// registerWorker register worker node to cluster
-func (n *Node) registerWorker(worker *packets.NodeInfo) {
+// registerNode register node to cluster
+func (n *Node) registerNode(nodeInfo *packets.NodeInfo) {
 RegisterWorker:
 	for {
-		err := n.Cluster.RegisterWorker(worker)
+		err := n.Cluster.RegisterNode(nodeInfo)
 		if err != nil {
-			logger.Node().DebugS("Node RegisterWorker error, will retry after 10 seconds")
-			logger.Node().Error(err, "Node RegisterWorker error.")
+			logger.Node().DebugS("RegisterNode error, will retry after 10 seconds")
+			logger.Node().Error(err, "RegisterNode error.")
 			time.Sleep(time.Second * 10)
 			continue RegisterWorker
 		} else {
-			logger.Node().DebugS("Node RegisterWorker success:", worker)
-
+			logger.Node().DebugS("RegisterNode success:", nodeInfo)
 			break
 		}
 	}

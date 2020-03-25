@@ -25,23 +25,17 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 }
 
 // RegisterWorker register worker node to leader node
-func (h *RpcHandler) RegisterWorker(worker *packets.NodeInfo, result *packets.JsonResult) error {
-	logTitle := "RegisterWorker[" + worker.EndPoint() + "] "
+func (h *RpcHandler) RegisterNode(nodeInfo *packets.NodeInfo, result *packets.JsonResult) error {
+	logTitle := "RegisterNode[" + nodeInfo.EndPoint() + "] "
 	if !h.getNode().IsLeader {
 		logger.Default().Warn(logTitle + "can not register to not leader node")
 		*result = createResult(-1001, "can not register to not leader node", nil)
 		return nil
 	}
 
-	err := h.getNode().Cluster.AddWorker(worker)
-	if err != nil {
-		logger.Default().Error(err, logTitle+"can not add node to cluster:"+err.Error())
-		*result = createResult(-9001, "can not add node to cluster:"+err.Error(), nil)
-		return nil
-	}
-
+	h.getNode().Cluster.AddNodeInfo(nodeInfo)
 	logger.Default().DebugS(logTitle + "success")
-	*result = createResult(0, "ok", h.getNode().Cluster.Workers)
+	*result = createResult(0, "ok", h.getNode().Cluster.Nodes)
 	return nil
 }
 
