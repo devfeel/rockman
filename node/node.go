@@ -51,7 +51,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		submitRetryQueue: make(chan *packets.SubmitInfo),
 	}
 
-	nodeInfo := &packets.NodeInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort}
+	nodeInfo := &packets.NodeInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort, IsMaster: profile.Node.IsMaster, IsWorker: profile.Node.IsWorker}
 	nodeKey := nodeInfo.GetNodeKey(profile.Cluster.ClusterId)
 
 	//init config

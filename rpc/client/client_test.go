@@ -26,10 +26,21 @@ func TestRpcClient_CallEcho(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallRegisterWorker(t *testing.T) {
+func TestRpcClient_CallRegisterNode(t *testing.T) {
 	client := getRpcClient()
-	worker := &packets.WorkerInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
-	err, result := client.CallRegisterWorker(worker)
+	worker := &packets.NodeInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
+	err, result := client.CallRegisterNode(worker)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallQueryNodes(t *testing.T) {
+	client := getRpcClient()
+	page := &packets.PageInfo{PageIndex: 1, PageSize: 10}
+	err, result := client.CallQueryNodes(page)
 	if err != nil {
 		t.Error(err)
 	} else {

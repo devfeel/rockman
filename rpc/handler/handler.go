@@ -39,6 +39,20 @@ func (h *RpcHandler) RegisterNode(nodeInfo *packets.NodeInfo, result *packets.Js
 	return nil
 }
 
+// QueryNodes query node list from leader node
+func (h *RpcHandler) QueryNodes(pageInfo *packets.PageInfo, result *packets.JsonResult) error {
+	logTitle := "QueryNodes "
+	if !h.getNode().IsLeader {
+		logger.Default().Warn(logTitle + "can not query nodes from not leader node")
+		*result = createResult(-1001, "can not query nodes from not leader node", nil)
+		return nil
+	}
+
+	logger.Default().DebugS(logTitle + "success")
+	*result = createResult(0, "ok", h.getNode().Cluster.Nodes)
+	return nil
+}
+
 // SubmitExecutor submit executor to leader node, then register to worker node
 func (h *RpcHandler) SubmitExecutor(submit *packets.SubmitInfo, result *packets.JsonResult) error {
 	logTitle := "SubmitExecutor: "

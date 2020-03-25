@@ -60,6 +60,20 @@ func (c *RpcClient) CallRegisterNode(worker *packets.NodeInfo) (error, *packets.
 	return nil, &reply
 }
 
+func (c *RpcClient) CallQueryNodes(pageInfo *packets.PageInfo) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.QueryNodes", pageInfo, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
 func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
