@@ -79,7 +79,7 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, er
 func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) error {
 	opts := &api.LockOptions{
 		Key:   nodeKey,
-		Value: []byte(nodeInfo.EndPoint()),
+		Value: []byte(nodeInfo.Json()),
 		SessionOpts: &api.SessionEntry{
 			Name:     nodeKey,
 			TTL:      "10s",
@@ -94,6 +94,41 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) erro
 	_, err = locker.Locker.Lock(nil)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// RefreshNodes refresh node state from Registry
+func (c *Cluster) RefreshNodes() error {
+	nodeKVs, _, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix)
+	if err != nil {
+		return errors.New("RefreshNodes error: " + err.Error())
+	}
+	nodes := make(map[string]*packets.NodeInfo)
+	for _, s := range nodeKVs {
+		if s.Session == "" {
+			continue
+		}
+		node := new(packets.NodeInfo)
+		if err := node.LoadFromJson(string(s.Value)); err != nil {
+			continue
+		}
+		if node.Cluster != c.ClusterId {
+			continue
+		}
+		nodes[node.EndPoint()] = node
+		if _, exists := c.Nodes[node.EndPoint()]; !exists {
+			c.AddNodeInfo(node)
+		}
+	}
+	c.nodeLocker.Lock()
+	defer c.nodeLocker.Unlock()
+	for _, node := range c.Nodes {
+		if _, exists := nodes[node.EndPoint()]; !exists {
+			node.IsOnline = false
+		} else {
+			node.IsOnline = true
+		}
 	}
 	return nil
 }

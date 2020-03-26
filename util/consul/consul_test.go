@@ -2,6 +2,7 @@ package consul
 
 import (
 	"fmt"
+	"github.com/devfeel/rockman/packets"
 	"testing"
 	"time"
 )
@@ -35,4 +36,19 @@ func TestCreateLocker(t *testing.T) {
 		}(i)
 	}
 	time.Sleep(time.Hour)
+}
+
+func TestConsulClient_ListKV(t *testing.T) {
+	client, err := NewConsulClient(consulServer)
+	if err != nil {
+		t.Error("create consul client error", err)
+		return
+	}
+	nodeKVs, _, err := client.ListKV(packets.NodeKeyPrefix)
+	if err != nil {
+		fmt.Println("RefreshNodes error: " + err.Error())
+	}
+	for _, s := range nodeKVs {
+		fmt.Println(s.Key, string(s.Value), s.Session)
+	}
 }

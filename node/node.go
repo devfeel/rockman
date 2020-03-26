@@ -51,7 +51,15 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		submitRetryQueue: make(chan *packets.SubmitInfo),
 	}
 
-	nodeInfo := &packets.NodeInfo{NodeID: node.NodeId, Host: profile.Rpc.RpcHost, Port: profile.Rpc.RpcPort, IsMaster: profile.Node.IsMaster, IsWorker: profile.Node.IsWorker}
+	nodeInfo := &packets.NodeInfo{
+		NodeID:   node.NodeId,
+		Cluster:  profile.Cluster.ClusterId,
+		Host:     profile.Rpc.RpcHost,
+		Port:     profile.Rpc.RpcPort,
+		IsMaster: profile.Node.IsMaster,
+		IsWorker: profile.Node.IsWorker,
+		IsOnline: true,
+	}
 	nodeKey := nodeInfo.GetNodeKey(profile.Cluster.ClusterId)
 
 	//init config
@@ -71,6 +79,8 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	if node.Config.IsMaster {
 		// election leader role
 		go node.ElectionLeader()
+
+		go node.refreshNodes()
 	}
 
 	if node.Config.IsWorker {
@@ -149,6 +159,27 @@ RegisterWorker:
 		} else {
 			logger.Node().DebugS("RegisterNode success:", nodeInfo)
 			break
+		}
+	}
+}
+
+// refreshNodes refresh node state from Registry
+func (n *Node) refreshNodes() {
+	for {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Node().Error(errInfo, "refreshNodes error")
+			}
+		}()
+		for {
+			time.Sleep(time.Minute)
+			err := n.Cluster.RefreshNodes()
+			if err == nil {
+				logger.Node().Debug("Node refreshNodes success")
+			} else {
+				logger.Node().Debug("Node refreshNodes error: " + err.Error())
+			}
 		}
 	}
 }
