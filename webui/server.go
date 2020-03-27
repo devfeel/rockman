@@ -31,7 +31,7 @@ func NewWebServer(logPath string) *WebServer {
 
 func (s *WebServer) ListenAndServe(listenAddr string) error {
 	s.listenAddr = listenAddr
-	logger.Default().Debug("WebServer.StartServer => " + s.listenAddr)
+	logger.Default().Debug("WebServer begin listen " + s.listenAddr)
 	err := s.webApp.ListenAndServe(s.listenAddr)
 	if err != nil {
 		return err

@@ -141,7 +141,7 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 
 // registerNode register node to cluster
 func (n *Node) registerNode(nodeInfo *packets.NodeInfo) error {
-	logTitle := "Node.registerNode[" + nodeInfo.EndPoint() + "] "
+	logTitle := "Node {" + n.NodeId + "} registerNode "
 	var leaderServer string
 	var err error
 	var retryCount int
@@ -182,20 +182,21 @@ RegisterNode:
 
 // refreshNodes refresh node state from Registry
 func (n *Node) refreshNodes() {
+	logTitle := "Node {" + n.NodeId + "} refreshNodes "
 	for {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Node().Error(errInfo, "refreshNodes error")
+				logger.Node().Error(errInfo, logTitle+"error")
 			}
 		}()
 		for {
 			time.Sleep(time.Minute)
 			err := n.Cluster.RefreshNodes()
 			if err == nil {
-				logger.Node().Debug("Node refreshNodes success")
+				logger.Node().Debug(logTitle + "success")
 			} else {
-				logger.Node().Debug("Node refreshNodes error: " + err.Error())
+				logger.Node().Debug(logTitle + "error: " + err.Error())
 			}
 		}
 	}
