@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
+	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
 	"github.com/devfeel/rockman/runtime/executor"
 	"time"
@@ -19,6 +20,7 @@ type (
 		IsLeader         bool
 		Status           int
 		Config           *NodeConfig
+		profile          *config.Profile
 		submitList       map[string]*packets.SubmitInfo
 		submitQueue      chan *packets.SubmitInfo
 		submitRetryQueue chan *packets.SubmitInfo
@@ -49,17 +51,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		submitList:       make(map[string]*packets.SubmitInfo),
 		submitQueue:      make(chan *packets.SubmitInfo),
 		submitRetryQueue: make(chan *packets.SubmitInfo),
+		profile:          profile,
 	}
 
-	nodeInfo := &packets.NodeInfo{
-		NodeID:   node.NodeId,
-		Cluster:  profile.Cluster.ClusterId,
-		Host:     profile.Rpc.RpcHost,
-		Port:     profile.Rpc.RpcPort,
-		IsMaster: profile.Node.IsMaster,
-		IsWorker: profile.Node.IsWorker,
-		IsOnline: true,
-	}
+	nodeInfo := node.getNodeInfo()
 	nodeKey := nodeInfo.GetNodeKey(profile.Cluster.ClusterId)
 
 	//init config
@@ -92,15 +87,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	go func() {
 		err := node.Cluster.CreateSession(nodeKey, nodeInfo)
 		if err != nil {
-			logger.Node().Debug("Node{" + node.NodeId + "} create session to registry error: " + err.Error())
+			logger.Node().Debug("Node {" + node.NodeId + "} create session to registry error: " + err.Error())
 		} else {
-			logger.Node().Debug("Node{" + node.NodeId + "} create session to registry success with key {" + nodeKey + "}")
+			logger.Node().Debug("Node {" + node.NodeId + "} create session to registry success with key {" + nodeKey + "}")
 		}
-	}()
-
-	// register node to cluster
-	go func() {
-		node.registerNode(nodeInfo)
 	}()
 
 	logger.Node().Debug("Node init success.")
@@ -118,7 +108,10 @@ func (n *Node) Start() error {
 		go n.distributeSubmit()
 	}
 
-	return nil
+	// register node to cluster
+	err := n.registerNode(n.getNodeInfo())
+
+	return err
 }
 
 func (n *Node) ElectionLeader() error {
@@ -147,20 +140,44 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 }
 
 // registerNode register node to cluster
-func (n *Node) registerNode(nodeInfo *packets.NodeInfo) {
-RegisterWorker:
+func (n *Node) registerNode(nodeInfo *packets.NodeInfo) error {
+	logTitle := "Node.registerNode[" + nodeInfo.EndPoint() + "] "
+	var leaderServer string
+	var err error
+	var retryCount int
+
+RegisterNode:
 	for {
-		err := n.Cluster.RegisterNode(nodeInfo)
+		if retryCount > n.profile.Global.RetryLimit {
+			err = errors.New(logTitle + "retry count bigger than 5, now stop it.")
+			logger.Node().DebugS(logTitle + "error: " + err.Error())
+			return err
+		}
+		retryCount += 1
+		// get leader info
+		leaderServer, err = n.Cluster.GetLeaderInfo()
 		if err != nil {
-			logger.Node().DebugS("RegisterNode error, will retry after 10 seconds")
-			logger.Node().Error(err, "RegisterNode error.")
+			logger.Cluster().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
 			time.Sleep(time.Second * 10)
-			continue RegisterWorker
+			continue RegisterNode
 		} else {
-			logger.Node().DebugS("RegisterNode success:", nodeInfo)
+			rpcClient := client.NewRpcClient(leaderServer)
+			err, result := rpcClient.CallRegisterNode(nodeInfo)
+			if err != nil {
+				logger.Cluster().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				time.Sleep(time.Second * 10)
+				continue RegisterNode
+			}
+			if result.RetCode != result.CorrectCode() {
+				logger.Cluster().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				time.Sleep(time.Second * 10)
+				continue RegisterNode
+			}
 			break
 		}
 	}
+	logger.Node().DebugS(logTitle + "success")
+	return nil
 }
 
 // refreshNodes refresh node state from Registry
@@ -240,6 +257,19 @@ func (n *Node) initConfig(conf *config.Profile) error {
 
 	logger.Node().Debug("Node Config init success.")
 	return nil
+}
+
+func (n *Node) getNodeInfo() *packets.NodeInfo {
+	nodeInfo := &packets.NodeInfo{
+		NodeID:   n.NodeId,
+		Cluster:  n.profile.Cluster.ClusterId,
+		Host:     n.profile.Rpc.RpcHost,
+		Port:     n.profile.Rpc.RpcPort,
+		IsMaster: n.profile.Node.IsMaster,
+		IsWorker: n.profile.Node.IsWorker,
+		IsOnline: true,
+	}
+	return nodeInfo
 }
 
 func registerDemoExecutors(r *runtime.Runtime) {

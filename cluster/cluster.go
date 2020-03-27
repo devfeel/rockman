@@ -154,31 +154,6 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 	}
 }
 
-// RegisterNode register node to leader server
-func (c *Cluster) RegisterNode(nodeInfo *packets.NodeInfo) error {
-	logTitle := "Cluster.RegisterNode[" + nodeInfo.EndPoint() + "] "
-	var leaderServer string
-	var err error
-GetLeader:
-	for {
-		// get leader info
-		leaderServer, err = c.GetLeaderInfo()
-		if err != nil {
-			logger.Cluster().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
-			time.Sleep(time.Second * 10)
-			continue GetLeader
-		} else {
-			break
-		}
-	}
-	rpcClient := client.NewRpcClient(leaderServer)
-	err, _ = rpcClient.CallRegisterNode(nodeInfo)
-	if err != nil {
-		logger.Cluster().Debug(logTitle + "CallRegisterNode error: " + err.Error())
-	}
-	return err
-}
-
 // addNodeToList add node into node list
 func (c *Cluster) AddNodeInfo(nodeInfo *packets.NodeInfo) {
 	key := nodeInfo.EndPoint()
