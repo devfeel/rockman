@@ -16,6 +16,7 @@ type (
 
 	ShellExecutor struct {
 		baseExecutor
+		shellConfig *ShellConfig
 	}
 )
 

@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/devfeel/dotweb"
-	"github.com/devfeel/rockman/protected/service/task"
+	service2 "github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/webui/contract"
 	"github.com/devfeel/rockman/webui/validate"
 )
@@ -16,7 +16,7 @@ func (c *TaskController) ShowTaskListByNodeID(ctx dotweb.Context) error {
 		return ctx.WriteJson(rep)
 	}
 
-	service := task.NewTaskService()
+	service := service2.NewTaskService()
 	tasks, err := service.QueryTasksByNodeID(nodeID)
 	if err != nil {
 		return ctx.WriteJson(contract.CreateResponse(-2001, "Query Error", err))

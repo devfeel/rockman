@@ -1,9 +1,8 @@
-package task
+package repository
 
 import (
 	"errors"
 	"github.com/devfeel/rockman/config"
-	"github.com/devfeel/rockman/protected/repository"
 	"sync"
 )
 
@@ -17,7 +16,7 @@ func init() {
 }
 
 type TaskRepository struct {
-	repository.BaseRepository
+	BaseRepository
 }
 
 // GetMessageRepository return MessageRepository which is inited

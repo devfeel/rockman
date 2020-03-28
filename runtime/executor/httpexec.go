@@ -3,6 +3,7 @@ package executor
 import (
 	"fmt"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 )
@@ -18,6 +19,7 @@ type (
 
 	HttpExecutor struct {
 		baseExecutor
+		httpConfig *HttpConfig
 	}
 )
 
@@ -42,16 +44,16 @@ func NewHttpExecutor(conf *packets.TaskConfig) *HttpExecutor {
 	exec := new(HttpExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	exec.httpConfig = new(HttpConfig)
+	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.httpConfig)
+	if err != nil {
+		logger.Runtime().Error(err, "convert config error")
+	}
 	return exec
 }
 
 func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "HttpExecutor [" + exec.GetTaskID() + "] "
-	conf, isOk := exec.TaskConfig.TargetConfig.(*HttpConfig)
-	if !isOk {
-		logger.Runtime().Error(ErrorNotMatchConfigType, logTitle+"convert config error")
-		return ErrorNotMatchConfigType
-	}
-	fmt.Println("HttpExecutor exec", *conf)
+	fmt.Println(logTitle+"exec", exec.httpConfig)
 	return nil
 }

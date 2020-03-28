@@ -15,6 +15,7 @@ type (
 
 	GoExecutor struct {
 		baseExecutor
+		goConfig *GoConfig
 	}
 )
 
@@ -62,9 +63,9 @@ func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 	if execFunc, ok := s.(Exec); ok {
 		err := execFunc(ctx)
 		if err != nil {
-			logger.Runtime().DebugS(logTitle + "exec success")
-		} else {
 			logger.Runtime().Error(err, logTitle+"exec err:"+err.Error())
+		} else {
+			logger.Runtime().DebugS(logTitle + "exec success")
 		}
 		return err
 	} else {

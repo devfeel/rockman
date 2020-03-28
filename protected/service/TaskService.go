@@ -1,11 +1,10 @@
-package task
+package service
 
 import (
 	"errors"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
-	task2 "github.com/devfeel/rockman/protected/repository/task"
-	"github.com/devfeel/rockman/protected/service"
+	repository2 "github.com/devfeel/rockman/protected/repository"
 )
 
 var (
@@ -13,8 +12,8 @@ var (
 )
 
 type TaskService struct {
-	service.BaseService
-	taskRepository *task2.TaskRepository
+	BaseService
+	taskRepository *repository2.TaskRepository
 }
 
 func init() {
@@ -23,7 +22,7 @@ func init() {
 
 func NewTaskService() *TaskService {
 	service := &TaskService{
-		taskRepository: task2.GetTaskRepository(),
+		taskRepository: repository2.GetTaskRepository(),
 	}
 	return service
 }

@@ -43,3 +43,7 @@ func Node() Logger {
 func Cluster() Logger {
 	return GetLogger(LoggerName_Cluster)
 }
+
+func Service() Logger {
+	return GetLogger(LoggerName_Service)
+}
