@@ -3,6 +3,7 @@ package executor
 import (
 	"errors"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"plugin"
@@ -39,18 +40,17 @@ func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
 	exec := new(GoExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.goConfig)
+	if err != nil {
+		logger.Runtime().Error(err, "convert config error")
+	}
 	return exec
 }
 
 // Exec TODO:log to mysql log
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "GoExecutor [" + exec.GetTaskID() + "] "
-	conf, isOk := exec.TaskConfig.TargetConfig.(*GoConfig)
-	if !isOk {
-		logger.Runtime().Error(ErrorNotMatchConfigType, logTitle+"convert config error")
-		return ErrorNotMatchConfigType
-	}
-	p, err := plugin.Open(conf.FileName)
+	p, err := plugin.Open(exec.goConfig.FileName)
 	if err != nil {
 		logger.Runtime().Error(err, logTitle+"open plugin error: "+err.Error())
 		return err

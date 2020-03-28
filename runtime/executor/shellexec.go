@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"os/exec"
@@ -40,19 +41,18 @@ func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
 	exec := new(ShellExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.shellConfig)
+	if err != nil {
+		logger.Runtime().Error(err, "convert config error")
+	}
 	return exec
 }
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "ShellExecutor [" + exec.GetTaskID() + "] "
-	conf, isOk := exec.TaskConfig.TargetConfig.(*ShellConfig)
-	if !isOk {
-		logger.Runtime().Error(ErrorNotMatchConfigType, logTitle+"convert config error")
-		return ErrorNotMatchConfigType
-	}
-	fmt.Println("ShellExecutor exec", *conf)
+	fmt.Println(logTitle+" success", *exec.shellConfig)
 	return nil
-	result, err := execShell(conf.FileName)
+	result, err := execShell(exec.shellConfig.FileName)
 	//TODO log exec result
 	//1.file
 	//2.mysql
