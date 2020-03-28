@@ -1,45 +1,37 @@
 package executor
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/rockman/packets"
 )
 
 const (
-	HttpType  = "http"
-	ShellType = "shell"
-	GoSoType  = "goso"
-	CodeType  = "code"
+	TargetType_Http  = "http"
+	TargetType_Shell = "shell"
+	TargetType_GoSo  = "goso"
+	TargetType_Code  = "code"
 )
 
-type Executor interface {
-	GetTask() task.Task
-	SetTask(task task.Task)
-	GetTaskID() string
-	GetTargetType() string
-	GetTaskConfig() *TaskConfig
-	Exec(ctx *task.TaskContext) error
-}
+type (
+	Executor interface {
+		GetTask() task.Task
+		SetTask(task task.Task)
+		GetTaskID() string
+		GetTargetType() string
+		GetTaskConfig() *packets.TaskConfig
+		Exec(ctx *task.TaskContext) error
+	}
 
-type Exec func(ctx *task.TaskContext) error
+	Exec func(ctx *task.TaskContext) error
 
-type TaskConfig struct {
-	TaskID     string
-	TaskType   string
-	IsRun      bool
-	Handler    task.TaskHandle `json:"-"`
-	DueTime    int64
-	Interval   int64
-	Express    string
-	TargetType string
-	TaskData   interface{}
-}
+	baseExecutor struct {
+		Task       task.Task
+		TaskConfig *packets.TaskConfig
+	}
+)
 
-type baseExecutor struct {
-	Task           task.Task
-	baseTaskConfig *TaskConfig
-}
+var ErrorNotMatchConfigType = errors.New("not match config type")
 
 func (exec *baseExecutor) GetTask() task.Task {
 	return exec.Task
@@ -50,42 +42,21 @@ func (exec *baseExecutor) SetTask(task task.Task) {
 }
 
 func (exec *baseExecutor) GetTaskID() string {
-	return exec.baseTaskConfig.TaskID
+	return exec.TaskConfig.TaskID
 }
 
-func (exec *baseExecutor) GetTaskConfig() *TaskConfig {
-	return exec.baseTaskConfig
+func (exec *baseExecutor) GetTaskConfig() *packets.TaskConfig {
+	return exec.TaskConfig
 }
 
 func (exec *baseExecutor) GetTargetType() string {
-	return exec.baseTaskConfig.TargetType
+	return exec.TaskConfig.TargetType
 }
 
 // ValidateExecType validate the execType is supported
 func ValidateExecType(execType string) bool {
-	if execType != HttpType && execType != GoSoType && execType != ShellType {
+	if execType != TargetType_Http && execType != TargetType_GoSo && execType != TargetType_Shell {
 		return false
 	}
 	return true
-}
-
-func ConvertRealTaskConfig(taskConfig *TaskConfig) (interface{}, error) {
-	jsonStr, err := json.Marshal(taskConfig)
-	if err != nil {
-		return nil, err
-	}
-	if taskConfig.TargetType == HttpType {
-		conf := &HttpTaskConfig{}
-		err := json.Unmarshal([]byte(jsonStr), conf)
-		return conf, err
-	} else if taskConfig.TargetType == ShellType {
-		conf := &HttpTaskConfig{}
-		err := json.Unmarshal([]byte(jsonStr), conf)
-		return conf, err
-	} else if taskConfig.TargetType == ShellType {
-		conf := &HttpTaskConfig{}
-		err := json.Unmarshal([]byte(jsonStr), conf)
-		return conf, err
-	}
-	return nil, errors.New("not support target type: " + taskConfig.TaskType)
 }

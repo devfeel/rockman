@@ -1,7 +1,7 @@
 package packets
 
 type SubmitInfo struct {
-	ExecutorConfig interface{}
+	TaskConfig     *TaskConfig
 	Worker         *NodeInfo
 	DistributeType int ``
 }

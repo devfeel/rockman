@@ -10,22 +10,24 @@ import (
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
 	"github.com/devfeel/rockman/runtime/executor"
+	"sync"
 	"time"
 )
 
 type (
 	Node struct {
-		NodeId           string
-		NodeName         string
-		IsLeader         bool
-		Status           int
-		Config           *NodeConfig
-		profile          *config.Profile
-		submitList       map[string]*packets.SubmitInfo
-		submitQueue      chan *packets.SubmitInfo
-		submitRetryQueue chan *packets.SubmitInfo
-		Cluster          *cluster.Cluster
-		Runtime          *runtime.Runtime
+		NodeId             string
+		NodeName           string
+		IsLeader           bool
+		Status             int
+		Config             *NodeConfig
+		profile            *config.Profile
+		onlineSubmits      map[string]*packets.SubmitInfo
+		onlineSubmitLocker *sync.RWMutex
+		submitQueue        chan *packets.SubmitInfo
+		submitRetryQueue   chan *packets.SubmitInfo
+		Cluster            *cluster.Cluster
+		Runtime            *runtime.Runtime
 	}
 
 	NodeConfig struct {
@@ -46,12 +48,13 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	logger.Node().Debug("Node {" + profile.Node.NodeId + "} start...")
 
 	node := &Node{
-		NodeId:           profile.Node.NodeId,
-		NodeName:         profile.Node.NodeName,
-		submitList:       make(map[string]*packets.SubmitInfo),
-		submitQueue:      make(chan *packets.SubmitInfo),
-		submitRetryQueue: make(chan *packets.SubmitInfo),
-		profile:          profile,
+		NodeId:             profile.Node.NodeId,
+		NodeName:           profile.Node.NodeName,
+		onlineSubmits:      make(map[string]*packets.SubmitInfo),
+		onlineSubmitLocker: new(sync.RWMutex),
+		submitQueue:        make(chan *packets.SubmitInfo),
+		submitRetryQueue:   make(chan *packets.SubmitInfo),
+		profile:            profile,
 	}
 
 	nodeInfo := node.getNodeInfo()
@@ -134,7 +137,7 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 		return ErrorCanNotSubmitToNotLeaderNode
 	}
 	n.submitQueue <- submit
-	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.ExecutorConfig) + "] into queue success")
+	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.TaskConfig) + "] into queue success")
 	//TODO log submit to db log
 	return nil
 }
@@ -228,7 +231,7 @@ func (n *Node) distributeSubmit() {
 
 			//submit executor to the specified worker node
 			rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
-			err, reply := rpcClient.CallRegisterExecutor(submit.ExecutorConfig)
+			err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
 			if err != nil {
 				n.submitRetryQueue <- submit
 				logger.Node().DebugS("distributeSubmit into retry queue, error:", err.Error())
@@ -239,12 +242,19 @@ func (n *Node) distributeSubmit() {
 					logger.Node().DebugS("distributeSubmit into retry queue, failed:", reply.RetCode)
 					//TODO log submit result to db log
 				} else {
-					n.Cluster.Scheduler.AddJobInfo(worker.EndPoint(), 1)
+
+					n.Cluster.Scheduler.AddOnlineSubmit(submit)
 					//TODO log submit result to db log
 				}
 			}
 		}
 	}
+}
+
+func (n *Node) addOnlineSubmit(submit *packets.SubmitInfo) {
+	n.onlineSubmitLocker.Lock()
+	defer n.onlineSubmitLocker.Unlock()
+	n.onlineSubmits[submit.TaskConfig.TaskID] = submit
 }
 
 // initConfig init node config from config profile
@@ -293,21 +303,6 @@ func registerDemoExecutors(r *runtime.Runtime) {
 		logger.Node().Error(err, "service.CreateCronTask {shell.exec} error!")
 	}
 	logger.Node().Debug("Register Demo Executors Success!")
-}
-
-func loadHttpTaskConfigs() []*executor.HttpTaskConfig {
-	//TODO load http task config from mysql
-	return []*executor.HttpTaskConfig{}
-}
-
-func loadShellTaskConfigs() []*executor.ShellTaskConfig {
-	//TODO load shell task config from mysql
-	return []*executor.ShellTaskConfig{}
-}
-
-func loadGoTaskConfigs() []*executor.GoTaskConfig {
-	//TODO load go task config from mysql
-	return []*executor.GoTaskConfig{}
 }
 
 func getLeaderKey(clusterId string) string {

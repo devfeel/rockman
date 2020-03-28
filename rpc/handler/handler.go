@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/packets"
-	"github.com/devfeel/rockman/runtime/executor"
 	"strconv"
 )
 
@@ -75,32 +73,18 @@ func (h *RpcHandler) SubmitExecutor(submit *packets.SubmitInfo, result *packets.
 }
 
 // RegisterExecutor register executor to runtime in worker node
-func (h *RpcHandler) RegisterExecutor(config interface{}, result *packets.JsonResult) error {
+func (h *RpcHandler) RegisterExecutor(config *packets.TaskConfig, result *packets.JsonResult) error {
 	logTitle := "RpcServer.RegisterExecutor: "
 	if !h.getNode().Config.IsWorker {
 		logger.Default().Warn("unworker node can not register executor")
-		*result = packets.JsonResult{-1001, "unworker node can not register executor", nil}
+		*result = packets.JsonResult{RetCode: -1001, RetMsg: "unworker node can not register executor"}
 		return nil
 	}
 
-	taskConfig := &executor.TaskConfig{}
-	err := mapper.MapperMap(config.(map[string]interface{}), taskConfig)
-	if err != nil {
-		logger.Default().Error(err, logTitle+"mapper config to TaskConfig error:"+err.Error())
-		*result = packets.JsonResult{-2001, "mapper config to TaskConfig error:" + err.Error(), nil}
-		return nil
-	}
-	realTaskConfig, err := executor.ConvertRealTaskConfig(taskConfig)
-	if err != nil {
-		logger.Default().Error(err, logTitle+"convert real task config err:"+err.Error())
-		*result = packets.JsonResult{-2002, "convert real task config err:" + err.Error(), nil}
-		return nil
-	}
-
-	exec, err := h.getNode().Runtime.CreateExecutor(taskConfig.TaskID, taskConfig.TargetType, realTaskConfig)
+	exec, err := h.getNode().Runtime.CreateExecutor(config)
 	if err != nil {
 		logger.Default().Error(err, logTitle+"CreateExecutor error:"+err.Error())
-		*result = packets.JsonResult{-9001, "CreateExecutor error:" + err.Error(), nil}
+		*result = packets.JsonResult{RetCode: -9001, RetMsg: "CreateExecutor error:" + err.Error()}
 		return nil
 	} else {
 		if exec.GetTaskConfig().IsRun {
@@ -192,7 +176,7 @@ func (h *RpcHandler) QueryExecutorConfig(taskId string, result *packets.JsonResu
 			*result = packets.JsonResult{-1001, "not exists this taskId", nil}
 		} else {
 			logger.Default().Debug(logTitle + "success")
-			configs = make(map[string]executor.TaskConfig)
+			configs = make(map[string]packets.TaskConfig)
 			configs[taskId] = exec
 			*result = packets.JsonResult{0, "ok", configs}
 		}

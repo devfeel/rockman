@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"errors"
+	"github.com/devfeel/rockman/packets"
 	"sort"
 	"sync"
 )
@@ -15,8 +16,10 @@ const (
 
 type (
 	Scheduler struct {
-		resources      map[string]*ResourceInfo
-		resourceLocker *sync.RWMutex
+		resources          map[string]*ResourceInfo
+		resourceLocker     *sync.RWMutex
+		onlineSubmits      map[string]*packets.SubmitInfo
+		onlineSubmitLocker *sync.RWMutex
 	}
 )
 
@@ -27,30 +30,40 @@ func NewScheduler() *Scheduler {
 	scheduler := new(Scheduler)
 	scheduler.resources = make(map[string]*ResourceInfo)
 	scheduler.resourceLocker = new(sync.RWMutex)
+	scheduler.onlineSubmits = make(map[string]*packets.SubmitInfo)
+	scheduler.onlineSubmitLocker = new(sync.RWMutex)
+
 	return scheduler
 }
 
-// AddJobInfo add job info with endPoint
-func (s *Scheduler) AddJobInfo(endPoint string, jobCount int) {
-	defer s.resourceLocker.Unlock()
+// AddOnlineSubmit add submit info which is online
+func (s *Scheduler) AddOnlineSubmit(submit *packets.SubmitInfo) {
+
 	s.resourceLocker.Lock()
+	endPoint := submit.Worker.EndPoint()
 	resource, isExists := s.resources[endPoint]
 	if !isExists {
-		resource := &ResourceInfo{EndPoint: endPoint, JobCount: jobCount}
+		resource := &ResourceInfo{EndPoint: endPoint, TaskCount: 1}
 		resource.refreshLoadValue()
 		s.resources[endPoint] = resource
 	} else {
-		resource.JobCount += 1
+		resource.TaskCount += 1
 		resource.refreshLoadValue()
 		s.resources[endPoint] = resource
 	}
+	s.resourceLocker.Unlock()
+
+	s.onlineSubmitLocker.Lock()
+	s.onlineSubmits[submit.TaskConfig.TaskID] = submit
+	s.onlineSubmitLocker.Unlock()
+
 }
 
 // RefreshResource refresh resource value
 func (s *Scheduler) SetResource(endPoint string, cpuRate int, memoryRate int, jobCount int) {
 	defer s.resourceLocker.Unlock()
 	s.resourceLocker.Lock()
-	resource := &ResourceInfo{EndPoint: endPoint, CpuRate: cpuRate, MemoryRate: memoryRate, JobCount: jobCount}
+	resource := &ResourceInfo{EndPoint: endPoint, CpuRate: cpuRate, MemoryRate: memoryRate, TaskCount: jobCount}
 	resource.refreshLoadValue()
 	s.resources[endPoint] = resource
 }

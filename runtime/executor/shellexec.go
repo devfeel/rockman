@@ -4,21 +4,23 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/packets"
 	"os/exec"
 )
 
-type ShellTaskConfig struct {
-	TaskConfig
-	ShellFile string
-}
+type (
+	ShellConfig struct {
+		FileName string
+	}
 
-type ShellExecutor struct {
-	baseExecutor
-	TaskConfig *ShellTaskConfig
-}
+	ShellExecutor struct {
+		baseExecutor
+	}
+)
 
 func NewDebugShellExecutor(taskID string) Executor {
-	conf := &ShellTaskConfig{}
+	conf := &packets.TaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -26,21 +28,30 @@ func NewDebugShellExecutor(taskID string) Executor {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = "shell.sh"
+	conf.TargetType = TargetType_Shell
+	conf.TargetConfig = &ShellConfig{
+		FileName: "demo.sh",
+	}
 	return NewShellExecutor(conf)
 }
 
-func NewShellExecutor(conf *ShellTaskConfig) *ShellExecutor {
+func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
 	exec := new(ShellExecutor)
-	conf.TargetType = ShellType
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
-	exec.baseTaskConfig = &conf.TaskConfig
 	return exec
 }
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
-	fmt.Println("ShellExecutor exec", exec.TaskConfig.TaskID)
-	result, err := execShell(exec.TaskConfig.ShellFile)
+	logTitle := "ShellExecutor [" + exec.GetTaskID() + "] "
+	conf, isOk := exec.TaskConfig.TargetConfig.(*ShellConfig)
+	if !isOk {
+		logger.Runtime().Error(ErrorNotMatchConfigType, logTitle+"convert config error")
+		return ErrorNotMatchConfigType
+	}
+	fmt.Println("ShellExecutor exec", *conf)
+	return nil
+	result, err := execShell(conf.FileName)
 	//TODO log exec result
 	//1.file
 	//2.mysql

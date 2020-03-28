@@ -5,7 +5,7 @@ type (
 		EndPoint   string
 		CpuRate    int //cpu rate, refresh per 1 minute
 		MemoryRate int //memory rate, refresh per 1 minute
-		JobCount   int //job count
+		TaskCount  int //job count
 		LoadValue  int //load value = cpu * 30 + memory * 30 + jobs * 40
 	}
 
@@ -17,7 +17,7 @@ type (
 
 // refreshLoadValue refresh resource's load value
 func (r *ResourceInfo) refreshLoadValue() int {
-	r.LoadValue = r.CpuRate*30 + r.MemoryRate*30 + r.JobCount*40
+	r.LoadValue = r.CpuRate*30 + r.MemoryRate*30 + r.TaskCount*40
 	return r.LoadValue
 }
 
@@ -55,7 +55,7 @@ func (rs JobResources) Len() int {
 	return len(rs)
 }
 func (rs JobResources) Less(i, j int) bool {
-	return rs[i].JobCount > rs[j].JobCount
+	return rs[i].TaskCount > rs[j].TaskCount
 }
 func (rs JobResources) Swap(i, j int) {
 	rs[i], rs[j] = rs[j], rs[i]

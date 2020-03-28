@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/runtime/executor"
 )
 
@@ -37,14 +38,14 @@ func (r *Runtime) Start() {
 
 // CreateCronExecutor create new cron executor and register to task service
 // now support http\shell\go.so
-func (r *Runtime) CreateExecutor(target string, targetType string, taskConf interface{}) (executor.Executor, error) {
+func (r *Runtime) CreateExecutor(taskConf *packets.TaskConfig) (executor.Executor, error) {
 	var exec executor.Executor
-	if targetType == executor.HttpType {
-		exec = executor.NewHttpExecutor(taskConf.(*executor.HttpTaskConfig))
-	} else if targetType == executor.ShellType {
-		exec = executor.NewShellExecutor(taskConf.(*executor.ShellTaskConfig))
-	} else if targetType == executor.ShellType {
-		exec = executor.NewGoExecutor(taskConf.(*executor.GoTaskConfig))
+	if taskConf.TargetType == executor.TargetType_Http {
+		exec = executor.NewHttpExecutor(taskConf)
+	} else if taskConf.TargetType == executor.TargetType_Shell {
+		exec = executor.NewShellExecutor(taskConf)
+	} else if taskConf.TargetType == executor.TargetType_GoSo {
+		exec = executor.NewGoExecutor(taskConf)
 	}
 
 	err := r.RegisterExecutor(exec)
@@ -88,15 +89,15 @@ func (r *Runtime) RemoveExecutor(taskId string) error {
 	return nil
 }
 
-func (r *Runtime) QueryAllExecutorConfig() map[string]executor.TaskConfig {
-	confs := make(map[string]executor.TaskConfig)
+func (r *Runtime) QueryAllExecutorConfig() map[string]packets.TaskConfig {
+	confs := make(map[string]packets.TaskConfig)
 	for key, value := range r.Executors {
 		confs[key] = *value.GetTaskConfig()
 	}
 	return confs
 }
 
-func convertToDotTaskConfig(conf *executor.TaskConfig) task.TaskConfig {
+func convertToDotTaskConfig(conf *packets.TaskConfig) task.TaskConfig {
 	return task.TaskConfig{
 		TaskID:   conf.TaskID,
 		TaskType: conf.TaskType,

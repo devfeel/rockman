@@ -50,7 +50,7 @@ func TestRpcClient_CallQueryNodes(t *testing.T) {
 
 func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	client := getRpcClient()
-	conf := &executor.HttpTaskConfig{}
+	conf := &packets.TaskConfig{}
 	conf.TaskID = "TestRpcClient-http-debug"
 	conf.TaskType = "cron"
 	conf.TargetType = "http"
@@ -59,6 +59,9 @@ func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = "http-url"
+	conf.TargetConfig = &executor.HttpConfig{
+		Url: "http://www.baidu.com",
+	}
 
 	err, result := client.CallRegisterExecutor(conf)
 	if err != nil {

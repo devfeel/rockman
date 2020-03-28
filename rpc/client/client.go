@@ -74,7 +74,7 @@ func (c *RpcClient) CallQueryNodes(pageInfo *packets.PageInfo) (error, *packets.
 	return nil, &reply
 }
 
-func (c *RpcClient) CallRegisterExecutor(conf interface{}) (error, *packets.JsonResult) {
+func (c *RpcClient) CallRegisterExecutor(conf *packets.TaskConfig) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
