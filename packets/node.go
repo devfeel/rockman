@@ -2,7 +2,7 @@ package packets
 
 import jsonutil "github.com/devfeel/rockman/util/json"
 
-const NodeKeyPrefix = "devfeel/rockman:nodekey:"
+const NodeKeyPrefix = "devfeel/rockman/nodekey/"
 
 type NodeInfo struct {
 	NodeID   string

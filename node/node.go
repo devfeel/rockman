@@ -75,8 +75,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	//init cluster
 	cluster, err := cluster.NewCluster(
 		profile.Cluster.ClusterId,
-		profile.Cluster.RegistryServer,
-		getLeaderKey(profile.Cluster.ClusterId))
+		profile.Cluster.RegistryServer)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +127,7 @@ func (n *Node) Start() error {
 }
 
 func (n *Node) ElectionLeader() {
-	logTitle := "Node ElectionLeader "
+	logTitle := "Node election leader "
 	var retryCount int
 	limit := n.profile.Global.RetryLimit
 	for {
@@ -353,8 +352,4 @@ func registerDemoExecutors(r *runtime.Runtime) {
 		logger.Node().Error(err, "service.CreateCronTask {shell.exec} error!")
 	}
 	logger.Node().Debug("Register Demo Executors Success!")
-}
-
-func getLeaderKey(clusterId string) string {
-	return "devfeel/rockman:" + clusterId + ":leader:locker"
 }

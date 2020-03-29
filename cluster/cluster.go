@@ -3,11 +3,11 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"github.com/devfeel/rockman/cluster/consul"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/scheduler"
-	"github.com/devfeel/rockman/util/consul"
 	"github.com/hashicorp/consul/api"
 	"sync"
 	"time"
@@ -34,11 +34,11 @@ type (
 )
 
 // NewCluster new cluster and reg server
-func NewCluster(clusterId string, registryServer string, leaderKey string) (*Cluster, error) {
+func NewCluster(clusterId string, registryServer string) (*Cluster, error) {
 	cluster := new(Cluster)
 	cluster.ClusterId = clusterId
 	cluster.RegistryServerUrl = registryServer
-	cluster.LeaderKey = leaderKey
+	cluster.LeaderKey = getLeaderKey(clusterId)
 	regClient, err := consul.NewConsulClient(registryServer)
 	if err != nil {
 		logger.Node().Debug(fmt.Sprint("Cluster init error", err.Error()))
@@ -258,4 +258,8 @@ func (c *Cluster) watchLeaderChange() error {
 	}
 
 	return nil
+}
+
+func getLeaderKey(clusterId string) string {
+	return "devfeel/rockman/" + clusterId + "/leader/locker"
 }
