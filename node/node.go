@@ -251,7 +251,7 @@ func (n *Node) addOnlineSubmit(submit *packets.SubmitInfo) {
 }
 
 // onLeaderChange do something when leader is changed
-func (n *Node) onLeaderChange(leader string) {
+func (n *Node) onLeaderChange() {
 	err := n.registerNode()
 	if err != nil {
 		logger.Node().DebugS("Node.onLeaderChange registerNode error:", err.Error())
@@ -259,7 +259,7 @@ func (n *Node) onLeaderChange(leader string) {
 		logger.Node().Debug("Node.onLeaderChange registerNode success")
 	}
 	if n.IsLeader {
-		if leader != n.Config.RpcServer {
+		if n.Cluster.LeaderServer != n.Config.RpcServer {
 			n.removeLeaderRole()
 		}
 	}

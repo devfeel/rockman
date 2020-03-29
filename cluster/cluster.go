@@ -15,23 +15,25 @@ import (
 
 type (
 	Cluster struct {
-		ClusterId             string
-		RegistryServerUrl     string
-		RegistryClient        *consul.ConsulClient
-		LeaderKey             string
-		LeaderServer          string
-		leaderLastIndex       uint64
-		lastGetLeaderInfoTime time.Time
-		OnLeaderChange        LeaderChangeHandle
-		Nodes                 map[string]*packets.NodeInfo
-		nodesLastIndex        uint64
-		nodesLocker           *sync.RWMutex
-		rpcClients            map[string]*client.RpcClient
-		rpcClientLocker       *sync.RWMutex
-		Scheduler             *scheduler.Scheduler
+		ClusterId         string
+		RegistryServerUrl string
+		RegistryClient    *consul.ConsulClient
+		LeaderKey         string
+		LeaderServer      string
+		leaderLastIndex   uint64
+		lastGetLeaderTime time.Time
+		OnLeaderChange    WatchChangeHandle
+		Nodes             map[string]*packets.NodeInfo
+		nodesLastIndex    uint64
+		nodesLocker       *sync.RWMutex
+		OnNodesChange     WatchChangeHandle
+		lastLoadNodesTime time.Time
+		rpcClients        map[string]*client.RpcClient
+		rpcClientLocker   *sync.RWMutex
+		Scheduler         *scheduler.Scheduler
 	}
 
-	LeaderChangeHandle func(leader string)
+	WatchChangeHandle func()
 )
 
 // NewCluster new cluster and reg server
@@ -133,7 +135,7 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 		} else {
 			c.LeaderServer = string(kvPair.Value)
 			c.leaderLastIndex = meta.LastIndex
-			c.lastGetLeaderInfoTime = time.Now()
+			c.lastGetLeaderTime = time.Now()
 			go c.watchLeaderChange()
 			logger.Cluster().Debug("Cluster.GetLeaderInfo success [" + c.LeaderServer + "]")
 			return c.LeaderServer, nil
@@ -226,6 +228,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 			node.IsOnline = true
 		}
 	}
+	c.lastLoadNodesTime = time.Now()
 }
 
 // watchLeaderChange
@@ -256,9 +259,9 @@ func (c *Cluster) watchLeaderChange() error {
 			logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader change.")
 			c.leaderLastIndex = meta.LastIndex
 			c.LeaderServer = string(kvPair.Value)
-			c.lastGetLeaderInfoTime = time.Now()
+			c.lastGetLeaderTime = time.Now()
 			if c.OnLeaderChange != nil {
-				c.OnLeaderChange(c.LeaderServer)
+				c.OnLeaderChange()
 			}
 		}
 	}
@@ -293,6 +296,9 @@ func (c *Cluster) watchOnlineNodesChange() error {
 			logger.Cluster().Debug("Cluster.watchNodesChange success. there were some nodes change.")
 			c.nodesLastIndex = meta.LastIndex
 			c.refreshOnlineNodes(nodeKVs)
+			if c.OnNodesChange != nil {
+				c.OnNodesChange()
+			}
 		}
 	}
 
