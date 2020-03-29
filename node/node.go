@@ -11,6 +11,7 @@ import (
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
 	"github.com/devfeel/rockman/runtime/executor"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -71,11 +72,16 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		return nil, err
 	}
 
-	//init Registry
-	cluster, err := cluster.NewCluster(profile.Cluster.ClusterId, profile.Cluster.RegistryServer, getLeaderKey(profile.Cluster.ClusterId))
+	//init cluster
+	cluster, err := cluster.NewCluster(
+		profile.Cluster.ClusterId,
+		profile.Cluster.RegistryServer,
+		getLeaderKey(profile.Cluster.ClusterId))
 	if err != nil {
 		return nil, err
 	}
+	cluster.OnLeaderChange = node.onLeaderChange
+
 	node.Cluster = cluster
 
 	if node.Config.IsMaster {
@@ -94,9 +100,9 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	go func() {
 		err := node.Cluster.CreateSession(nodeKey, nodeInfo)
 		if err != nil {
-			logger.Node().Debug("Node {" + node.NodeId + "} create session to registry error: " + err.Error())
+			logger.Node().Debug("Node create session to registry error: " + err.Error())
 		} else {
-			logger.Node().Debug("Node {" + node.NodeId + "} create session to registry success with key {" + nodeKey + "}")
+			logger.Node().Debug("Node create session to registry success with key {" + nodeKey + "}")
 		}
 	}()
 
@@ -116,24 +122,32 @@ func (n *Node) Start() error {
 	}
 
 	// register node to cluster
-	err := n.registerNode(n.getNodeInfo())
+	err := n.registerNode()
 
 	return err
 }
 
-func (n *Node) ElectionLeader() error {
-	isLeader, err := n.Cluster.ElectionLeader(n.Config.RpcServer, "")
-	if err == nil {
-		n.IsLeader = isLeader
-	} else {
-		logger.Node().Error(err, "Node {"+n.NodeId+"} election leader role with key {"+n.Cluster.LeaderKey+"} error:"+err.Error())
+func (n *Node) ElectionLeader() {
+	logTitle := "Node ElectionLeader "
+	var retryCount int
+	limit := n.profile.Global.RetryLimit
+	for {
+		if retryCount > limit {
+			err := errors.New(logTitle + "retry count bigger than " + strconv.Itoa(limit) + ", now stop it.")
+			logger.Node().DebugS(logTitle + "error:" + err.Error())
+			return
+		}
+		retryCount += 1
+
+		err := n.Cluster.ElectionLeader(n.Config.RpcServer, "")
+		if err == nil {
+			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
+			n.becomeLeaderRole()
+		} else {
+			logger.Node().Error(err, logTitle+"error")
+		}
 	}
 
-	if n.IsLeader {
-		//TODO do something when change to leader
-		logger.Node().Debug("Node {" + n.NodeId + "} election leader role success with key {" + n.Cluster.LeaderKey + "}")
-	}
-	return nil
 }
 
 func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
@@ -147,16 +161,17 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 }
 
 // registerNode register node to cluster
-func (n *Node) registerNode(nodeInfo *packets.NodeInfo) error {
-	logTitle := "Node {" + n.NodeId + "} registerNode "
+func (n *Node) registerNode() error {
+	logTitle := "Node registerNode "
 	var leaderServer string
 	var err error
 	var retryCount int
+	nodeInfo := n.getNodeInfo()
 
 RegisterNode:
 	for {
 		if retryCount > n.profile.Global.RetryLimit {
-			err = errors.New(logTitle + "retry count bigger than 5, now stop it.")
+			err = errors.New(logTitle + "retry count bigger than 5, now stop it")
 			logger.Node().DebugS(logTitle + "error: " + err.Error())
 			return err
 		}
@@ -164,19 +179,19 @@ RegisterNode:
 		// get leader info
 		leaderServer, err = n.Cluster.GetLeaderInfo()
 		if err != nil {
-			logger.Cluster().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
+			logger.Node().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
 			time.Sleep(time.Second * 10)
 			continue RegisterNode
 		} else {
 			rpcClient := client.NewRpcClient(leaderServer)
 			err, result := rpcClient.CallRegisterNode(nodeInfo)
 			if err != nil {
-				logger.Cluster().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				logger.Node().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			}
 			if result.RetCode != result.CorrectCode() {
-				logger.Cluster().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				logger.Node().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			}
@@ -189,23 +204,24 @@ RegisterNode:
 
 // refreshNodes refresh node state from Registry
 func (n *Node) refreshNodes() {
-	logTitle := "Node {" + n.NodeId + "} refreshNodes "
-	for {
+	logTitle := "Node refreshNodes "
+	doRefresh := func() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
 				logger.Node().Error(errInfo, logTitle+"error")
 			}
 		}()
-		for {
-			time.Sleep(time.Minute)
-			err := n.Cluster.RefreshNodes()
-			if err == nil {
-				logger.Node().Debug(logTitle + "success")
-			} else {
-				logger.Node().Debug(logTitle + "error: " + err.Error())
-			}
+		err := n.Cluster.RefreshNodes()
+		if err == nil {
+			logger.Node().Debug(logTitle + "success")
+		} else {
+			logger.Node().Debug(logTitle + "error: " + err.Error())
 		}
+	}
+	for {
+		time.Sleep(time.Minute)
+		doRefresh()
 	}
 }
 
@@ -259,6 +275,36 @@ func (n *Node) addOnlineSubmit(submit *packets.SubmitInfo) {
 	n.onlineSubmitLocker.Lock()
 	defer n.onlineSubmitLocker.Unlock()
 	n.onlineSubmits[submit.TaskConfig.TaskID] = submit
+}
+
+// onLeaderChange do something when leader is changed
+func (n *Node) onLeaderChange(leader string) {
+	err := n.registerNode()
+	if err != nil {
+		logger.Node().DebugS("Node.onLeaderChange registerNode error:", err.Error())
+	} else {
+		logger.Node().Debug("Node.onLeaderChange registerNode success")
+	}
+	if n.IsLeader {
+		if leader != n.Config.RpcServer {
+			n.removeLeaderRole()
+		}
+	}
+}
+
+func (n *Node) becomeLeaderRole() {
+	logTitle := "Node "
+	//TODO do something when become to leader
+	logger.Node().Debug(logTitle + "become to leader role")
+	n.IsLeader = true
+
+}
+
+func (n *Node) removeLeaderRole() {
+	logTitle := "Node "
+	//TODO do something when become to not leader
+	logger.Node().Debug(logTitle + "remove leader role")
+	n.IsLeader = false
 }
 
 // initConfig init node config from config profile

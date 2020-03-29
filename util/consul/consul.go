@@ -81,17 +81,17 @@ func (c *ConsulClient) SearchService(addr string, serviceName string, tag string
 	return appServices, nil
 }
 
-func (c *ConsulClient) Get(key string) (*consulapi.KVPair, error) {
+func (c *ConsulClient) Get(key string, opt *consulapi.QueryOptions) (*consulapi.KVPair, *consulapi.QueryMeta, error) {
 	client := c.GetClient()
 
-	kvPair, _, err := client.KV().Get(key, nil)
+	kvPair, meta, err := client.KV().Get(key, opt)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if kvPair == nil {
-		return nil, ErrorNotExistsKey
+		return nil, nil, ErrorNotExistsKey
 	}
-	return kvPair, nil
+	return kvPair, meta, nil
 }
 
 func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*ConsulLocker, error) {

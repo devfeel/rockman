@@ -20,13 +20,17 @@ type (
 		RegistryClient        *consul.ConsulClient
 		LeaderKey             string
 		LeaderServer          string
+		leaderLastIndex       uint64
 		lastGetLeaderInfoTime time.Time
+		OnLeaderChange        LeaderChangeHandle
 		Nodes                 map[string]*packets.NodeInfo
 		nodeLocker            *sync.RWMutex
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
 		Scheduler             *scheduler.Scheduler
 	}
+
+	LeaderChangeHandle func(leader string)
 )
 
 // NewCluster new cluster and reg server
@@ -53,7 +57,7 @@ func NewCluster(clusterId string, registryServer string, leaderKey string) (*Clu
 }
 
 // electionLeader election leader role to registry server
-func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, error) {
+func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) error {
 	opts := &api.LockOptions{
 		Key:   c.LeaderKey,
 		Value: []byte(leaderServer),
@@ -65,14 +69,14 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) (bool, er
 	}
 	locker, err := c.RegistryClient.CreateLockerOpts(opts)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	_, err = locker.Locker.Lock(nil)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
 // CreateSession create session to registry with node info
@@ -135,20 +139,23 @@ func (c *Cluster) RefreshNodes() error {
 
 // GetLeaderInfo get leader info from leader key
 // must check is locked by leader session
-// cache in memory with 1 minute
+// leader changed by watchLeaderChange
 func (c *Cluster) GetLeaderInfo() (string, error) {
-	if c.LeaderServer != "" && time.Now().Sub(c.lastGetLeaderInfoTime) < time.Minute {
+	if c.LeaderServer != "" {
 		return c.LeaderServer, nil
 	}
-	kvPair, err := c.RegistryClient.Get(c.LeaderKey)
+	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, nil)
 	if err != nil {
 		return "", err
 	} else {
 		if kvPair.Session == "" {
-			return "", errors.New("no leader info exists")
+			return "", errors.New("lock session is nil")
 		} else {
 			c.LeaderServer = string(kvPair.Value)
+			c.leaderLastIndex = meta.LastIndex
 			c.lastGetLeaderInfoTime = time.Now()
+			go c.watchLeaderChange()
+			logger.Cluster().Debug("Cluster.GetLeaderInfo success [" + c.LeaderServer + "]")
 			return c.LeaderServer, nil
 		}
 	}
@@ -210,4 +217,45 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 3 times.")
 	return nil, errors.New("no match resource with worker")
+}
+
+// watchLeaderChange
+func (c *Cluster) watchLeaderChange() error {
+	logger.Cluster().Debug("Cluster.watchLeaderChange start.")
+	doQuery := func() {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, "Cluster.watchLeaderChange error")
+			}
+		}()
+
+		opt := &api.QueryOptions{
+			WaitIndex: c.leaderLastIndex,
+			WaitTime:  time.Minute * 10,
+		}
+		kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+		if err != nil {
+			logger.Cluster().DebugS("Cluster.watchLeaderChange error:", err.Error())
+			return
+		}
+		if kvPair.Session == "" {
+			logger.Cluster().DebugS("Cluster.watchLeaderChange error: lock session is nil")
+			return
+		}
+		if meta.LastIndex != c.leaderLastIndex {
+			c.leaderLastIndex = meta.LastIndex
+			c.LeaderServer = string(kvPair.Value)
+			c.lastGetLeaderInfoTime = time.Now()
+			if c.OnLeaderChange != nil {
+				c.OnLeaderChange(c.LeaderServer)
+			}
+		}
+	}
+
+	for {
+		doQuery()
+	}
+
+	return nil
 }
