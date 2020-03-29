@@ -59,11 +59,8 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		profile:            profile,
 	}
 
-	nodeInfo := node.getNodeInfo()
-	nodeKey := nodeInfo.GetNodeKey(profile.Cluster.ClusterId)
-
 	// sync global node info
-	global.GlobalNode = nodeInfo
+	global.GlobalNode = node.getNodeInfo()
 
 	//init config
 	err := node.initConfig(profile)
@@ -83,19 +80,9 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 	node.Cluster = cluster
 
-	if node.Config.IsMaster {
-		go node.ElectionLeader()
-	}
-
 	if node.Config.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime()
-	}
-
-	// create session with node info
-	err = node.createSession(nodeKey)
-	if err != nil {
-		return nil, err
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -103,14 +90,19 @@ func NewNode(profile *config.Profile) (*Node, error) {
 }
 
 func (n *Node) Start() error {
-	if n.Config.IsWorker {
-		// load self tasks
-		// TODO load self tasks
-		go n.Runtime.Start()
+	// create session with node info
+	err := n.createSession(n.getNodeInfo().GetNodeKey(n.Cluster.ClusterId))
+	if err != nil {
+		return err
 	}
 
-	if n.IsLeader {
+	if n.profile.Node.IsMaster {
+		go n.electionLeader()
 		go n.distributeSubmit()
+	}
+
+	if n.Config.IsWorker {
+		go n.Runtime.Start()
 	}
 
 	if n.profile.Node.IsMaster {
@@ -118,12 +110,23 @@ func (n *Node) Start() error {
 	}
 
 	// register node to cluster
-	err := n.registerNode()
+	err = n.registerNode()
 
 	return err
 }
 
-func (n *Node) ElectionLeader() {
+func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
+	if !n.IsLeader {
+		return ErrorCanNotSubmitToNotLeaderNode
+	}
+	n.submitQueue <- submit
+	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.TaskConfig) + "] into queue success")
+	//TODO log submit to db log
+	return nil
+}
+
+// electionLeader
+func (n *Node) electionLeader() {
 	logTitle := "Node election leader "
 	var retryCount int
 	limit := n.profile.Global.RetryLimit
@@ -144,16 +147,6 @@ func (n *Node) ElectionLeader() {
 		}
 	}
 
-}
-
-func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
-	if !n.IsLeader {
-		return ErrorCanNotSubmitToNotLeaderNode
-	}
-	n.submitQueue <- submit
-	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.TaskConfig) + "] into queue success")
-	//TODO log submit to db log
-	return nil
 }
 
 // registerNode register node to cluster
@@ -200,50 +193,53 @@ RegisterNode:
 
 // distributeSubmit distribute submit from queue, send to worker node
 func (n *Node) distributeSubmit() {
-	for {
+	doDistribute := func() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Node().Error(errInfo, "distributeSubmit error")
+				logger.Node().Error(errInfo, "Node distributeSubmit error")
 			}
 		}()
-		for {
-			submit := <-n.submitQueue
-			worker := submit.Worker
-			var err error
 
-			// get low balance worker
-			if worker == nil {
-				worker, err = n.Cluster.GetLowBalanceWorker()
-				if err != nil {
-					logger.Node().Error(err, "GetLowBalanceWorker error")
-					//TODO log submit result to db log
-					return
-				}
-			}
+		submit := <-n.submitQueue
+		worker := submit.Worker
+		var err error
 
-			//submit executor to the specified worker node
-			rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
-			err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
+		// get low balance worker
+		if worker == nil {
+			worker, err = n.Cluster.GetLowBalanceWorker()
 			if err != nil {
+				logger.Node().Error(err, "Node distributeSubmit GetLowBalanceWorker error")
+				//TODO log submit result to db log
+				return
+			}
+		}
+
+		//submit executor to the specified worker node
+		rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
+		err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
+		if err != nil {
+			n.submitRetryQueue <- submit
+			logger.Node().DebugS("Node distributeSubmit into retry queue, error:", err.Error())
+			//TODO log submit result to db log
+		} else {
+			if reply.RetCode != reply.CorrectCode() {
 				n.submitRetryQueue <- submit
-				logger.Node().DebugS("distributeSubmit into retry queue, error:", err.Error())
+				logger.Node().DebugS("Node distributeSubmit into retry queue, failed:", reply.RetCode)
 				//TODO log submit result to db log
 			} else {
-				if reply.RetCode != reply.CorrectCode() {
-					n.submitRetryQueue <- submit
-					logger.Node().DebugS("distributeSubmit into retry queue, failed:", reply.RetCode)
-					//TODO log submit result to db log
-				} else {
 
-					n.Cluster.Scheduler.AddOnlineSubmit(submit)
-					//TODO log submit result to db log
-				}
+				n.Cluster.Scheduler.AddOnlineSubmit(submit)
+				//TODO log submit result to db log
 			}
 		}
 	}
+	for {
+		doDistribute()
+	}
 }
 
+// addOnlineSubmit
 func (n *Node) addOnlineSubmit(submit *packets.SubmitInfo) {
 	n.onlineSubmitLocker.Lock()
 	defer n.onlineSubmitLocker.Unlock()
