@@ -84,9 +84,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	node.Cluster = cluster
 
 	if node.Config.IsMaster {
-		// election leader role
 		go node.ElectionLeader()
-
 		go node.refreshNodes()
 	}
 
@@ -96,14 +94,10 @@ func NewNode(profile *config.Profile) (*Node, error) {
 	}
 
 	// create session with node info
-	go func() {
-		err := node.Cluster.CreateSession(nodeKey, nodeInfo)
-		if err != nil {
-			logger.Node().Debug("Node create session to registry error: " + err.Error())
-		} else {
-			logger.Node().Debug("Node create session to registry success with key {" + nodeKey + "}")
-		}
-	}()
+	err = node.createSession(nodeKey)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Node().Debug("Node init success.")
 	return node, err
@@ -289,6 +283,17 @@ func (n *Node) onLeaderChange(leader string) {
 			n.removeLeaderRole()
 		}
 	}
+}
+
+// createSession create session to registry server
+func (n *Node) createSession(nodeKey string) error {
+	err := n.Cluster.CreateSession(nodeKey, n.getNodeInfo())
+	if err != nil {
+		logger.Node().Debug("Node create session error: " + err.Error())
+	} else {
+		logger.Node().Debug("Node create session success with key {" + nodeKey + "}")
+	}
+	return err
 }
 
 func (n *Node) becomeLeaderRole() {
