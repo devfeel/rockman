@@ -24,7 +24,8 @@ type (
 		lastGetLeaderInfoTime time.Time
 		OnLeaderChange        LeaderChangeHandle
 		Nodes                 map[string]*packets.NodeInfo
-		nodeLocker            *sync.RWMutex
+		nodesLastIndex        uint64
+		nodesLocker           *sync.RWMutex
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
 		Scheduler             *scheduler.Scheduler
@@ -47,7 +48,7 @@ func NewCluster(clusterId string, registryServer string) (*Cluster, error) {
 	}
 	cluster.RegistryClient = regClient
 	cluster.Nodes = make(map[string]*packets.NodeInfo)
-	cluster.nodeLocker = new(sync.RWMutex)
+	cluster.nodesLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
@@ -102,38 +103,17 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) erro
 	return nil
 }
 
-// RefreshNodes refresh node state from Registry
-func (c *Cluster) RefreshNodes() error {
-	nodeKVs, _, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix)
+// LoadOnlineNodes load all online nodes from Registry
+func (c *Cluster) LoadOnlineNodes() error {
+	nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, nil)
 	if err != nil {
 		return errors.New("RefreshNodes error: " + err.Error())
 	}
-	nodes := make(map[string]*packets.NodeInfo)
-	for _, s := range nodeKVs {
-		if s.Session == "" {
-			continue
-		}
-		node := new(packets.NodeInfo)
-		if err := node.LoadFromJson(string(s.Value)); err != nil {
-			continue
-		}
-		if node.Cluster != c.ClusterId {
-			continue
-		}
-		nodes[node.EndPoint()] = node
-		if _, exists := c.Nodes[node.EndPoint()]; !exists {
-			c.AddNodeInfo(node)
-		}
-	}
-	c.nodeLocker.Lock()
-	defer c.nodeLocker.Unlock()
-	for _, node := range c.Nodes {
-		if _, exists := nodes[node.EndPoint()]; !exists {
-			node.IsOnline = false
-		} else {
-			node.IsOnline = true
-		}
-	}
+	c.nodesLastIndex = meta.LastIndex
+	c.refreshOnlineNodes(nodeKVs)
+
+	go c.watchOnlineNodesChange()
+
 	return nil
 }
 
@@ -164,8 +144,8 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 // addNodeToList add node into node list
 func (c *Cluster) AddNodeInfo(nodeInfo *packets.NodeInfo) {
 	key := nodeInfo.EndPoint()
-	c.nodeLocker.Lock()
-	defer c.nodeLocker.Unlock()
+	c.nodesLocker.Lock()
+	defer c.nodesLocker.Unlock()
 	//TODO get remote worker's resource
 	c.Scheduler.SetResource(key, 0, 0, 0)
 	c.Nodes[key] = nodeInfo
@@ -191,8 +171,8 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 		return nil, err
 	}
 
-	c.nodeLocker.RLock()
-	defer c.nodeLocker.RUnlock()
+	c.nodesLocker.RLock()
+	defer c.nodesLocker.RUnlock()
 
 	resource := resources[0]
 	rawWorker, isExists := c.Nodes[resource.EndPoint]
@@ -217,6 +197,35 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 3 times.")
 	return nil, errors.New("no match resource with worker")
+}
+
+func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
+	nodes := make(map[string]*packets.NodeInfo)
+	for _, s := range nodeKVs {
+		if s.Session == "" {
+			continue
+		}
+		node := new(packets.NodeInfo)
+		if err := node.LoadFromJson(string(s.Value)); err != nil {
+			continue
+		}
+		if node.Cluster != c.ClusterId {
+			continue
+		}
+		nodes[node.EndPoint()] = node
+		if _, exists := c.Nodes[node.EndPoint()]; !exists {
+			c.AddNodeInfo(node)
+		}
+	}
+	c.nodesLocker.Lock()
+	defer c.nodesLocker.Unlock()
+	for _, node := range c.Nodes {
+		if _, exists := nodes[node.EndPoint()]; !exists {
+			node.IsOnline = false
+		} else {
+			node.IsOnline = true
+		}
+	}
 }
 
 // watchLeaderChange
@@ -244,12 +253,46 @@ func (c *Cluster) watchLeaderChange() error {
 			return
 		}
 		if meta.LastIndex != c.leaderLastIndex {
+			logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader change.")
 			c.leaderLastIndex = meta.LastIndex
 			c.LeaderServer = string(kvPair.Value)
 			c.lastGetLeaderInfoTime = time.Now()
 			if c.OnLeaderChange != nil {
 				c.OnLeaderChange(c.LeaderServer)
 			}
+		}
+	}
+
+	for {
+		doQuery()
+	}
+
+	return nil
+}
+
+// watchOnlineNodesChange
+func (c *Cluster) watchOnlineNodesChange() error {
+	logger.Cluster().Debug("Cluster.watchNodesChange start.")
+	doQuery := func() {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, "Cluster.watchNodesChange error, now will retry it")
+			}
+		}()
+
+		opt := &api.QueryOptions{
+			WaitIndex: c.nodesLastIndex,
+		}
+		nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, opt)
+		if err != nil {
+			logger.Cluster().DebugS("Cluster.watchNodesChange error:", err.Error())
+			return
+		}
+		if meta.LastIndex != c.nodesLastIndex {
+			logger.Cluster().Debug("Cluster.watchNodesChange success. there were some nodes change.")
+			c.nodesLastIndex = meta.LastIndex
+			c.refreshOnlineNodes(nodeKVs)
 		}
 	}
 

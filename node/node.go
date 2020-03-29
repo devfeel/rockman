@@ -85,7 +85,6 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 	if node.Config.IsMaster {
 		go node.ElectionLeader()
-		go node.refreshNodes()
 	}
 
 	if node.Config.IsWorker {
@@ -112,6 +111,10 @@ func (n *Node) Start() error {
 
 	if n.IsLeader {
 		go n.distributeSubmit()
+	}
+
+	if n.profile.Node.IsMaster {
+		n.Cluster.LoadOnlineNodes()
 	}
 
 	// register node to cluster
@@ -193,29 +196,6 @@ RegisterNode:
 	}
 	logger.Node().DebugS(logTitle + "success")
 	return nil
-}
-
-// refreshNodes refresh node state from Registry
-func (n *Node) refreshNodes() {
-	logTitle := "Node refreshNodes "
-	doRefresh := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Node().Error(errInfo, logTitle+"error")
-			}
-		}()
-		err := n.Cluster.RefreshNodes()
-		if err == nil {
-			logger.Node().Debug(logTitle + "success")
-		} else {
-			logger.Node().Debug(logTitle + "error: " + err.Error())
-		}
-	}
-	for {
-		time.Sleep(time.Minute)
-		doRefresh()
-	}
 }
 
 // distributeSubmit distribute submit from queue, send to worker node

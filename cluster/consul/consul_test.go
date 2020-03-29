@@ -3,6 +3,7 @@ package consul
 import (
 	"fmt"
 	"github.com/devfeel/rockman/packets"
+	"github.com/hashicorp/consul/api"
 	"testing"
 	"time"
 )
@@ -44,11 +45,21 @@ func TestConsulClient_ListKV(t *testing.T) {
 		t.Error("create consul client error", err)
 		return
 	}
-	nodeKVs, _, err := client.ListKV(packets.NodeKeyPrefix)
+	nodeKVs, meta, err := client.ListKV(packets.NodeKeyPrefix, nil)
 	if err != nil {
-		fmt.Println("RefreshNodes error: " + err.Error())
+		fmt.Println("RefreshNodes1 error: " + err.Error())
+		return
+	}
+	fmt.Println("RefreshNodes1 LastIndex:", meta.LastIndex)
+	opt := &api.QueryOptions{
+		WaitIndex: meta.LastIndex,
+		WaitTime:  time.Minute * 10,
+	}
+	nodeKVs, meta, err = client.ListKV(packets.NodeKeyPrefix, opt)
+	if err != nil {
+		fmt.Println("RefreshNodes2 error: " + err.Error())
 	}
 	for _, s := range nodeKVs {
-		fmt.Println(s.Key, string(s.Value), s.Session)
+		fmt.Println(s.Key, string(s.Value), s.Session, meta.LastIndex)
 	}
 }

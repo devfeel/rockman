@@ -114,8 +114,8 @@ func (c *ConsulClient) ListSession() ([]*consulapi.SessionEntry, *consulapi.Quer
 	return c.GetClient().Session().List(nil)
 }
 
-func (c *ConsulClient) ListKV(prefix string) (consulapi.KVPairs, *consulapi.QueryMeta, error) {
-	return c.GetClient().KV().List(prefix, nil)
+func (c *ConsulClient) ListKV(prefix string, opt *consulapi.QueryOptions) (consulapi.KVPairs, *consulapi.QueryMeta, error) {
+	return c.GetClient().KV().List(prefix, opt)
 }
 
 func (c *ConsulClient) GetClient() *consulapi.Client {
