@@ -4,12 +4,15 @@ import (
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/middleware/cors"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/node"
+	_const "github.com/devfeel/rockman/webui/const"
 	"github.com/devfeel/rockman/webui/controllers"
 )
 
 var (
 	testController = new(controllers.TestController)
 	taskController = new(controllers.TaskController)
+	nodeController = new(controllers.NodeController)
 )
 
 type WebServer struct {
@@ -17,13 +20,14 @@ type WebServer struct {
 	listenAddr string
 }
 
-func NewWebServer(logPath string) *WebServer {
+func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s := &WebServer{}
 	s.webApp = dotweb.New()
 	s.webApp.SetLogPath(logPath)
 	s.webApp.SetEnabledLog(true)
 	s.webApp.UseRequestLog()
 	s.webApp.Use(cors.Middleware(cors.NewConfig().UseDefault()))
+	s.webApp.Items.Set(_const.ItemKey_Node, node)
 	s.initRoute()
 	logger.Default().Debug("WebUI init success.")
 	return s
@@ -44,5 +48,8 @@ func (s *WebServer) initRoute() {
 	g.GET("/index", testController.Echo)
 
 	g = s.webApp.HttpServer.Group("/task")
-	g.GET("/taskbynode", taskController.ShowTaskListByNodeID)
+	g.GET("/list", taskController.ShowTasks)
+
+	g = s.webApp.HttpServer.Group("/node")
+	g.GET("/list", nodeController.ShowNodeList)
 }

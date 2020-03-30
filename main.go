@@ -50,7 +50,7 @@ func main() {
 	CurRpcServer = rpc.NewRpcServer(profile, CurNode)
 	//start web server
 	if profile.Node.IsMaster {
-		CurWebServer = webui.NewWebServer(profile.Logger.LogPath)
+		CurWebServer = webui.NewWebServer(profile.Logger.LogPath, CurNode)
 	}
 
 	go func() {

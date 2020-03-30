@@ -44,7 +44,7 @@ func NewTaskRepository() *TaskRepository {
 	return repository
 }
 
-func (repository *TaskRepository) QueryTasksByNodeID(dest interface{}, nodeID string) error {
-	sql := "SELECT * FROM Tasks WHERE NodeID = ? "
-	return repository.FindList(dest, sql, nodeID)
+func (repository *TaskRepository) QueryTasks(dest interface{}) error {
+	sql := "SELECT * FROM Task"
+	return repository.FindList(dest, sql)
 }

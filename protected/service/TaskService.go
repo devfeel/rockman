@@ -28,13 +28,10 @@ func NewTaskService() *TaskService {
 }
 
 // QueryTasksByNodeID
-func (service *TaskService) QueryTasksByNodeID(nodeID string) ([]*model.TaskInfo, error) {
-	if nodeID == "" {
-		return nil, errors.New("must set NodeID")
-	}
+func (service *TaskService) QueryTasks() ([]*model.TaskInfo, error) {
 	var results []*model.TaskInfo
 	var err error
-	err = service.taskRepository.QueryTasksByNodeID(&results, nodeID)
+	err = service.taskRepository.QueryTasks(&results)
 	if err == nil {
 		if len(results) <= 0 {
 			results = nil
