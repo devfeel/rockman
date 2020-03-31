@@ -25,14 +25,14 @@ type (
 		TaskService *task.TaskService
 		Executors   map[string]executor.Executor
 		Status      int
-		logService  *service.LogService
+		taskLog     *service.TaskService
 	}
 )
 
 func NewRuntime() *Runtime {
 	r := &Runtime{Status: RuntimeStatus_Init, Executors: make(map[string]executor.Executor)}
 	r.TaskService = task.StartNewService()
-	r.logService = service.NewLogService()
+	r.taskLog = service.NewTaskService()
 	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
 	r.TaskService.SetOnBeforeHandler(func(ctx *task.TaskContext) error {
 		ctx.Header[TaskHeader_StartTime] = time.Now()
@@ -156,6 +156,6 @@ func (r *Runtime) writeExecLog(ctx *task.TaskContext) error {
 		FailureType:  failureType,
 		FailureCause: failureCause,
 	}
-	err := r.logService.WriteExecLog(execLog)
+	err := r.taskLog.WriteExecLog(execLog)
 	return err
 }

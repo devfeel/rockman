@@ -1,10 +1,11 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	repository2 "github.com/devfeel/rockman/protected/repository"
+	"time"
 )
 
 var (
@@ -27,16 +28,25 @@ func NewTaskService() *TaskService {
 	return service
 }
 
-// QueryTasksByNodeID
+// QueryTasks
 func (service *TaskService) QueryTasks() ([]*model.TaskInfo, error) {
 	var results []*model.TaskInfo
 	var err error
 	err = service.taskRepository.QueryTasks(&results)
-	if err == nil {
-		if len(results) <= 0 {
-			results = nil
-			err = errors.New("not exists task info")
-		}
-	}
+	return results, err
+}
+
+// WriteExecLog
+func (service *TaskService) WriteExecLog(log *model.TaskExecLog) error {
+	log.CreateTime = time.Now()
+	ret, err := service.taskRepository.WriteExecLog(log)
+	fmt.Print("WriteExecLog", ret, err)
+	return err
+}
+
+func (service *TaskService) QueryLogs() ([]*model.TaskExecLog, error) {
+	var results []*model.TaskExecLog
+	var err error
+	err = service.taskRepository.QueryLogs(&results)
 	return results, err
 }

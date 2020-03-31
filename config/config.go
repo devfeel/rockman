@@ -68,7 +68,7 @@ func GetConfigPath(file string) string {
 // SingleNodeProfile return default profile used to single node
 func SingleNodeProfile() *Profile {
 	p := new(Profile)
-	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1"}
+	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1&loc=Asia%2FShanghai&parseTime=true"}
 	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
 	p.Rpc = &RpcSection{RpcHost: "127.0.0.1", RpcPort: "2398"}
 	p.WebUI = &WebUISection{HttpHost: "127.0.0.1", HttpPort: "8080"}

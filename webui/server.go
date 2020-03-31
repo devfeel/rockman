@@ -49,6 +49,7 @@ func (s *WebServer) initRoute() {
 
 	g = s.webApp.HttpServer.Group("/task")
 	g.GET("/list", taskController.ShowTasks)
+	g.GET("/logs", taskController.ShowLogs)
 
 	g = s.webApp.HttpServer.Group("/node")
 	g.GET("/list", nodeController.ShowNodeList)

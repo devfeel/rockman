@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"github.com/devfeel/rockman/config"
+	"github.com/devfeel/rockman/protected/model"
 	"sync"
 )
 
@@ -46,5 +47,15 @@ func NewTaskRepository() *TaskRepository {
 
 func (repository *TaskRepository) QueryTasks(dest interface{}) error {
 	sql := "SELECT * FROM Task"
+	return repository.FindList(dest, sql)
+}
+
+func (repository *TaskRepository) WriteExecLog(log *model.TaskExecLog) (int64, error) {
+	sql := "INSERT INTO TaskExecLog(TaskID, NodeID, NodeEndPoint, IsSuccess, StartTime, EndTime, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	return repository.Insert(sql, log.TaskID, log.NodeID, log.NodeEndPoint, log.IsSuccess, log.StartTime, log.EndTime, log.FailureType, log.FailureCause, log.CreateTime)
+}
+
+func (repository *TaskRepository) QueryLogs(dest interface{}) error {
+	sql := "SELECT * FROM TaskExecLog LIMIT 100"
 	return repository.FindList(dest, sql)
 }
