@@ -3,7 +3,6 @@ package runtime
 import (
 	"errors"
 	"github.com/devfeel/dottask"
-	"github.com/devfeel/rockman/global"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/protected/model"
@@ -26,11 +25,13 @@ type (
 		Executors   map[string]executor.Executor
 		Status      int
 		taskLog     *service.TaskService
+		nodeInfo    *packets.NodeInfo
 	}
 )
 
-func NewRuntime() *Runtime {
+func NewRuntime(nodeInfo *packets.NodeInfo) *Runtime {
 	r := &Runtime{Status: RuntimeStatus_Init, Executors: make(map[string]executor.Executor)}
+	r.nodeInfo = nodeInfo
 	r.TaskService = task.StartNewService()
 	r.taskLog = service.NewTaskService()
 	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
@@ -148,8 +149,8 @@ func (r *Runtime) writeExecLog(ctx *task.TaskContext) error {
 	endTime := time.Now()
 	execLog := &model.TaskExecLog{
 		TaskID:       ctx.TaskID,
-		NodeID:       global.GlobalNode.NodeID,
-		NodeEndPoint: global.GlobalNode.EndPoint(),
+		NodeID:       r.nodeInfo.NodeID,
+		NodeEndPoint: r.nodeInfo.EndPoint(),
 		StartTime:    startTime,
 		EndTime:      endTime,
 		IsSuccess:    isSuccess,

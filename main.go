@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
@@ -19,6 +20,8 @@ var CurWebServer *webui.WebServer
 
 const (
 	ProjectName = "rockman"
+	cmdNodeType = "nodetype"
+	cmdHost     = "host"
 )
 
 func main() {
@@ -34,7 +37,9 @@ func main() {
 	var err error
 
 	// load config file
-	profile := config.SingleNodeProfile()
+	profile := config.DefaultProfile()
+
+	parseFlag(profile)
 
 	// start log service
 	logger.StartLogService("config")
@@ -77,6 +82,32 @@ func main() {
 
 	for {
 		time.Sleep(time.Hour)
+	}
+}
+
+func parseFlag(profile *config.Profile) {
+	var nodeType, host string
+	flag.StringVar(&nodeType, cmdNodeType, "", "node type, full or master or worker")
+	flag.StringVar(&host, cmdHost, "", "node host")
+	fmt.Println("args:", nodeType, host)
+	if nodeType == "" {
+		nodeType = "full"
+	}
+	if nodeType != "full" && nodeType != "master" && nodeType != "worker" {
+		nodeType = "full"
+	}
+
+	if nodeType == "master" {
+		profile.Node.IsWorker = false
+	}
+
+	if nodeType == "worker" {
+		profile.Node.IsMaster = false
+	}
+
+	if host != "" {
+		profile.Rpc.RpcHost = host
+		profile.WebUI.HttpHost = host
 	}
 }
 

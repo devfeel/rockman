@@ -65,13 +65,13 @@ func GetConfigPath(file string) string {
 	return ConfigPath + file
 }
 
-// SingleNodeProfile return default profile used to single node
-func SingleNodeProfile() *Profile {
+// DefaultProfile return default profile used to full node role
+func DefaultProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1&loc=Asia%2FShanghai&parseTime=true"}
 	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
-	p.Rpc = &RpcSection{RpcHost: "127.0.0.1", RpcPort: "2398"}
-	p.WebUI = &WebUISection{HttpHost: "127.0.0.1", HttpPort: "8080"}
+	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398"}
+	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
 	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "rock"}

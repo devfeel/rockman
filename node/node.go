@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
-	"github.com/devfeel/rockman/global"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
@@ -59,9 +58,6 @@ func NewNode(profile *config.Profile) (*Node, error) {
 		profile:            profile,
 	}
 
-	// sync global node info
-	global.GlobalNode = node.getNodeInfo()
-
 	//init config
 	err := node.initConfig(profile)
 	if err != nil {
@@ -82,7 +78,7 @@ func NewNode(profile *config.Profile) (*Node, error) {
 
 	if node.Config.IsWorker {
 		// create runtime
-		node.Runtime = runtime.NewRuntime()
+		node.Runtime = runtime.NewRuntime(node.getNodeInfo())
 	}
 
 	logger.Node().Debug("Node init success.")
