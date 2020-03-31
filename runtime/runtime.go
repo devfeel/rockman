@@ -160,3 +160,25 @@ func (r *Runtime) writeExecLog(ctx *task.TaskContext) error {
 	err := r.taskLog.WriteExecLog(execLog)
 	return err
 }
+
+func registerDemoExecutors(r *Runtime) {
+	logger.Node().Debug("Register Demo Executors Begin")
+	goExec := executor.NewDebugGoExecutor(("go"))
+	err := r.RegisterExecutor(goExec)
+	if err != nil {
+		logger.Node().Error(err, "service.CreateCronTask {go.exec} error!")
+	}
+
+	httpExec := executor.NewDebugHttpExecutor("http")
+	err = r.RegisterExecutor(httpExec)
+	if err != nil {
+		logger.Node().Error(err, "service.CreateCronTask {http.exec} error!")
+	}
+
+	shellExec := executor.NewDebugShellExecutor("shell")
+	err = r.RegisterExecutor(shellExec)
+	if err != nil {
+		logger.Node().Error(err, "service.CreateCronTask {shell.exec} error!")
+	}
+	logger.Node().Debug("Register Demo Executors Success!")
+}

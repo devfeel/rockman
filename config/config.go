@@ -31,8 +31,9 @@ type (
 	}
 
 	ClusterSection struct {
-		ClusterId      string //cluster Id
-		RegistryServer string //Registry Server
+		ClusterId             string //cluster Id
+		RegistryServer        string //Registry Server
+		WatchLeaderRetryLimit int
 	}
 
 	NodeSection struct {
@@ -76,7 +77,7 @@ func DefaultProfile() *Profile {
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
-	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "rock-dev"}
+	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "rock-dev", WatchLeaderRetryLimit: 10}
 
 	CurrentProfile = p
 	return p

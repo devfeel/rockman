@@ -48,8 +48,10 @@ func main() {
 	// start log service
 	logger.StartLogService("config")
 
+	shutdownChan := make(chan string)
+
 	//start worker node
-	CurNode, err = node.NewNode(profile)
+	CurNode, err = node.NewNode(profile, shutdownChan)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -82,11 +84,18 @@ func main() {
 
 	time.Sleep(time.Second)
 	//start node
-	CurNode.Start()
+	err = CurNode.Start()
+	if err != nil {
+		logger.Default().Error(err, "Node start error")
+		return
+	}
+	logger.Default().Debug("Node start success, service running...")
 
 	for {
-		time.Sleep(time.Hour)
+		<-shutdownChan
+		logger.Default().Debug("Node Shutdown.")
 	}
+	logger.Default().Debug("Node Close.")
 }
 
 func parseFlag(profile *config.Profile) {

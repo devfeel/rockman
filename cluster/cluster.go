@@ -108,7 +108,6 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) erro
 // LoadOnlineNodes load all online nodes from Registry
 func (c *Cluster) LoadOnlineNodes() error {
 	logTitle := "Cluster.LoadOnlineNodes "
-	logger.Cluster().Debug(logTitle + "start.")
 	nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
@@ -116,8 +115,7 @@ func (c *Cluster) LoadOnlineNodes() error {
 	}
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
-	c.watchOnlineNodesChange()
-	logger.Cluster().Debug(logTitle + "success.")
+	c.watchOnlineNodes()
 	return nil
 }
 
@@ -138,8 +136,6 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 			c.LeaderServer = string(kvPair.Value)
 			c.leaderLastIndex = meta.LastIndex
 			c.lastGetLeaderTime = time.Now()
-			go c.watchLeaderChange()
-			logger.Cluster().Debug("Cluster.GetLeaderInfo success [" + c.LeaderServer + "]")
 			return c.LeaderServer, nil
 		}
 	}
@@ -233,57 +229,48 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	c.lastLoadNodesTime = time.Now()
 }
 
-// watchLeaderChange
-func (c *Cluster) watchLeaderChange() error {
-	logger.Cluster().Debug("Cluster.watchLeaderChange start.")
-	doQuery := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, "Cluster.watchLeaderChange error")
-			}
-		}()
+// watchLeader
+func (c *Cluster) WatchLeader() error {
+	logTitle := "Cluster.WatchLeader "
+	defer func() {
+		if err := recover(); err != nil {
+			errInfo := errors.New(fmt.Sprintln(err))
+			logger.Cluster().Error(errInfo, logTitle+"error")
+		}
+	}()
 
-		opt := &api.QueryOptions{
-			WaitIndex: c.leaderLastIndex,
-			WaitTime:  time.Minute * 10,
-		}
-		kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
-		if err != nil {
-			logger.Cluster().DebugS("Cluster.watchLeaderChange error:", err.Error())
-			return
-		}
-		if kvPair.Session == "" {
-			logger.Cluster().DebugS("Cluster.watchLeaderChange error: lock session is nil")
-			return
-		}
-		if meta.LastIndex != c.leaderLastIndex {
-			logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader change.")
-			c.leaderLastIndex = meta.LastIndex
-			c.LeaderServer = string(kvPair.Value)
-			c.lastGetLeaderTime = time.Now()
-			if c.OnLeaderChange != nil {
-				c.OnLeaderChange()
-			}
-		}
-		logger.Cluster().Debug("Cluster.watchLeaderChange success.")
+	opt := &api.QueryOptions{
+		WaitIndex: c.leaderLastIndex,
+		WaitTime:  time.Minute * 10,
 	}
-
-	for {
-		doQuery()
+	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+	if err != nil {
+		return err
 	}
-
+	if kvPair.Session == "" {
+		return errors.New("leader lock session is nil")
+	}
+	if meta.LastIndex != c.leaderLastIndex {
+		logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader change.")
+		c.leaderLastIndex = meta.LastIndex
+		c.LeaderServer = string(kvPair.Value)
+		c.lastGetLeaderTime = time.Now()
+		if c.OnLeaderChange != nil {
+			c.OnLeaderChange()
+		}
+	}
 	return nil
 }
 
-// watchOnlineNodesChange
-func (c *Cluster) watchOnlineNodesChange() error {
-	logger.Cluster().Debug("Cluster.watchNodesChange start.")
-	doQuery := func() {
+// watchOnlineNodes
+func (c *Cluster) watchOnlineNodes() error {
+	logTitle := "Cluster.watchOnlineNodes "
+	logger.Cluster().Debug(logTitle + "running.")
+	doQuery := func() error {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, "Cluster.watchNodesChange error, now will retry it")
+				logger.Cluster().Error(errInfo, logTitle+"error, now will retry it")
 			}
 		}()
 
@@ -292,22 +279,34 @@ func (c *Cluster) watchOnlineNodesChange() error {
 		}
 		nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, opt)
 		if err != nil {
-			logger.Cluster().DebugS("Cluster.watchNodesChange error:", err.Error())
-			return
+			return err
 		}
 		if meta.LastIndex != c.nodesLastIndex {
-			logger.Cluster().Debug("Cluster.watchNodesChange success. there were some nodes change.")
 			c.nodesLastIndex = meta.LastIndex
 			c.refreshOnlineNodes(nodeKVs)
 			if c.OnNodesChange != nil {
 				c.OnNodesChange()
 			}
+		} else {
+			return errors.New("nothing change")
 		}
+		return nil
 	}
 
 	go func() {
+		var retryCount int
 		for {
-			doQuery()
+			err := doQuery()
+			if err != nil {
+				/*if retryCount > config.CurrentProfile.Cluster.WatchLeaderRetryLimit{
+					//TODO do something
+				}else{*/
+				retryCount += 1
+				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
+				//}
+			} else {
+				logger.Cluster().Debug("Cluster.watchNodesChange success. there were some nodes changed.")
+			}
 		}
 	}()
 
