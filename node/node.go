@@ -123,6 +123,7 @@ func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
 // electionLeader
 func (n *Node) electionLeader() {
 	logTitle := "Node election leader "
+	logger.Node().Debug(logTitle + "start.")
 	var retryCount int
 	limit := n.profile.Global.RetryLimit
 	for {
@@ -138,6 +139,7 @@ func (n *Node) electionLeader() {
 			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
 			n.becomeLeaderRole()
 		} else {
+			logger.Node().DebugS(logTitle + "error: " + err.Error())
 			logger.Node().Error(err, logTitle+"error")
 		}
 	}
@@ -188,11 +190,13 @@ RegisterNode:
 
 // distributeSubmit distribute submit from queue, send to worker node
 func (n *Node) distributeSubmit() {
+	logTitle := "Node distributeSubmit "
+	logger.Node().Debug(logTitle + "start.")
 	doDistribute := func() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Node().Error(errInfo, "Node distributeSubmit error")
+				logger.Node().Error(errInfo, logTitle+"error")
 			}
 		}()
 
@@ -204,7 +208,7 @@ func (n *Node) distributeSubmit() {
 		if worker == nil {
 			worker, err = n.Cluster.GetLowBalanceWorker()
 			if err != nil {
-				logger.Node().Error(err, "Node distributeSubmit GetLowBalanceWorker error")
+				logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
 				//TODO log submit result to db log
 				return
 			}
@@ -215,12 +219,12 @@ func (n *Node) distributeSubmit() {
 		err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
 		if err != nil {
 			n.submitRetryQueue <- submit
-			logger.Node().DebugS("Node distributeSubmit into retry queue, error:", err.Error())
+			logger.Node().DebugS(logTitle+"into retry queue, error:", err.Error())
 			//TODO log submit result to db log
 		} else {
 			if reply.RetCode != reply.CorrectCode() {
 				n.submitRetryQueue <- submit
-				logger.Node().DebugS("Node distributeSubmit into retry queue, failed:", reply.RetCode)
+				logger.Node().DebugS(logTitle+"into retry queue, failed:", reply.RetCode)
 				//TODO log submit result to db log
 			} else {
 

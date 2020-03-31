@@ -107,15 +107,17 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) erro
 
 // LoadOnlineNodes load all online nodes from Registry
 func (c *Cluster) LoadOnlineNodes() error {
+	logTitle := "Cluster.LoadOnlineNodes "
+	logger.Cluster().Debug(logTitle + "start.")
 	nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, nil)
 	if err != nil {
-		return errors.New("RefreshNodes error: " + err.Error())
+		logger.Cluster().Debug(logTitle + "error: " + err.Error())
+		return errors.New(logTitle + "error: " + err.Error())
 	}
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
-
-	go c.watchOnlineNodesChange()
-
+	c.watchOnlineNodesChange()
+	logger.Cluster().Debug(logTitle + "success.")
 	return nil
 }
 
@@ -303,9 +305,11 @@ func (c *Cluster) watchOnlineNodesChange() error {
 		}
 	}
 
-	for {
-		doQuery()
-	}
+	go func() {
+		for {
+			doQuery()
+		}
+	}()
 
 	return nil
 }
