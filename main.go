@@ -23,6 +23,7 @@ const (
 	cmdNodeType  = "nodetype"
 	cmdOuterHost = "outerhost"
 	cmdOuterPort = "outerport"
+	cmdCluster   = "cluster"
 )
 
 func main() {
@@ -87,10 +88,11 @@ func main() {
 }
 
 func parseFlag(profile *config.Profile) {
-	var nodeType, outerHost, outerPort string
+	var nodeType, outerHost, outerPort, cluster string
 	flag.StringVar(&nodeType, cmdNodeType, "", "node type, full or master or worker")
 	flag.StringVar(&outerHost, cmdOuterHost, "", "node outer host")
 	flag.StringVar(&outerPort, cmdOuterPort, "", "node outer port")
+	flag.StringVar(&cluster, cmdCluster, "", "node cluster id")
 
 	flag.Parse()
 	if nodeType == "master" {
@@ -103,6 +105,10 @@ func parseFlag(profile *config.Profile) {
 
 	profile.Rpc.OuterHost = outerHost
 	profile.Rpc.OuterPort = outerPort
+
+	if cluster != "" {
+		profile.Cluster.ClusterId = cluster
+	}
 }
 
 func printLogo() {
