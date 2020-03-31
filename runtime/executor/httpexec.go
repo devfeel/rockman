@@ -1,11 +1,21 @@
 package executor
 
 import (
-	"fmt"
+	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
+	_http "github.com/devfeel/rockman/util/http"
+	"strings"
+	"time"
+)
+
+const (
+	HttpMethod_HEAD = "HEAD"
+	HttpMethod_GET  = "GET"
+	HttpMethod_POST = "POST"
+	CorrectStatus   = "200 OK"
 )
 
 type (
@@ -35,7 +45,7 @@ func NewDebugHttpExecutor(taskID string) Executor {
 	conf.TargetType = TargetType_Http
 	conf.TargetConfig = &HttpConfig{
 		Url:    "http://www.dotweb.cn",
-		Method: "GET",
+		Method: HttpMethod_GET,
 	}
 	return NewHttpExecutor(conf)
 }
@@ -49,11 +59,53 @@ func NewHttpExecutor(conf *packets.TaskConfig) *HttpExecutor {
 	if err != nil {
 		logger.Runtime().Error(err, "convert config error")
 	}
+	if exec.httpConfig.Method == "" {
+		exec.httpConfig.Method = HttpMethod_GET
+	}
+	exec.httpConfig.Method = strings.ToUpper(exec.httpConfig.Method)
 	return exec
 }
 
 func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {
-	logTitle := "HttpExecutor [" + exec.GetTaskID() + "] "
-	fmt.Println(logTitle+"exec", exec.httpConfig)
+	logTitle := "HttpExecutor [" + exec.GetTaskID() + "] [" + exec.httpConfig.Method + "] "
+	if exec.httpConfig.Method == HttpMethod_HEAD {
+		result := _http.HttpHead(exec.httpConfig.Url, time.Second*time.Duration(exec.httpConfig.Timeout))
+		logger.Runtime().DebugS(logTitle+"result= "+result.Status, "error=", result.Error)
+		if result.Error != nil {
+			ctx.Error = result.Error
+			return nil
+		}
+		if result.Status != CorrectStatus {
+			ctx.Error = errors.New("http response status not " + CorrectStatus + ", is " + result.Status)
+		}
+		return nil
+	}
+	if exec.httpConfig.Method == HttpMethod_GET {
+		result := _http.HttpGet(exec.httpConfig.Url, time.Second*time.Duration(exec.httpConfig.Timeout))
+		logger.Runtime().DebugS(logTitle+"result= "+result.Status, "error=", result.Error)
+		if result.Error != nil {
+			ctx.Error = result.Error
+			return nil
+		}
+		if result.Status != CorrectStatus {
+			ctx.Error = errors.New("http response status not " + CorrectStatus + ", is " + result.Status)
+		}
+		return nil
+	}
+	if exec.httpConfig.Method == HttpMethod_POST {
+		result := _http.HttpPost(exec.httpConfig.Url, exec.httpConfig.PostBody, exec.httpConfig.ContentType, time.Second*time.Duration(exec.httpConfig.Timeout))
+		logger.Runtime().DebugS(logTitle+"result= "+result.Status, "error=", result.Error)
+		if result.Error != nil {
+			ctx.Error = result.Error
+			return nil
+		}
+		if result.Status != CorrectStatus {
+			ctx.Error = errors.New("http response status not " + CorrectStatus + ", is " + result.Status)
+		}
+		return nil
+	}
+
+	logger.Runtime().Debug(logTitle + "not support http method [" + exec.httpConfig.Method + "]")
+	ctx.Error = errors.New(logTitle + "not support http method [" + exec.httpConfig.Method + "]")
 	return nil
 }

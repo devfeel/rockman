@@ -17,6 +17,14 @@ const (
 	InsecureSkipVerify      = true
 )
 
+type HttpResult struct {
+	Status       string
+	Body         string
+	ContentType  string
+	IntervalTime time.Duration
+	Error        error
+}
+
 func getTransport(timeout time.Duration) *http.Transport {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -34,96 +42,88 @@ func GetHttpClient(timeout time.Duration) *http.Client {
 	return &http.Client{Transport: getTransport(timeout)}
 }
 
-func HttpHead(url string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
+func HttpHead(url string, timeout time.Duration) *HttpResult {
 	startTime := time.Now()
-	intervalTime = 0
-	contentType = ""
-	body = ""
-	errReturn = nil
+	result := &HttpResult{}
 
 	resp, err := GetHttpClient(timeout).Head(url)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
 	defer resp.Body.Close()
 
-	status = resp.Status
+	result.Status = resp.Status
 
-	bytebody, err := ioutil.ReadAll(resp.Body)
-	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
+	byteBody, err := ioutil.ReadAll(resp.Body)
+	result.IntervalTime = time.Now().Sub(startTime)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
-	body = string(bytebody)
-	contentType = resp.Header.Get("Content-Type")
-	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-	return
+	result.Body = string(byteBody)
+	result.ContentType = resp.Header.Get("Content-Type")
+	result.IntervalTime = time.Now().Sub(startTime)
+	return result
 }
 
-func HttpGet(url string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
+func HttpGet(url string, timeout time.Duration) *HttpResult {
 	startTime := time.Now()
-	intervalTime = 0
-	contentType = ""
-	body = ""
-	errReturn = nil
+	result := &HttpResult{}
 
 	resp, err := GetHttpClient(timeout).Get(url)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
 	defer resp.Body.Close()
 
-	status = resp.Status
+	result.Status = resp.Status
 
 	byteBody, err := ioutil.ReadAll(resp.Body)
-	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
+	result.IntervalTime = time.Now().Sub(startTime)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
-	body = string(byteBody)
-	contentType = resp.Header.Get("Content-Type")
-	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-	return
+	result.Body = string(byteBody)
+	result.ContentType = resp.Header.Get("Content-Type")
+	result.IntervalTime = time.Now().Sub(startTime)
+	return result
 }
 
-func HttpPost(url string, postBody string, bodyType string, timeout time.Duration) (status string, body string, contentType string, intervalTime int64, errReturn error) {
+func HttpPost(url string, postBody string, bodyType string, timeout time.Duration) *HttpResult {
 	startTime := time.Now()
-	intervalTime = 0
-	contentType = ""
-	body = ""
-	errReturn = nil
+	result := &HttpResult{}
+
 	postBytes := bytes.NewBuffer([]byte(postBody))
 	if bodyType == "" {
 		bodyType = "application/x-www-form-urlencoded"
 	}
 	resp, err := GetHttpClient(timeout).Post(url, bodyType, postBytes)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
 	defer resp.Body.Close()
 
-	status = resp.Status
+	result.Status = resp.Status
 
 	byteBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-		errReturn = err
-		return
+		result.IntervalTime = time.Now().Sub(startTime)
+		result.Error = err
+		return result
 	}
-	body = string(byteBody)
-	contentType = resp.Header.Get("Content-Type")
-	intervalTime = int64(time.Now().Sub(startTime) / time.Millisecond)
-	return
+	result.Body = string(byteBody)
+	result.ContentType = resp.Header.Get("Content-Type")
+	result.IntervalTime = time.Now().Sub(startTime)
+	return result
 
 }
 

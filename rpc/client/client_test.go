@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	serverUrl = "116.62.16.66:2398"
+	//serverUrl = "116.62.16.66:2398"
+	serverUrl = "127.0.0.1:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {
@@ -60,7 +61,8 @@ func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	conf.Express = "0 * * * * *"
 	conf.TaskData = "http-url"
 	conf.TargetConfig = &executor.HttpConfig{
-		Url: "http://www.baidu.com",
+		Url:    "http://www.baidu.com",
+		Method: "HEAD",
 	}
 
 	err, result := client.CallRegisterExecutor(conf)
@@ -84,7 +86,8 @@ func TestRpcClient_CallSubmitExecutor(t *testing.T) {
 	conf.Express = "0 * * * * *"
 	conf.TaskData = "http-url"
 	conf.TargetConfig = &executor.HttpConfig{
-		Url: "http://www.baidu.com",
+		Url:    "http://www.baidu.com",
+		Method: "HEAD",
 	}
 
 	submit.TaskConfig = conf
