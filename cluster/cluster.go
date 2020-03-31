@@ -264,6 +264,7 @@ func (c *Cluster) watchLeaderChange() error {
 				c.OnLeaderChange()
 			}
 		}
+		logger.Cluster().Debug("Cluster.watchLeaderChange success.")
 	}
 
 	for {

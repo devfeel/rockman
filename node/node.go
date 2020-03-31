@@ -34,7 +34,6 @@ type (
 	NodeConfig struct {
 		IsMaster       bool
 		IsWorker       bool
-		RpcServer      string //current node's rpc server info
 		LogFilePath    string
 		RegistryServer string
 		Profile        *config.Profile
@@ -134,7 +133,7 @@ func (n *Node) electionLeader() {
 		}
 		retryCount += 1
 
-		err := n.Cluster.ElectionLeader(n.Config.RpcServer, "")
+		err := n.Cluster.ElectionLeader(n.getNodeInfo().EndPoint(), "")
 		if err == nil {
 			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
 			n.becomeLeaderRole()
@@ -152,7 +151,7 @@ func (n *Node) registerNode() error {
 	var err error
 	var retryCount int
 	nodeInfo := n.getNodeInfo()
-
+	logger.Cluster().Debug(logTitle + "start.")
 RegisterNode:
 	for {
 		if retryCount > n.profile.Global.RetryLimit {
@@ -183,7 +182,7 @@ RegisterNode:
 			break
 		}
 	}
-	logger.Node().DebugS(logTitle + "success")
+	logger.Node().DebugS(logTitle + "success.")
 	return nil
 }
 
@@ -251,7 +250,7 @@ func (n *Node) onLeaderChange() {
 		logger.Node().Debug("Node.onLeaderChange registerNode success")
 	}
 	if n.IsLeader {
-		if n.Cluster.LeaderServer != n.Config.RpcServer {
+		if n.Cluster.LeaderServer != n.getNodeInfo().EndPoint() {
 			n.removeLeaderRole()
 		}
 	}
@@ -286,7 +285,6 @@ func (n *Node) removeLeaderRole() {
 // initConfig init node config from config profile
 func (n *Node) initConfig(conf *config.Profile) error {
 	n.Config = new(NodeConfig)
-	n.Config.RpcServer = conf.Rpc.RpcHost + ":" + conf.Rpc.RpcPort
 	n.Config.RegistryServer = conf.Cluster.RegistryServer
 	n.Config.IsMaster = conf.Node.IsMaster
 	n.Config.IsWorker = conf.Node.IsWorker
@@ -298,13 +296,15 @@ func (n *Node) initConfig(conf *config.Profile) error {
 
 func (n *Node) getNodeInfo() *packets.NodeInfo {
 	nodeInfo := &packets.NodeInfo{
-		NodeID:   n.NodeId,
-		Cluster:  n.profile.Cluster.ClusterId,
-		Host:     n.profile.Rpc.RpcHost,
-		Port:     n.profile.Rpc.RpcPort,
-		IsMaster: n.profile.Node.IsMaster,
-		IsWorker: n.profile.Node.IsWorker,
-		IsOnline: true,
+		NodeID:    n.NodeId,
+		Cluster:   n.profile.Cluster.ClusterId,
+		OuterHost: n.profile.Rpc.OuterHost,
+		OuterPort: n.profile.Rpc.OuterPort,
+		Host:      n.profile.Rpc.RpcHost,
+		Port:      n.profile.Rpc.RpcPort,
+		IsMaster:  n.profile.Node.IsMaster,
+		IsWorker:  n.profile.Node.IsWorker,
+		IsOnline:  true,
 	}
 	return nodeInfo
 }

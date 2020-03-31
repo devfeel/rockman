@@ -43,6 +43,8 @@ type (
 	}
 
 	RpcSection struct {
+		OuterHost   string
+		OuterPort   string
 		RpcHost     string
 		RpcPort     string
 		RpcProtocol string //now is json-rpc

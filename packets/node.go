@@ -5,17 +5,27 @@ import jsonutil "github.com/devfeel/rockman/util/json"
 const NodeKeyPrefix = "devfeel/rockman/nodekey/"
 
 type NodeInfo struct {
-	NodeID   string
-	Cluster  string
-	Host     string
-	Port     string
-	IsMaster bool
-	IsWorker bool
-	IsOnline bool
+	NodeID    string
+	Cluster   string
+	Host      string
+	Port      string
+	OuterHost string
+	OuterPort string
+	IsMaster  bool
+	IsWorker  bool
+	IsOnline  bool
 }
 
 func (n *NodeInfo) EndPoint() string {
-	return n.Host + ":" + n.Port
+	host := n.Host
+	if n.OuterHost != "" {
+		host = n.OuterHost
+	}
+	port := n.Port
+	if n.OuterPort != "" {
+		host = n.OuterPort
+	}
+	return host + ":" + port
 }
 
 func (n *NodeInfo) Json() string {

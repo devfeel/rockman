@@ -19,9 +19,10 @@ var CurRpcServer *rpc.RpcServer
 var CurWebServer *webui.WebServer
 
 const (
-	ProjectName = "rockman"
-	cmdNodeType = "nodetype"
-	cmdHost     = "host"
+	ProjectName  = "rockman"
+	cmdNodeType  = "nodetype"
+	cmdOuterHost = "outerhost"
+	cmdOuterPort = "outerport"
 )
 
 func main() {
@@ -86,17 +87,12 @@ func main() {
 }
 
 func parseFlag(profile *config.Profile) {
-	var nodeType, host string
+	var nodeType, outerHost, outerPort string
 	flag.StringVar(&nodeType, cmdNodeType, "", "node type, full or master or worker")
-	flag.StringVar(&host, cmdHost, "", "node host")
-	fmt.Println("args:", nodeType, host)
-	if nodeType == "" {
-		nodeType = "full"
-	}
-	if nodeType != "full" && nodeType != "master" && nodeType != "worker" {
-		nodeType = "full"
-	}
+	flag.StringVar(&outerHost, cmdOuterHost, "", "node outer host")
+	flag.StringVar(&outerPort, cmdOuterPort, "", "node outer port")
 
+	flag.Parse()
 	if nodeType == "master" {
 		profile.Node.IsWorker = false
 	}
@@ -105,10 +101,8 @@ func parseFlag(profile *config.Profile) {
 		profile.Node.IsMaster = false
 	}
 
-	if host != "" {
-		profile.Rpc.RpcHost = host
-		profile.WebUI.HttpHost = host
-	}
+	profile.Rpc.OuterHost = outerHost
+	profile.Rpc.OuterPort = outerPort
 }
 
 func printLogo() {
