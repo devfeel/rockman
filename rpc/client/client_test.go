@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	serverUrl = "127.0.0.1:2398"
+	serverUrl = "116.62.16.66:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {
@@ -64,6 +64,36 @@ func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	}
 
 	err, result := client.CallRegisterExecutor(conf)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallSubmitExecutor(t *testing.T) {
+	client := getRpcClient()
+	submit := new(packets.SubmitInfo)
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "TestRpcClient-http-debug"
+	conf.TaskType = "cron"
+	conf.TargetType = "http"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = "http-url"
+	conf.TargetConfig = &executor.HttpConfig{
+		Url: "http://www.baidu.com",
+	}
+
+	submit.TaskConfig = conf
+	submit.Worker = &packets.NodeInfo{
+		Host: "118.31.32.168",
+		Port: "2398",
+	}
+
+	err, result := client.CallSubmitExecutor(submit)
 	if err != nil {
 		t.Error(err)
 	} else {

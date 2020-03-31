@@ -219,16 +219,16 @@ func (n *Node) distributeSubmit() {
 		err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
 		if err != nil {
 			n.submitRetryQueue <- submit
-			logger.Node().DebugS(logTitle+"into retry queue, error:", err.Error())
+			logger.Node().DebugS(logTitle+"submit ["+submit.TaskConfig.TaskID+"] to ["+submit.Worker.EndPoint()+"] error, into retry queue:", err.Error())
 			//TODO log submit result to db log
 		} else {
 			if reply.RetCode != reply.CorrectCode() {
 				n.submitRetryQueue <- submit
-				logger.Node().DebugS(logTitle+"into retry queue, failed:", reply.RetCode)
+				logger.Node().DebugS(logTitle+"submit ["+submit.TaskConfig.TaskID+"] to ["+submit.Worker.EndPoint()+"] failed, into retry queue:", reply.RetCode)
 				//TODO log submit result to db log
 			} else {
-
 				n.Cluster.Scheduler.AddOnlineSubmit(submit)
+				logger.Node().Debug(logTitle + "submit [" + submit.TaskConfig.TaskID + "] to [" + submit.Worker.EndPoint() + "] success.")
 				//TODO log submit result to db log
 			}
 		}

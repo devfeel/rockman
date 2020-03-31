@@ -74,6 +74,20 @@ func (c *RpcClient) CallQueryNodes(pageInfo *packets.PageInfo) (error, *packets.
 	return nil, &reply
 }
 
+func (c *RpcClient) CallSubmitExecutor(submit *packets.SubmitInfo) (error, *packets.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packets.JsonResult
+	err = client.Call("Rpc.SubmitExecutor", submit, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
 func (c *RpcClient) CallRegisterExecutor(conf *packets.TaskConfig) (error, *packets.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {
