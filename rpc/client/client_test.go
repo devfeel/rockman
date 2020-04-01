@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	//serverUrl = "116.62.16.66:2398"
-	serverUrl = "127.0.0.1:2398"
+	serverUrl = "116.62.16.66:2398"
+	//serverUrl = "127.0.0.1:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {
@@ -49,7 +49,7 @@ func TestRpcClient_CallQueryNodes(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallRegisterExecutor(t *testing.T) {
+func TestRpcClient_CallRegisterHttpExecutor(t *testing.T) {
 	client := getRpcClient()
 	conf := &packets.TaskConfig{}
 	conf.TaskID = "TestRpcClient-http-debug"
@@ -63,6 +63,30 @@ func TestRpcClient_CallRegisterExecutor(t *testing.T) {
 	conf.TargetConfig = &executor.HttpConfig{
 		Url:    "http://www.baidu.com",
 		Method: "HEAD",
+	}
+
+	err, result := client.CallRegisterExecutor(conf)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallRegisterShellxecutor(t *testing.T) {
+	client := getRpcClient()
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-shell-debug"
+	conf.TaskType = "cron"
+	conf.TargetType = "shell"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.ShellConfig{
+		Script: "echo OK",
+		Type:   "Script",
 	}
 
 	err, result := client.CallRegisterExecutor(conf)

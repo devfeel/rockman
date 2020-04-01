@@ -40,6 +40,7 @@ func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
 	exec := new(GoExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
+	exec.goConfig = new(GoConfig)
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.goConfig)
 	if err != nil {
 		logger.Runtime().Error(err, "convert config error")

@@ -312,14 +312,13 @@ func (n *Node) watchLeader() {
 			err := n.Cluster.WatchLeader()
 			if err != nil {
 				if retryCount > config.CurrentProfile.Cluster.WatchLeaderRetryLimit {
+					logger.Cluster().DebugS(logTitle + "error num bigger than max limit, now will shutdown node.")
 					n.Shutdown()
 				} else {
 					retryCount += 1
 					logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
 				}
 				time.Sleep(time.Second * 10)
-			} else {
-				logger.Cluster().Debug(logTitle + "success.")
 			}
 		}
 	}()

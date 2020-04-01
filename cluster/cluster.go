@@ -251,7 +251,7 @@ func (c *Cluster) WatchLeader() error {
 		return errors.New("leader lock session is nil")
 	}
 	if meta.LastIndex != c.leaderLastIndex {
-		logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader change.")
+		logger.Cluster().Debug("Cluster.watchLeaderChange success. there was leader changed.")
 		c.leaderLastIndex = meta.LastIndex
 		c.LeaderServer = string(kvPair.Value)
 		c.lastGetLeaderTime = time.Now()
