@@ -65,7 +65,7 @@ func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "ShellExecutor [" + exec.GetTaskID() + "] [" + exec.shellConfig.Type + "] "
 	if exec.shellConfig.Type == ShellType_Script {
-		result, err := execScript(exec.shellConfig.FileName)
+		result, err := execScript(exec.shellConfig.Script)
 		logger.Runtime().DebugS(logTitle+"result= "+result, "error=", err)
 		if err != nil {
 			ctx.Error = err
