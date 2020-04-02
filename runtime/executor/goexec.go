@@ -66,7 +66,7 @@ func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 		ctx.Error = err
 		return nil
 	}
-	if execFunc, ok := s.(Exec); ok {
+	if execFunc, ok := s.(func(ctx *task.TaskContext) error); ok {
 		err := execFunc(ctx)
 		if err != nil {
 			logger.Runtime().Error(err, logTitle+"exec err:"+err.Error())
