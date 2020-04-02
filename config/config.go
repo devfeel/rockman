@@ -91,11 +91,11 @@ func LoadConfig(configFile string) (*Profile, error) {
 	// 3. Try $PWD/config
 	// fixed for issue #15 config file path
 	realFile := configFile
-	if !file.Exist(realFile) {
+	if !file.Exists(realFile) {
 		realFile = file.GetCurrentDirectory() + "/" + configFile
-		if !file.Exist(realFile) {
+		if !file.Exists(realFile) {
 			realFile = file.GetCurrentDirectory() + "/config/" + configFile
-			if !file.Exist(realFile) {
+			if !file.Exists(realFile) {
 				return nil, errors.New("no exists config file => " + configFile)
 			}
 		}
