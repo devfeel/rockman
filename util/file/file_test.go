@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -35,12 +36,16 @@ func Test_GetFileExt_2(t *testing.T) {
 func Test_Exist_1(t *testing.T) {
 	fn := "testdata/file.test"
 	//	fn := "/Users/kevin/Downloads/commdownload.dmg"
-	isExist := Exist(fn)
+	isExist := Exists(fn)
 	if isExist {
 		t.Log(isExist)
 	} else {
 		t.Log("请修改测试代码中文件的路径！")
 	}
+}
+
+func Test_ExistsInPath(t *testing.T) {
+	fmt.Println(ExistsInPath("../", "../../main.go"))
 }
 
 // 以下是性能测试
