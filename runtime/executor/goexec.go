@@ -9,6 +9,10 @@ import (
 	"plugin"
 )
 
+/*
+	build script on linux: go build --buildmode=plugin -o plugin.so plugin.go
+*/
+
 type (
 	GoConfig struct {
 		FileName string
@@ -50,7 +54,7 @@ func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "GoExecutor [" + exec.GetTaskID() + "] "
-	p, err := plugin.Open(exec.goConfig.FileName)
+	p, err := plugin.Open("plugins/" + exec.goConfig.FileName)
 	if err != nil {
 		logger.Runtime().Error(err, logTitle+"open plugin error: "+err.Error())
 		ctx.Error = err
