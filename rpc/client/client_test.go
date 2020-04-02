@@ -165,7 +165,7 @@ func TestRpcClient_CallSubmitShellExecutor(t *testing.T) {
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
 	conf.TargetConfig = &executor.ShellConfig{
-		Script: "shells/hello.sh",
+		Script: "hello.sh",
 		Type:   "File",
 	}
 
