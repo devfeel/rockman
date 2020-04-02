@@ -37,6 +37,7 @@ func main() {
 		}
 	}()
 
+	startTime := time.Now()
 	printLogo()
 	var err error
 
@@ -89,7 +90,9 @@ func main() {
 		logger.Default().Error(err, "Node start error")
 		return
 	}
-	logger.Default().Debug("Node start success, service running...")
+
+	useTime := time.Now().Sub(startTime)
+	logger.Default().Debug("Node start success in " + fmt.Sprint(int64(useTime/time.Second)) + "s, service running...")
 
 	for {
 		<-shutdownChan
