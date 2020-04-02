@@ -103,7 +103,7 @@ func execShellScript(s string) (string, error) {
 }
 
 func execShellFile(f string) (string, error) {
-	cmd := exec.Command("Shell", f)
+	cmd := exec.Command("/bin/sh", f)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
