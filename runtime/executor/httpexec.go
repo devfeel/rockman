@@ -15,7 +15,6 @@ const (
 	HttpMethod_HEAD = "HEAD"
 	HttpMethod_GET  = "GET"
 	HttpMethod_POST = "POST"
-	CorrectStatus   = "200 OK"
 )
 
 type (

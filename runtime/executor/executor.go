@@ -11,6 +11,9 @@ const (
 	TargetType_Shell = "shell"
 	TargetType_GoSo  = "goso"
 	TargetType_Code  = "code"
+
+	CorrectStatus = "200 OK"
+	CorrectResult = "OK"
 )
 
 type (

@@ -14,7 +14,6 @@ import (
 const (
 	ShellType_Script = "SCRIPT"
 	ShellType_File   = "FILE"
-	CorrectResult    = "OK"
 )
 
 type (
