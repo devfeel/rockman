@@ -25,7 +25,7 @@ const (
 	cmdOuterPort = "outerport"
 	cmdCluster   = "cluster"
 
-	version = "2020.401"
+	version = "2020.402"
 )
 
 func main() {

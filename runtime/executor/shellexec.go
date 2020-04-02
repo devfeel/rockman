@@ -19,9 +19,8 @@ const (
 
 type (
 	ShellConfig struct {
-		Type     string //default will be ShellType_Script
-		FileName string
-		Script   string
+		Type   string //default will be ShellType_Script
+		Script string
 	}
 
 	ShellExecutor struct {
@@ -41,7 +40,8 @@ func NewDebugShellExecutor(taskID string) Executor {
 	conf.TaskData = "shell.sh"
 	conf.TargetType = TargetType_Shell
 	conf.TargetConfig = &ShellConfig{
-		FileName: "demo.sh",
+		Script: "demo.sh",
+		Type:   ShellType_File,
 	}
 	return NewShellExecutor(conf)
 }
@@ -64,25 +64,47 @@ func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "ShellExecutor [" + exec.GetTaskID() + "] [" + exec.shellConfig.Type + "] "
-	if exec.shellConfig.Type == ShellType_Script {
-		result, err := execScript(exec.shellConfig.Script)
-		logger.Runtime().DebugS(logTitle+"result= "+result, "error=", err)
-		if err != nil {
-			ctx.Error = err
-			return nil
-		}
-		if result != CorrectResult {
-			ctx.Error = errors.New("shell response not " + CorrectResult + ", is " + result)
-		}
+	if exec.shellConfig.Type != ShellType_File && exec.shellConfig.Type != ShellType_Script {
+		logger.Runtime().Debug(logTitle + "not support shell type")
+		ctx.Error = errors.New("not support shell type [" + exec.shellConfig.Type + "]")
 		return nil
 	}
-	logger.Runtime().Debug(logTitle + "not support shell type")
-	ctx.Error = errors.New("not support shell type [" + exec.shellConfig.Type + "]")
+
+	var result string
+	var err error
+	if exec.shellConfig.Type == ShellType_Script {
+		result, err = execShellScript(exec.shellConfig.Script)
+	}
+	if exec.shellConfig.Type == ShellType_File {
+		result, err = execShellFile(exec.shellConfig.Script)
+	}
+
+	logger.Runtime().DebugS(logTitle+"result= "+result, "error=", err)
+	if err != nil {
+		ctx.Error = err
+		return nil
+	}
+	if result != CorrectResult {
+		ctx.Error = errors.New("shell response not " + CorrectResult + ", is " + result)
+	}
 	return nil
 }
 
-func execScript(s string) (string, error) {
+func execShellScript(s string) (string, error) {
 	cmd := exec.Command("/bin/bash", "-c", s)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	str := strings.Replace(out.String(), " ", "", -1)
+	str = strings.Replace(out.String(), "\n", "", -1)
+	return str, err
+}
+
+func execShellFile(f string) (string, error) {
+	cmd := exec.Command("Shell", f)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()

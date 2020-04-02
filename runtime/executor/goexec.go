@@ -48,18 +48,19 @@ func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
 	return exec
 }
 
-// Exec TODO:log to mysql log
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "GoExecutor [" + exec.GetTaskID() + "] "
 	p, err := plugin.Open(exec.goConfig.FileName)
 	if err != nil {
 		logger.Runtime().Error(err, logTitle+"open plugin error: "+err.Error())
-		return err
+		ctx.Error = err
+		return nil
 	}
 	s, err := p.Lookup("Exec")
 	if err != nil {
 		logger.Runtime().Error(err, logTitle+"lookup Exec error: "+err.Error())
-		return err
+		ctx.Error = err
+		return nil
 	}
 	if execFunc, ok := s.(Exec); ok {
 		err := execFunc(ctx)
@@ -68,10 +69,12 @@ func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 		} else {
 			logger.Runtime().DebugS(logTitle + "exec success")
 		}
-		return err
+		ctx.Error = err
+		return nil
 	} else {
 		err := errors.New("not match Exec function")
 		logger.Runtime().Error(err, logTitle+"not match Exec function")
-		return err
+		ctx.Error = err
+		return nil
 	}
 }
