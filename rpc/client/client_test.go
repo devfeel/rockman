@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	//serverUrl = "116.62.16.66:2398"
-	serverUrl = "127.0.0.1:2398"
+	serverUrl = "116.62.16.66:2398"
+	//serverUrl = "118.31.32.168:2398"
+	//serverUrl = "127.0.0.1:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {
@@ -85,7 +86,7 @@ func TestRpcClient_CallRegisterShellExecutor(t *testing.T) {
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
 	conf.TargetConfig = &executor.ShellConfig{
-		Script: "shell/hello.sh",
+		Script: "hello.sh",
 		Type:   "File",
 	}
 
@@ -120,11 +121,11 @@ func TestRpcClient_CallRegisterGoExecutor(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallSubmitExecutor(t *testing.T) {
+func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	client := getRpcClient()
 	submit := new(packets.SubmitInfo)
 	conf := &packets.TaskConfig{}
-	conf.TaskID = "TestRpcClient-http-debug"
+	conf.TaskID = "Test-http"
 	conf.TaskType = "cron"
 	conf.TargetType = "http"
 	conf.IsRun = true
@@ -135,6 +136,67 @@ func TestRpcClient_CallSubmitExecutor(t *testing.T) {
 	conf.TargetConfig = &executor.HttpConfig{
 		Url:    "http://www.baidu.com",
 		Method: "HEAD",
+	}
+
+	submit.TaskConfig = conf
+	submit.Worker = &packets.NodeInfo{
+		Host: "118.31.32.168",
+		Port: "2398",
+	}
+
+	err, result := client.CallSubmitExecutor(submit)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallSubmitShellExecutor(t *testing.T) {
+	client := getRpcClient()
+	submit := new(packets.SubmitInfo)
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-shell-File"
+	conf.TaskType = "cron"
+	conf.TargetType = "shell"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.ShellConfig{
+		Script: "shells/hello.sh",
+		Type:   "File",
+	}
+
+	submit.TaskConfig = conf
+	submit.Worker = &packets.NodeInfo{
+		Host: "118.31.32.168",
+		Port: "2398",
+	}
+
+	err, result := client.CallSubmitExecutor(submit)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
+	client := getRpcClient()
+	submit := new(packets.SubmitInfo)
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-GoSo"
+	conf.TaskType = "cron"
+	conf.TargetType = "goso"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.GoConfig{
+		FileName: "plugin.so",
 	}
 
 	submit.TaskConfig = conf
@@ -177,7 +239,7 @@ func TestRpcClient_CallStopExecutor(t *testing.T) {
 
 func TestRpcClient_CallRemoveExecutor(t *testing.T) {
 	client := getRpcClient()
-	taskId := "TestRpcClient-http-debug"
+	taskId := "Test-shell-File"
 
 	err, result := client.CallRemoveExecutor(taskId)
 	if err != nil {
