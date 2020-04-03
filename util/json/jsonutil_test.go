@@ -1,4 +1,4 @@
-package jsonutil
+package _json
 
 import (
 	"testing"

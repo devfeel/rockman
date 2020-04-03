@@ -72,7 +72,7 @@ func GetConfigPath(file string) string {
 func DefaultProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1&loc=Asia%2FShanghai&parseTime=true"}
-	p.Node = &NodeSection{NodeId: uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
+	p.Node = &NodeSection{NodeId: _uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
 	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398"}
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
@@ -91,11 +91,11 @@ func LoadConfig(configFile string) (*Profile, error) {
 	// 3. Try $PWD/config
 	// fixed for issue #15 config file path
 	realFile := configFile
-	if !file.Exists(realFile) {
-		realFile = file.GetCurrentDirectory() + "/" + configFile
-		if !file.Exists(realFile) {
-			realFile = file.GetCurrentDirectory() + "/config/" + configFile
-			if !file.Exists(realFile) {
+	if !_file.Exists(realFile) {
+		realFile = _file.GetCurrentDirectory() + "/" + configFile
+		if !_file.Exists(realFile) {
+			realFile = _file.GetCurrentDirectory() + "/config/" + configFile
+			if !_file.Exists(realFile) {
 				return nil, errors.New("no exists config file => " + configFile)
 			}
 		}
