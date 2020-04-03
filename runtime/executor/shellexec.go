@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
+	_file "github.com/devfeel/rockman/util/file"
 	"os/exec"
 	"strings"
 )
@@ -14,6 +15,7 @@ import (
 const (
 	ShellType_Script = "SCRIPT"
 	ShellType_File   = "FILE"
+	ShellFilePath    = "shells/"
 )
 
 type (
@@ -42,10 +44,11 @@ func NewDebugShellExecutor(taskID string) Executor {
 		Script: "demo.sh",
 		Type:   ShellType_File,
 	}
-	return NewShellExecutor(conf)
+	exec, _ := NewShellExecutor(conf)
+	return exec
 }
 
-func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
+func NewShellExecutor(conf *packets.TaskConfig) (*ShellExecutor, error) {
 	exec := new(ShellExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
@@ -53,21 +56,30 @@ func NewShellExecutor(conf *packets.TaskConfig) *ShellExecutor {
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.shellConfig)
 	if err != nil {
 		logger.Runtime().Error(err, "convert config error")
+		return nil, err
 	}
 	if exec.shellConfig.Type == "" {
 		exec.shellConfig.Type = ShellType_Script
 	}
 	exec.shellConfig.Type = strings.ToUpper(exec.shellConfig.Type)
-	return exec
+
+	if exec.shellConfig.Type != ShellType_File && exec.shellConfig.Type != ShellType_Script {
+		logger.Runtime().Debug("NewShellExecutor error: not support shell type")
+		return nil, errors.New("NewShellExecutor error: not support shell type [" + exec.shellConfig.Type + "]")
+	}
+
+	if exec.shellConfig.Type == ShellType_File {
+		exec.shellConfig.Script = ShellFilePath + exec.shellConfig.Script
+		if !_file.ExistsInPath(ShellFilePath, exec.shellConfig.Script) {
+			logger.Runtime().Debug("NewShellExecutor error: shell file not in specify path")
+			return nil, errors.New("NewShellExecutor error: shell file not in specify path")
+		}
+	}
+	return exec, nil
 }
 
 func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "ShellExecutor [" + exec.GetTaskID() + "] [" + exec.shellConfig.Type + "] "
-	if exec.shellConfig.Type != ShellType_File && exec.shellConfig.Type != ShellType_Script {
-		logger.Runtime().Debug(logTitle + "not support shell type")
-		ctx.Error = errors.New("not support shell type [" + exec.shellConfig.Type + "]")
-		return nil
-	}
 
 	var result string
 	var err error
@@ -103,7 +115,7 @@ func execShellScript(s string) (string, error) {
 }
 
 func execShellFile(f string) (string, error) {
-	cmd := exec.Command("/bin/sh", "shells/"+f)
+	cmd := exec.Command("/bin/sh", f)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()

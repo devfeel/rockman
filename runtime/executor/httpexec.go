@@ -46,10 +46,11 @@ func NewDebugHttpExecutor(taskID string) Executor {
 		Url:    "http://www.dotweb.cn",
 		Method: HttpMethod_GET,
 	}
-	return NewHttpExecutor(conf)
+	exec, _ := NewHttpExecutor(conf)
+	return exec
 }
 
-func NewHttpExecutor(conf *packets.TaskConfig) *HttpExecutor {
+func NewHttpExecutor(conf *packets.TaskConfig) (*HttpExecutor, error) {
 	exec := new(HttpExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
@@ -57,12 +58,13 @@ func NewHttpExecutor(conf *packets.TaskConfig) *HttpExecutor {
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.httpConfig)
 	if err != nil {
 		logger.Runtime().Error(err, "convert config error")
+		return nil, err
 	}
 	if exec.httpConfig.Method == "" {
 		exec.httpConfig.Method = HttpMethod_GET
 	}
 	exec.httpConfig.Method = strings.ToUpper(exec.httpConfig.Method)
-	return exec
+	return exec, nil
 }
 
 func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {

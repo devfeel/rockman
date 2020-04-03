@@ -60,15 +60,19 @@ func (r *Runtime) Start() {
 // now support http\shell\go.so
 func (r *Runtime) CreateExecutor(taskConf *packets.TaskConfig) (executor.Executor, error) {
 	var exec executor.Executor
+	var err error
 	if taskConf.TargetType == executor.TargetType_Http {
-		exec = executor.NewHttpExecutor(taskConf)
+		exec, err = executor.NewHttpExecutor(taskConf)
 	} else if taskConf.TargetType == executor.TargetType_Shell {
-		exec = executor.NewShellExecutor(taskConf)
+		exec, err = executor.NewShellExecutor(taskConf)
 	} else if taskConf.TargetType == executor.TargetType_GoSo {
-		exec = executor.NewGoExecutor(taskConf)
+		exec, err = executor.NewGoExecutor(taskConf)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	err := r.RegisterExecutor(exec)
+	err = r.RegisterExecutor(exec)
 	return exec, err
 }
 

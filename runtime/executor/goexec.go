@@ -6,12 +6,15 @@ import (
 	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
+	_file "github.com/devfeel/rockman/util/file"
 	"plugin"
 )
 
 /*
 	build script on linux: go build --buildmode=plugin -o plugin.so plugin.go
 */
+
+const GoFilePath = "plugins/"
 
 type (
 	GoConfig struct {
@@ -37,10 +40,11 @@ func NewDebugGoExecutor(taskID string) Executor {
 	conf.TargetConfig = &GoConfig{
 		FileName: "demo.so",
 	}
-	return NewGoExecutor(conf)
+	exec, _ := NewGoExecutor(conf)
+	return exec
 }
 
-func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
+func NewGoExecutor(conf *packets.TaskConfig) (*GoExecutor, error) {
 	exec := new(GoExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
@@ -48,8 +52,15 @@ func NewGoExecutor(conf *packets.TaskConfig) *GoExecutor {
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.goConfig)
 	if err != nil {
 		logger.Runtime().Error(err, "convert config error")
+		return nil, err
 	}
-	return exec
+
+	exec.goConfig.FileName = GoFilePath + exec.goConfig.FileName
+	if !_file.ExistsInPath(GoFilePath, exec.goConfig.FileName) {
+		logger.Runtime().Debug("NewGoExecutor error: go.so file not in specify path")
+		return nil, errors.New("NewGoExecutor error: go.so file not in specify path")
+	}
+	return exec, nil
 }
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
