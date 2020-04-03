@@ -61,13 +61,18 @@ func (h *RpcHandler) SubmitExecutor(submit *packets.SubmitInfo, result *packets.
 	}
 
 	//async send executor to worker node
-	err := h.getNode().SubmitExecutor(submit)
+	err, reply := h.getNode().SubmitExecutor(submit)
 	if err != nil {
 		logger.Default().DebugS(logTitle+"error:", err.Error())
 		*result = createResult(-2001, "submit error", nil)
 	} else {
-		logger.Default().DebugS(logTitle+"success", submit)
-		*result = createResult(0, "ok", h.getNode().Runtime.Executors)
+		if reply.RetCode != reply.CorrectCode() {
+			logger.Default().DebugS(logTitle+"failed, reply code:", reply.RetCode)
+			*result = createResult(reply.RetCode, reply.RetMsg, reply.Message)
+		} else {
+			logger.Default().DebugS(logTitle+"success", submit)
+			*result = createResult(reply.RetCode, reply.RetMsg, h.getNode().Runtime.Executors)
+		}
 	}
 	return nil
 }

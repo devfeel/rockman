@@ -111,14 +111,40 @@ func (n *Node) Start() error {
 	return err
 }
 
-func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) error {
+func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) (error, *packets.JsonResult) {
+	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
 	if !n.IsLeader {
-		return ErrorCanNotSubmitToNotLeaderNode
+		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, Current node is not leader.")
+		return ErrorCanNotSubmitToNotLeaderNode, nil
 	}
-	n.submitQueue <- submit
-	logger.Node().Debug("SubmitExecutor[" + fmt.Sprint(submit.TaskConfig) + "] into queue success")
-	//TODO log submit to db log
-	return nil
+
+	var err error
+	// get low balance worker
+	if submit.Worker == nil {
+		submit.Worker, err = n.Cluster.GetLowBalanceWorker()
+		if err != nil {
+			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
+			//TODO log submit result to db log
+			return err, nil
+		}
+	}
+
+	//submit executor to the specified worker node
+	rpcClient := n.Cluster.GetRpcClient(submit.Worker.EndPoint())
+	err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
+	//TODO log submit result to db log
+	if err != nil {
+		logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] error:", err.Error())
+		return err, reply
+	} else {
+		if reply.RetCode != reply.CorrectCode() {
+			logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] failed, result:", reply.RetCode)
+		} else {
+			n.Cluster.Scheduler.AddOnlineSubmit(submit)
+			logger.Node().Debug(logTitle + "to [" + submit.Worker.EndPoint() + "] success.")
+		}
+		return err, reply
+	}
 }
 
 func (n *Node) Shutdown() {
@@ -229,7 +255,7 @@ func (n *Node) distributeSubmit() {
 		}
 
 		//submit executor to the specified worker node
-		rpcClient := n.Cluster.GetRpcClient(submit.Worker.Host, submit.Worker.Port)
+		rpcClient := n.Cluster.GetRpcClient(submit.Worker.EndPoint())
 		err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
 		if err != nil {
 			n.submitRetryQueue <- submit

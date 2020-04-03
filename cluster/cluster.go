@@ -153,15 +153,14 @@ func (c *Cluster) AddNodeInfo(nodeInfo *packets.NodeInfo) {
 	c.Nodes[key] = nodeInfo
 }
 
-func (c *Cluster) GetRpcClient(host, port string) *client.RpcClient {
-	serverUrl := host + ":" + port
+func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	defer c.rpcClientLocker.Unlock()
 	c.rpcClientLocker.Lock()
 	var rpcClient *client.RpcClient
 	var isExists bool
-	if rpcClient, isExists = c.rpcClients[serverUrl]; !isExists {
-		rpcClient = client.NewRpcClient(serverUrl)
-		c.rpcClients[serverUrl] = rpcClient
+	if rpcClient, isExists = c.rpcClients[endPoint]; !isExists {
+		rpcClient = client.NewRpcClient(endPoint)
+		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
 }

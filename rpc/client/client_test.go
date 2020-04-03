@@ -268,6 +268,30 @@ func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 	}
 }
 
+func TestRpcClient_CallSubmitLBGoExecutor(t *testing.T) {
+	client := getRpcClient()
+	submit := new(packets.SubmitInfo)
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-GoSo-LB"
+	conf.TaskType = "cron"
+	conf.TargetType = "goso"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.GoConfig{
+		FileName: "plugin.so",
+	}
+	submit.TaskConfig = conf
+	err, result := client.CallSubmitExecutor(submit)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
 func TestRpcClient_CallStartExecutor(t *testing.T) {
 	client := getRpcClient()
 	taskId := "TestRpcClient-http-debug"
