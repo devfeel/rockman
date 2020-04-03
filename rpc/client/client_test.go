@@ -176,7 +176,38 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallSubmitShellExecutor(t *testing.T) {
+func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
+	client := getRpcClient()
+	submit := new(packets.SubmitInfo)
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-shell-Script"
+	conf.TaskType = "cron"
+	conf.TargetType = "shell"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.ShellConfig{
+		Script: "echo ok",
+		Type:   "Script",
+	}
+
+	submit.TaskConfig = conf
+	submit.Worker = &packets.NodeInfo{
+		Host: "118.31.32.168",
+		Port: "2398",
+	}
+
+	err, result := client.CallSubmitExecutor(submit)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 	client := getRpcClient()
 	submit := new(packets.SubmitInfo)
 	conf := &packets.TaskConfig{}
