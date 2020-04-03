@@ -7,9 +7,9 @@ import (
 
 func TestHttpGet(t *testing.T) {
 	url := "http://www.baidu.com"
-	_, _, _, _, err := HttpGet(url, 30*time.Second)
-	if err != nil {
-		t.Error(err)
+	result := HttpGet(url, 30*time.Second)
+	if result.Error != nil {
+		t.Error(result.Error)
 	} else {
 		t.Log("HttpGet success")
 	}
@@ -17,9 +17,9 @@ func TestHttpGet(t *testing.T) {
 
 func TestHttpPost(t *testing.T) {
 	url := "http://www.baidu.com"
-	_, _, _, _, err := HttpPost(url, "", "", 30*time.Second)
-	if err != nil {
-		t.Error(err)
+	result := HttpPost(url, "", "", 30*time.Second)
+	if result.Error != nil {
+		t.Error(result.Error)
 	} else {
 		t.Log("HttpPost success")
 	}

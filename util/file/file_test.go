@@ -45,7 +45,12 @@ func Test_Exist_1(t *testing.T) {
 }
 
 func Test_ExistsInPath(t *testing.T) {
-	fmt.Println(ExistsInPath("../", "../../main.go"))
+	fmt.Println(ExistsInPath("../../", "../../main.go"))
 }
 
 // 以下是性能测试
+func BenchmarkExistsInPath(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ExistsInPath("../../", "../../main.go")
+	}
+}
