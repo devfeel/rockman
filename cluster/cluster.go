@@ -24,6 +24,7 @@ type (
 		lastGetLeaderTime time.Time
 		OnLeaderChange    WatchChangeHandle
 		Nodes             map[string]*packets.NodeInfo
+		nodeKVs           api.KVPairs
 		nodesLastIndex    uint64
 		nodesLocker       *sync.RWMutex
 		OnNodesChange     WatchChangeHandle
@@ -113,6 +114,7 @@ func (c *Cluster) LoadOnlineNodes() error {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
 	}
+	c.nodeKVs = nodeKVs
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
 	c.watchOnlineNodes()
@@ -284,7 +286,9 @@ func (c *Cluster) watchOnlineNodes() error {
 		}
 		if meta.LastIndex != c.nodesLastIndex {
 			logger.Cluster().TraceS("Cluster.watchNodesChange:", meta.LastIndex, c.nodesLastIndex)
+			logger.Cluster().TraceS(fmt.Sprint(c.nodeKVs), fmt.Sprint(nodeKVs))
 			logger.Cluster().Debug("Cluster.watchNodesChange: some nodes changed.")
+			c.nodeKVs = nodeKVs
 			c.nodesLastIndex = meta.LastIndex
 			c.refreshOnlineNodes(nodeKVs)
 			if c.OnNodesChange != nil {
