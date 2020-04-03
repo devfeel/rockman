@@ -2,7 +2,6 @@ package node
 
 import (
 	"errors"
-	"fmt"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
@@ -24,8 +23,6 @@ type (
 		profile            *config.Profile
 		onlineSubmits      map[string]*packets.SubmitInfo
 		onlineSubmitLocker *sync.RWMutex
-		submitQueue        chan *packets.SubmitInfo
-		submitRetryQueue   chan *packets.SubmitInfo
 		Cluster            *cluster.Cluster
 		Runtime            *runtime.Runtime
 		shutdownChan       chan string
@@ -52,8 +49,6 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		NodeName:           profile.Node.NodeName,
 		onlineSubmits:      make(map[string]*packets.SubmitInfo),
 		onlineSubmitLocker: new(sync.RWMutex),
-		submitQueue:        make(chan *packets.SubmitInfo),
-		submitRetryQueue:   make(chan *packets.SubmitInfo),
 		profile:            profile,
 		shutdownChan:       shutdown,
 	}
@@ -95,7 +90,6 @@ func (n *Node) Start() error {
 
 	if n.profile.Node.IsMaster {
 		n.electionLeader()
-		n.distributeSubmit()
 	}
 
 	if n.Config.IsWorker {
@@ -226,58 +220,6 @@ RegisterNode:
 	}
 	logger.Node().DebugS(logTitle + "success.")
 	return nil
-}
-
-// distributeSubmit distribute submit from queue, send to worker node
-func (n *Node) distributeSubmit() {
-	logTitle := "Node distributeSubmit "
-	logger.Node().Debug(logTitle + "running.")
-	doDistribute := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Node().Error(errInfo, logTitle+"error")
-			}
-		}()
-
-		submit := <-n.submitQueue
-		worker := submit.Worker
-		var err error
-
-		// get low balance worker
-		if worker == nil {
-			worker, err = n.Cluster.GetLowBalanceWorker()
-			if err != nil {
-				logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
-				//TODO log submit result to db log
-				return
-			}
-		}
-
-		//submit executor to the specified worker node
-		rpcClient := n.Cluster.GetRpcClient(submit.Worker.EndPoint())
-		err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
-		if err != nil {
-			n.submitRetryQueue <- submit
-			logger.Node().DebugS(logTitle+"submit ["+submit.TaskConfig.TaskID+"] to ["+submit.Worker.EndPoint()+"] error, into retry queue:", err.Error())
-			//TODO log submit result to db log
-		} else {
-			if reply.RetCode != reply.CorrectCode() {
-				n.submitRetryQueue <- submit
-				logger.Node().DebugS(logTitle+"submit ["+submit.TaskConfig.TaskID+"] to ["+submit.Worker.EndPoint()+"] failed, into retry queue:", reply.RetCode)
-				//TODO log submit result to db log
-			} else {
-				n.Cluster.Scheduler.AddOnlineSubmit(submit)
-				logger.Node().Debug(logTitle + "submit [" + submit.TaskConfig.TaskID + "] to [" + submit.Worker.EndPoint() + "] success.")
-				//TODO log submit result to db log
-			}
-		}
-	}
-	go func() {
-		for {
-			doDistribute()
-		}
-	}()
 }
 
 // addOnlineSubmit
