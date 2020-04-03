@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/mapper"
+	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/packets"
 	_file "github.com/devfeel/rockman/util/file"
@@ -16,6 +17,12 @@ const (
 	ShellType_Script = "SCRIPT"
 	ShellType_File   = "FILE"
 	ShellFilePath    = "shells/"
+)
+
+var (
+	ErrorNotSupportShellType       = errors.New("not support shell type")
+	ErrorShellFileNotInSpecifyPath = errors.New("shell file not in specify path")
+	ErrorNotEnabledShellScriptMode = errors.New("shell script mode is not enabled")
 )
 
 type (
@@ -59,20 +66,26 @@ func NewShellExecutor(conf *packets.TaskConfig) (*ShellExecutor, error) {
 		return nil, err
 	}
 	if exec.shellConfig.Type == "" {
-		exec.shellConfig.Type = ShellType_Script
+		exec.shellConfig.Type = ShellType_File
 	}
 	exec.shellConfig.Type = strings.ToUpper(exec.shellConfig.Type)
+	if !config.CurrentProfile.Runtime.EnabledShellScript {
+		if exec.shellConfig.Type == ShellType_Script {
+			logger.Runtime().Debug("NewShellExecutor error: " + ErrorNotEnabledShellScriptMode.Error())
+			return nil, ErrorNotEnabledShellScriptMode
+		}
+	}
 
 	if exec.shellConfig.Type != ShellType_File && exec.shellConfig.Type != ShellType_Script {
-		logger.Runtime().Debug("NewShellExecutor error: not support shell type")
-		return nil, errors.New("NewShellExecutor error: not support shell type [" + exec.shellConfig.Type + "]")
+		logger.Runtime().Debug("NewShellExecutor error: " + ErrorNotSupportShellType.Error())
+		return nil, ErrorNotSupportShellType
 	}
 
 	if exec.shellConfig.Type == ShellType_File {
 		exec.shellConfig.Script = ShellFilePath + exec.shellConfig.Script
 		if !_file.ExistsInPath(ShellFilePath, exec.shellConfig.Script) {
-			logger.Runtime().Debug("NewShellExecutor error: shell file not in specify path")
-			return nil, errors.New("NewShellExecutor error: shell file not in specify path")
+			logger.Runtime().Debug("NewShellExecutor error: " + ErrorShellFileNotInSpecifyPath.Error())
+			return nil, ErrorShellFileNotInSpecifyPath
 		}
 	}
 	return exec, nil
@@ -102,6 +115,9 @@ func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 }
 
 func execShellScript(s string) (string, error) {
+	if !config.CurrentProfile.Runtime.EnabledShellScript {
+		return "", ErrorNotEnabledShellScriptMode
+	}
 	cmd := exec.Command("/bin/bash", "-c", s)
 	var out bytes.Buffer
 	cmd.Stdout = &out

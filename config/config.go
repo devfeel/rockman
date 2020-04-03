@@ -57,8 +57,9 @@ type (
 	}
 
 	RuntimeSection struct {
-		IsRun   bool
-		LogPath string
+		IsRun              bool
+		LogPath            string
+		EnabledShellScript bool
 	}
 )
 
@@ -76,7 +77,7 @@ func DefaultProfile() *Profile {
 	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398"}
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
-	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime"}
+	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime", EnabledShellScript: false}
 	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "rock-dev", WatchLeaderRetryLimit: 10}
 
 	CurrentProfile = p

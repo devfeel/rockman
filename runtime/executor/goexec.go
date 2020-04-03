@@ -16,6 +16,10 @@ import (
 
 const GoFilePath = "plugins/"
 
+var (
+	ErrorGoSoFileNotInSpecifyPath = errors.New("go.so file not in specify path")
+)
+
 type (
 	GoConfig struct {
 		FileName string
@@ -57,8 +61,8 @@ func NewGoExecutor(conf *packets.TaskConfig) (*GoExecutor, error) {
 
 	exec.goConfig.FileName = GoFilePath + exec.goConfig.FileName
 	if !_file.ExistsInPath(GoFilePath, exec.goConfig.FileName) {
-		logger.Runtime().Debug("NewGoExecutor error: go.so file not in specify path")
-		return nil, errors.New("NewGoExecutor error: go.so file not in specify path")
+		logger.Runtime().Debug("NewGoExecutor error: " + ErrorGoSoFileNotInSpecifyPath.Error())
+		return nil, ErrorGoSoFileNotInSpecifyPath
 	}
 	return exec, nil
 }
