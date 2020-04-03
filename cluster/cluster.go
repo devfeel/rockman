@@ -109,7 +109,7 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) erro
 // LoadOnlineNodes load all online nodes from Registry
 func (c *Cluster) LoadOnlineNodes() error {
 	logTitle := "Cluster.LoadOnlineNodes "
-	nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, nil)
+	nodeKVs, meta, err := c.RegistryClient.ListKV(c.getNodeKeyPrefix(), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
@@ -279,7 +279,7 @@ func (c *Cluster) watchOnlineNodes() error {
 			WaitIndex: c.nodesLastIndex,
 			WaitTime:  time.Minute * 10,
 		}
-		nodeKVs, meta, err := c.RegistryClient.ListKV(packets.NodeKeyPrefix, opt)
+		nodeKVs, meta, err := c.RegistryClient.ListKV(c.getNodeKeyPrefix(), opt)
 		if err != nil {
 			return err
 		}
@@ -308,6 +308,10 @@ func (c *Cluster) watchOnlineNodes() error {
 	}()
 
 	return nil
+}
+
+func (c *Cluster) getNodeKeyPrefix() string {
+	return packets.NodeKeyPrefix + c.ClusterId + "/"
 }
 
 func getLeaderKey(clusterId string) string {
