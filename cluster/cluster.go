@@ -284,8 +284,6 @@ func (c *Cluster) watchOnlineNodes() error {
 			return err
 		}
 		if meta.LastIndex != c.nodesLastIndex {
-			logger.Cluster().TraceS("Cluster.watchNodesChange:", meta.LastIndex, c.nodesLastIndex)
-			logger.Cluster().TraceS(fmt.Sprint(c.nodeKVs), fmt.Sprint(nodeKVs))
 			logger.Cluster().Debug("Cluster.watchNodesChange: some nodes changed.")
 			c.nodeKVs = nodeKVs
 			c.nodesLastIndex = meta.LastIndex
