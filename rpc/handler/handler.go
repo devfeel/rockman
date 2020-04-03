@@ -83,7 +83,7 @@ func (h *RpcHandler) RegisterExecutor(config *packets.TaskConfig, result *packet
 
 	exec, err := h.getNode().Runtime.CreateExecutor(config)
 	if err != nil {
-		logger.Default().Error(err, logTitle+"CreateExecutor error:"+err.Error())
+		logger.Default().Warn(logTitle + "CreateExecutor error:" + err.Error())
 		*result = packets.JsonResult{RetCode: -9001, RetMsg: "CreateExecutor error:" + err.Error()}
 		return nil
 	} else {
