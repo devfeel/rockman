@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	repository2 "github.com/devfeel/rockman/protected/repository"
@@ -39,8 +38,7 @@ func (service *TaskService) QueryTasks() ([]*model.TaskInfo, error) {
 // WriteExecLog
 func (service *TaskService) WriteExecLog(log *model.TaskExecLog) error {
 	log.CreateTime = time.Now()
-	ret, err := service.taskRepository.WriteExecLog(log)
-	fmt.Print("WriteExecLog", ret, err)
+	_, err := service.taskRepository.WriteExecLog(log)
 	return err
 }
 
