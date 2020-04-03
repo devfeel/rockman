@@ -69,7 +69,7 @@ func NewGoExecutor(conf *packets.TaskConfig) (*GoExecutor, error) {
 
 func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 	logTitle := "GoExecutor [" + exec.GetTaskID() + "] [" + exec.goConfig.FileName + "] "
-	p, err := plugin.Open("plugins/" + exec.goConfig.FileName)
+	p, err := plugin.Open(exec.goConfig.FileName)
 	if err != nil {
 		logger.Runtime().Error(err, logTitle+"open plugin error: "+err.Error())
 		ctx.Error = err
