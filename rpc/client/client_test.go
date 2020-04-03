@@ -74,7 +74,31 @@ func TestRpcClient_CallRegisterHttpExecutor(t *testing.T) {
 	}
 }
 
-func TestRpcClient_CallRegisterShellExecutor(t *testing.T) {
+func TestRpcClient_CallRegisterShellScriptExecutor(t *testing.T) {
+	client := getRpcClient()
+	conf := &packets.TaskConfig{}
+	conf.TaskID = "Test-shell-Script"
+	conf.TaskType = "cron"
+	conf.TargetType = "shell"
+	conf.IsRun = true
+	conf.DueTime = 0
+	conf.Interval = 0
+	conf.Express = "0 * * * * *"
+	conf.TaskData = ""
+	conf.TargetConfig = &executor.ShellConfig{
+		Script: "echo ok",
+		Type:   "Script",
+	}
+
+	err, result := client.CallRegisterExecutor(conf)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallRegisterShellFileExecutor(t *testing.T) {
 	client := getRpcClient()
 	conf := &packets.TaskConfig{}
 	conf.TaskID = "Test-shell-File"
