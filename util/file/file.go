@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 func GetCurrentDirectory() string {
@@ -37,7 +36,7 @@ func ExistsInPath(root string, fileName string) bool {
 }
 
 func FullPath(fileName string) (string, error) {
-	path, err := syscall.FullPath(fileName)
+	path, err := filepath.Abs(fileName)
 	if err != nil {
 		return "", err
 	}
