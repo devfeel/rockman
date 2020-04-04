@@ -325,7 +325,7 @@ func (c *Cluster) watchOnlineNodes() {
 // CycleLoadWorkerResource
 func (c *Cluster) cycleLoadWorkerResource() {
 	logTitle := "Cluster.CycleLoadWorkerResource "
-	logger.Cluster().Debug(logTitle + "begin.")
+	logger.Cluster().Debug(logTitle + "running...")
 	doQuery := func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -359,7 +359,7 @@ func (c *Cluster) cycleLoadWorkerResource() {
 						continue
 					}
 					c.Scheduler.SetResource(resource)
-					logger.Cluster().Debug(logTitle + "QueryResource[" + n.EndPoint() + "] success.")
+					logger.Cluster().Trace(logTitle + "QueryResource[" + n.EndPoint() + "] success.")
 				}
 			}
 		}
