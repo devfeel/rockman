@@ -68,6 +68,17 @@ func NewCluster(profile *config.Profile) (*Cluster, error) {
 	return cluster, nil
 }
 
+func (c *Cluster) Start() error {
+	logger.Default().Debug("Cluster start...")
+	err := c.loadOnlineNodes()
+	if err != nil {
+		return err
+	}
+	c.watchOnlineNodes()
+	c.cycleLoadWorkerResource()
+	return nil
+}
+
 // electionLeader election leader role to registry server
 func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) error {
 	opts := &api.LockOptions{
@@ -111,20 +122,6 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *core.NodeInfo) error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// LoadOnlineNodes load all online nodes from Registry
-func (c *Cluster) LoadOnlineNodes() error {
-	logTitle := "Cluster.LoadOnlineNodes "
-	nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
-	if err != nil {
-		logger.Cluster().Debug(logTitle + "error: " + err.Error())
-		return errors.New(logTitle + "error: " + err.Error())
-	}
-	c.nodesLastIndex = meta.LastIndex
-	c.refreshOnlineNodes(nodeKVs)
-	c.watchOnlineNodes()
 	return nil
 }
 
@@ -172,6 +169,39 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	return rpcClient
 }
 
+// WatchLeader
+func (c *Cluster) WatchLeader() error {
+	logTitle := "Cluster.WatchLeader "
+	defer func() {
+		if err := recover(); err != nil {
+			errInfo := errors.New(fmt.Sprintln(err))
+			logger.Cluster().Error(errInfo, logTitle+"error")
+		}
+	}()
+
+	opt := &api.QueryOptions{
+		WaitIndex: c.leaderLastIndex,
+		WaitTime:  time.Minute * 10,
+	}
+	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+	if err != nil {
+		return err
+	}
+	if kvPair.Session == "" {
+		return errors.New("leader lock session is nil")
+	}
+	if meta.LastIndex != c.leaderLastIndex {
+		logger.Cluster().Debug("Cluster.watchLeaderChange: leader changed.")
+		c.leaderLastIndex = meta.LastIndex
+		c.LeaderServer = string(kvPair.Value)
+		c.lastGetLeaderTime = time.Now()
+		if c.OnLeaderChange != nil {
+			c.OnLeaderChange()
+		}
+	}
+	return nil
+}
+
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
 func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	resources, err := c.Scheduler.Schedule(scheduler.Balance_LowerLoad)
@@ -207,36 +237,16 @@ func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	return nil, errors.New("no match resource with worker")
 }
 
-// WatchLeader
-func (c *Cluster) WatchLeader() error {
-	logTitle := "Cluster.WatchLeader "
-	defer func() {
-		if err := recover(); err != nil {
-			errInfo := errors.New(fmt.Sprintln(err))
-			logger.Cluster().Error(errInfo, logTitle+"error")
-		}
-	}()
-
-	opt := &api.QueryOptions{
-		WaitIndex: c.leaderLastIndex,
-		WaitTime:  time.Minute * 10,
-	}
-	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+// loadOnlineNodes load all online nodes from Registry
+func (c *Cluster) loadOnlineNodes() error {
+	logTitle := "Cluster.LoadOnlineNodes "
+	nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
 	if err != nil {
-		return err
+		logger.Cluster().Debug(logTitle + "error: " + err.Error())
+		return errors.New(logTitle + "error: " + err.Error())
 	}
-	if kvPair.Session == "" {
-		return errors.New("leader lock session is nil")
-	}
-	if meta.LastIndex != c.leaderLastIndex {
-		logger.Cluster().Debug("Cluster.watchLeaderChange: leader changed.")
-		c.leaderLastIndex = meta.LastIndex
-		c.LeaderServer = string(kvPair.Value)
-		c.lastGetLeaderTime = time.Now()
-		if c.OnLeaderChange != nil {
-			c.OnLeaderChange()
-		}
-	}
+	c.nodesLastIndex = meta.LastIndex
+	c.refreshOnlineNodes(nodeKVs)
 	return nil
 }
 
@@ -271,7 +281,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 }
 
 // watchOnlineNodes
-func (c *Cluster) watchOnlineNodes() error {
+func (c *Cluster) watchOnlineNodes() {
 	logTitle := "Cluster.watchOnlineNodes "
 	logger.Cluster().Debug(logTitle + "running.")
 	doQuery := func() error {
@@ -310,12 +320,10 @@ func (c *Cluster) watchOnlineNodes() error {
 			}
 		}
 	}()
-
-	return nil
 }
 
 // CycleLoadWorkerResource
-func (c *Cluster) CycleLoadWorkerResource() {
+func (c *Cluster) cycleLoadWorkerResource() {
 	logTitle := "Cluster.CycleLoadWorkerResource "
 	logger.Cluster().Debug(logTitle + "begin.")
 	doQuery := func() {
@@ -350,7 +358,7 @@ func (c *Cluster) CycleLoadWorkerResource() {
 						logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed[TypeMapperFailed, " + err.Error() + "]")
 						continue
 					}
-					c.Scheduler.SetResource(reply.Message.(*core.ResourceInfo))
+					c.Scheduler.SetResource(resource)
 					logger.Cluster().Debug(logTitle + "QueryResource[" + n.EndPoint() + "] success.")
 				}
 			}

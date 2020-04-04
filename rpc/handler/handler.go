@@ -35,7 +35,7 @@ func (h *RpcHandler) QueryResource(content string, result *core.JsonResult) erro
 	resource.CpuRate = 1
 	resource.MemoryRate = 1
 
-	logger.Default().DebugS("QueryResource success", *resource)
+	logger.Default().DebugS("RpcServer.QueryResource success", *resource)
 	*result = createResult(0, "ok", resource)
 	return nil
 }

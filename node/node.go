@@ -73,15 +73,14 @@ func (n *Node) Start() error {
 
 	if n.config.Node.IsMaster {
 		n.electionLeader()
-		n.Cluster.CycleLoadWorkerResource()
+		err := n.Cluster.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	if n.config.Node.IsWorker {
 		go n.Runtime.Start()
-	}
-
-	if n.config.Node.IsMaster {
-		n.Cluster.LoadOnlineNodes()
 	}
 
 	// register node to cluster
