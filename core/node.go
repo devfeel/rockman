@@ -36,6 +36,10 @@ func (n *NodeInfo) LoadFromJson(json string) error {
 	return jsonutil.Unmarshal(json, n)
 }
 
+func (n *NodeInfo) GetEmptyResource() *ResourceInfo {
+	return &ResourceInfo{EndPoint: n.EndPoint()}
+}
+
 func (n *NodeInfo) GetNodeKey(clusterId string) string {
 	return GetNodeKeyPrefix(clusterId) + n.EndPoint()
 }

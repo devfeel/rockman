@@ -34,6 +34,7 @@ type (
 		ClusterId             string //cluster Id
 		RegistryServer        string //Registry Server
 		WatchLeaderRetryLimit int
+		QueryResourceInterval int //the interval time for QueryResource, unit for second
 	}
 
 	NodeSection struct {
@@ -83,7 +84,7 @@ func DefaultProfile() *Profile {
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime", EnableShellScript: false}
-	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "dev-rock", WatchLeaderRetryLimit: 10}
+	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "dev-rock", WatchLeaderRetryLimit: 10, QueryResourceInterval: 60}
 
 	CurrentProfile = p
 	return p

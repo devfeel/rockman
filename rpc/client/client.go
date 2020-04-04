@@ -70,6 +70,20 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, *reply
 }
 
+func (c *RpcClient) CallQueryResource() (error, *core.JsonResult) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply core.JsonResult
+	err = client.Call("Rpc.QueryResource", "", &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
 func (c *RpcClient) CallRegisterNode(worker *core.NodeInfo) (error, *core.JsonResult) {
 	client, err := c.getConnClient()
 	if err != nil {

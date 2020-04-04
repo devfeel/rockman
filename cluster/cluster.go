@@ -3,6 +3,7 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/cluster/consul"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
@@ -10,8 +11,13 @@ import (
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/scheduler"
 	"github.com/hashicorp/consul/api"
+	"strconv"
 	"sync"
 	"time"
+)
+
+const (
+	MinQueryResourceInterval = 60
 )
 
 type (
@@ -25,7 +31,6 @@ type (
 		lastGetLeaderTime time.Time
 		OnLeaderChange    WatchChangeHandle
 		Nodes             map[string]*core.NodeInfo
-		nodeKVs           api.KVPairs
 		nodesLastIndex    uint64
 		nodesLocker       *sync.RWMutex
 		OnNodesChange     WatchChangeHandle
@@ -117,7 +122,6 @@ func (c *Cluster) LoadOnlineNodes() error {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
 	}
-	c.nodeKVs = nodeKVs
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
 	c.watchOnlineNodes()
@@ -152,7 +156,7 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) {
 	c.nodesLocker.Lock()
 	defer c.nodesLocker.Unlock()
 	//TODO get remote worker's resource
-	c.Scheduler.SetResource(key, 0, 0, 0)
+	c.Scheduler.SetResource(nodeInfo.GetEmptyResource())
 	c.Nodes[key] = nodeInfo
 }
 
@@ -203,36 +207,6 @@ func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	return nil, errors.New("no match resource with worker")
 }
 
-func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
-	nodes := make(map[string]*core.NodeInfo)
-	for _, s := range nodeKVs {
-		if s.Session == "" {
-			continue
-		}
-		node := new(core.NodeInfo)
-		if err := node.LoadFromJson(string(s.Value)); err != nil {
-			continue
-		}
-		if node.Cluster != c.ClusterId {
-			continue
-		}
-		nodes[node.EndPoint()] = node
-		if _, exists := c.Nodes[node.EndPoint()]; !exists {
-			c.AddNodeInfo(node)
-		}
-	}
-	c.nodesLocker.Lock()
-	defer c.nodesLocker.Unlock()
-	for _, node := range c.Nodes {
-		if _, exists := nodes[node.EndPoint()]; !exists {
-			node.IsOnline = false
-		} else {
-			node.IsOnline = true
-		}
-	}
-	c.lastLoadNodesTime = time.Now()
-}
-
 // WatchLeader
 func (c *Cluster) WatchLeader() error {
 	logTitle := "Cluster.WatchLeader "
@@ -266,6 +240,36 @@ func (c *Cluster) WatchLeader() error {
 	return nil
 }
 
+func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
+	nodes := make(map[string]*core.NodeInfo)
+	for _, s := range nodeKVs {
+		if s.Session == "" {
+			continue
+		}
+		node := new(core.NodeInfo)
+		if err := node.LoadFromJson(string(s.Value)); err != nil {
+			continue
+		}
+		if node.Cluster != c.ClusterId {
+			continue
+		}
+		nodes[node.EndPoint()] = node
+		if _, exists := c.Nodes[node.EndPoint()]; !exists {
+			c.AddNodeInfo(node)
+		}
+	}
+	c.nodesLocker.Lock()
+	defer c.nodesLocker.Unlock()
+	for _, node := range c.Nodes {
+		if _, exists := nodes[node.EndPoint()]; !exists {
+			node.IsOnline = false
+		} else {
+			node.IsOnline = true
+		}
+	}
+	c.lastLoadNodesTime = time.Now()
+}
+
 // watchOnlineNodes
 func (c *Cluster) watchOnlineNodes() error {
 	logTitle := "Cluster.watchOnlineNodes "
@@ -288,7 +292,6 @@ func (c *Cluster) watchOnlineNodes() error {
 		}
 		if meta.LastIndex != c.nodesLastIndex {
 			logger.Cluster().Debug("Cluster.watchNodesChange: some nodes changed.")
-			c.nodeKVs = nodeKVs
 			c.nodesLastIndex = meta.LastIndex
 			c.refreshOnlineNodes(nodeKVs)
 			if c.OnNodesChange != nil {
@@ -309,6 +312,62 @@ func (c *Cluster) watchOnlineNodes() error {
 	}()
 
 	return nil
+}
+
+// CycleLoadWorkerResource
+func (c *Cluster) CycleLoadWorkerResource() {
+	logTitle := "Cluster.CycleLoadWorkerResource "
+	logger.Cluster().Debug(logTitle + "begin.")
+	doQuery := func() {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, logTitle+"error")
+				logger.Cluster().Debug(logTitle + "error[" + errInfo.Error() + "], wait next time")
+			}
+		}()
+		queryNodes := 0
+		failedNodes := 0
+		for _, n := range c.Nodes {
+			if !n.IsOnline && !n.IsWorker {
+				continue
+			}
+			queryNodes += 1
+			client := c.GetRpcClient(n.EndPoint())
+			err, reply := client.CallQueryResource()
+			if err != nil {
+				failedNodes += 1
+				logger.Cluster().Error(err, logTitle+"QueryResource["+n.EndPoint()+"] error")
+			} else {
+				if reply.RetCode != reply.CorrectCode() {
+					failedNodes += 1
+					logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed[" + strconv.Itoa(reply.RetCode) + ", " + reply.RetMsg + "]")
+				} else {
+					resource := new(core.ResourceInfo)
+					err := mapper.MapperMap(reply.Message.(map[string]interface{}), resource)
+					if err != nil {
+						failedNodes += 1
+						logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed[TypeMapperFailed, " + err.Error() + "]")
+						continue
+					}
+					c.Scheduler.SetResource(reply.Message.(*core.ResourceInfo))
+					logger.Cluster().Debug(logTitle + "QueryResource[" + n.EndPoint() + "] success.")
+				}
+			}
+		}
+		logger.Cluster().Debug(logTitle + "success, query nodes[" + strconv.Itoa(queryNodes) + "], failed[" + strconv.Itoa(failedNodes) + "]")
+	}
+
+	go func() {
+		for {
+			interval := c.profile.Cluster.QueryResourceInterval
+			if interval < MinQueryResourceInterval {
+				interval = MinQueryResourceInterval
+			}
+			time.Sleep(time.Second * time.Duration(interval))
+			doQuery()
+		}
+	}()
 }
 
 func getLeaderKey(clusterId string) string {

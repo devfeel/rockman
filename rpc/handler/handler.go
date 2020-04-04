@@ -22,6 +22,24 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 	return nil
 }
 
+// QueryResource query resource info from worker node
+func (h *RpcHandler) QueryResource(content string, result *core.JsonResult) error {
+	if !h.node.IsWorker() {
+		logger.Default().Warn("QueryResource failed: can not query resource from not worker node")
+		*result = createResult(-1001, "can not query resource from not worker nodee", nil)
+		return nil
+	}
+	resource := &core.ResourceInfo{}
+	resource.EndPoint = h.node.NodeInfo().EndPoint()
+	resource.TaskCount = h.node.Runtime.TaskService.Count()
+	resource.CpuRate = 1
+	resource.MemoryRate = 1
+
+	logger.Default().DebugS("QueryResource success", *resource)
+	*result = createResult(0, "ok", resource)
+	return nil
+}
+
 // RegisterExecutor register executor to runtime in worker node
 func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, result *core.JsonResult) error {
 	logTitle := "RpcServer.RegisterExecutor: "

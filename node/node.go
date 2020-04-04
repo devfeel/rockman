@@ -20,6 +20,7 @@ type (
 		isLeader           bool
 		Status             int
 		config             *config.Profile
+		nodeInfo           *core.NodeInfo
 		onlineSubmits      map[string]*core.SubmitInfo
 		onlineSubmitLocker *sync.RWMutex
 		Cluster            *cluster.Cluster
@@ -55,7 +56,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 
 	if node.config.Node.IsWorker {
 		// create runtime
-		node.Runtime = runtime.NewRuntime(node.getNodeInfo())
+		node.Runtime = runtime.NewRuntime(node.NodeInfo())
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -65,13 +66,14 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 func (n *Node) Start() error {
 	logger.Node().Debug("Node begin start...")
 	// create session with node info
-	err := n.createSession(n.getNodeInfo().GetNodeKey(n.Cluster.ClusterId))
+	err := n.createSession(n.NodeInfo().GetNodeKey(n.Cluster.ClusterId))
 	if err != nil {
 		return err
 	}
 
 	if n.config.Node.IsMaster {
 		n.electionLeader()
+		n.Cluster.CycleLoadWorkerResource()
 	}
 
 	if n.config.Node.IsWorker {
@@ -162,7 +164,7 @@ func (n *Node) electionLeader() {
 			}
 			retryCount += 1
 
-			err := n.Cluster.ElectionLeader(n.getNodeInfo().EndPoint(), "")
+			err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint(), "")
 			if err == nil {
 				logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
 				n.becomeLeaderRole()
@@ -180,7 +182,7 @@ func (n *Node) registerNode() error {
 	var leaderServer string
 	var err error
 	var retryCount int
-	nodeInfo := n.getNodeInfo()
+	nodeInfo := n.NodeInfo()
 	logger.Cluster().Debug(logTitle + "begin...")
 RegisterNode:
 	for {
@@ -236,13 +238,13 @@ func (n *Node) onLeaderChange() {
 		logger.Node().Debug("Node.onLeaderChange registerNode success")
 	}
 	if n.IsLeader() {
-		if n.Cluster.LeaderServer != n.getNodeInfo().EndPoint() {
+		if n.Cluster.LeaderServer != n.NodeInfo().EndPoint() {
 			n.removeLeaderRole()
 		}
 	}
 
 	if n.IsMaster() && !n.IsLeader() {
-		if n.Cluster.LeaderServer == n.getNodeInfo().EndPoint() {
+		if n.Cluster.LeaderServer == n.NodeInfo().EndPoint() {
 			n.becomeLeaderRole()
 		}
 	}
@@ -251,7 +253,7 @@ func (n *Node) onLeaderChange() {
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
 	logger.Node().Debug("Node create session begin...")
-	err := n.Cluster.CreateSession(nodeKey, n.getNodeInfo())
+	err := n.Cluster.CreateSession(nodeKey, n.NodeInfo())
 	if err != nil {
 		logger.Node().Debug("Node create session error: " + err.Error())
 	} else {
@@ -296,8 +298,11 @@ func (n *Node) watchLeader() {
 	}()
 }
 
-func (n *Node) getNodeInfo() *core.NodeInfo {
-	nodeInfo := &core.NodeInfo{
+func (n *Node) NodeInfo() *core.NodeInfo {
+	if n.nodeInfo != nil {
+		return n.nodeInfo
+	}
+	n.nodeInfo = &core.NodeInfo{
 		NodeID:    n.NodeId,
 		Cluster:   n.config.Cluster.ClusterId,
 		OuterHost: n.config.Rpc.OuterHost,
@@ -308,5 +313,5 @@ func (n *Node) getNodeInfo() *core.NodeInfo {
 		IsWorker:  n.config.Node.IsWorker,
 		IsOnline:  true,
 	}
-	return nodeInfo
+	return n.nodeInfo
 }

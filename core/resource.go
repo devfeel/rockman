@@ -1,4 +1,4 @@
-package scheduler
+package core
 
 type (
 	ResourceInfo struct {
@@ -16,7 +16,7 @@ type (
 )
 
 // refreshLoadValue refresh resource's load value
-func (r *ResourceInfo) refreshLoadValue() int {
+func (r *ResourceInfo) RefreshLoadValue() int {
 	r.LoadValue = r.CpuRate*30 + r.MemoryRate*30 + r.TaskCount*40
 	return r.LoadValue
 }
