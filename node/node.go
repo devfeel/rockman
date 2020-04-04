@@ -17,23 +17,14 @@ type (
 	Node struct {
 		NodeId             string
 		NodeName           string
-		IsLeader           bool
+		isLeader           bool
 		Status             int
-		Config             *NodeConfig
-		profile            *config.Profile
+		config             *config.Profile
 		onlineSubmits      map[string]*core.SubmitInfo
 		onlineSubmitLocker *sync.RWMutex
 		Cluster            *cluster.Cluster
 		Runtime            *runtime.Runtime
 		shutdownChan       chan string
-	}
-
-	NodeConfig struct {
-		IsMaster       bool
-		IsWorker       bool
-		LogFilePath    string
-		RegistryServer string
-		Profile        *config.Profile
 	}
 )
 
@@ -49,15 +40,8 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		NodeName:           profile.Node.NodeName,
 		onlineSubmits:      make(map[string]*core.SubmitInfo),
 		onlineSubmitLocker: new(sync.RWMutex),
-		profile:            profile,
+		config:             profile,
 		shutdownChan:       shutdown,
-	}
-
-	//init config
-	err := node.initConfig(profile)
-	if err != nil {
-		logger.Node().Debug("Node init config error: " + err.Error())
-		return nil, err
 	}
 
 	//init cluster
@@ -69,7 +53,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 
 	node.Cluster = cluster
 
-	if node.Config.IsWorker {
+	if node.config.Node.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime(node.getNodeInfo())
 	}
@@ -86,15 +70,15 @@ func (n *Node) Start() error {
 		return err
 	}
 
-	if n.profile.Node.IsMaster {
+	if n.config.Node.IsMaster {
 		n.electionLeader()
 	}
 
-	if n.Config.IsWorker {
+	if n.config.Node.IsWorker {
 		go n.Runtime.Start()
 	}
 
-	if n.profile.Node.IsMaster {
+	if n.config.Node.IsMaster {
 		n.Cluster.LoadOnlineNodes()
 	}
 
@@ -103,9 +87,25 @@ func (n *Node) Start() error {
 	return err
 }
 
+func (n *Node) Config() *config.Profile {
+	return n.config
+}
+
+func (n *Node) IsMaster() bool {
+	return n.config.Node.IsMaster
+}
+
+func (n *Node) IsWorker() bool {
+	return n.config.Node.IsWorker
+}
+
+func (n *Node) IsLeader() bool {
+	return n.isLeader
+}
+
 func (n *Node) SubmitExecutor(submit *core.SubmitInfo) (error, *core.JsonResult) {
 	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
-	if !n.IsLeader {
+	if !n.IsLeader() {
 		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, Current node is not leader.")
 		return ErrorCanNotSubmitToNotLeaderNode, nil
 	}
@@ -153,7 +153,7 @@ func (n *Node) electionLeader() {
 
 	go func() {
 		var retryCount int
-		limit := n.profile.Global.RetryLimit
+		limit := n.config.Global.RetryLimit
 		for {
 			if retryCount > limit {
 				err := errors.New(logTitle + "retry count bigger than " + strconv.Itoa(limit) + ", now stop it.")
@@ -184,8 +184,8 @@ func (n *Node) registerNode() error {
 	logger.Cluster().Debug(logTitle + "begin...")
 RegisterNode:
 	for {
-		if retryCount > n.profile.Global.RetryLimit {
-			err = errors.New(logTitle + "retry more than 5 times, now will be stop.")
+		if retryCount > n.config.Global.RetryLimit {
+			err = errors.New(logTitle + "retry more than 5 times, now will be stop")
 			logger.Node().DebugS(logTitle + "error: " + err.Error())
 			return err
 		}
@@ -198,7 +198,7 @@ RegisterNode:
 			continue RegisterNode
 		} else {
 			logger.Node().Debug(logTitle + "GetLeaderInfo success [" + leaderServer + "]")
-			rpcClient := client.NewRpcClient(leaderServer, n.profile.Rpc.EnableTls, n.profile.Rpc.ClientCertFile, n.profile.Rpc.ClientKeyFile)
+			rpcClient := client.NewRpcClient(leaderServer, n.config.Rpc.EnableTls, n.config.Rpc.ClientCertFile, n.config.Rpc.ClientKeyFile)
 			err, result := rpcClient.CallRegisterNode(nodeInfo)
 			if err != nil {
 				logger.Node().Debug(logTitle + "CallRegisterNode error:" + err.Error() + ", will retry 10 seconds after.")
@@ -235,9 +235,15 @@ func (n *Node) onLeaderChange() {
 	} else {
 		logger.Node().Debug("Node.onLeaderChange registerNode success")
 	}
-	if n.IsLeader {
+	if n.IsLeader() {
 		if n.Cluster.LeaderServer != n.getNodeInfo().EndPoint() {
 			n.removeLeaderRole()
+		}
+	}
+
+	if n.IsMaster() && !n.IsLeader() {
+		if n.Cluster.LeaderServer == n.getNodeInfo().EndPoint() {
+			n.becomeLeaderRole()
 		}
 	}
 }
@@ -258,7 +264,7 @@ func (n *Node) becomeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to leader
 	logger.Node().Debug(logTitle + "become to leader role")
-	n.IsLeader = true
+	n.isLeader = true
 
 }
 
@@ -266,7 +272,7 @@ func (n *Node) removeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to not leader
 	logger.Node().Debug(logTitle + "remove leader role")
-	n.IsLeader = false
+	n.isLeader = false
 }
 
 func (n *Node) watchLeader() {
@@ -290,28 +296,16 @@ func (n *Node) watchLeader() {
 	}()
 }
 
-// initConfig init node config from config profile
-func (n *Node) initConfig(conf *config.Profile) error {
-	n.Config = new(NodeConfig)
-	n.Config.RegistryServer = conf.Cluster.RegistryServer
-	n.Config.IsMaster = conf.Node.IsMaster
-	n.Config.IsWorker = conf.Node.IsWorker
-	n.Config.Profile = conf
-
-	logger.Node().Debug("Node Config init success.")
-	return nil
-}
-
 func (n *Node) getNodeInfo() *core.NodeInfo {
 	nodeInfo := &core.NodeInfo{
 		NodeID:    n.NodeId,
-		Cluster:   n.profile.Cluster.ClusterId,
-		OuterHost: n.profile.Rpc.OuterHost,
-		OuterPort: n.profile.Rpc.OuterPort,
-		Host:      n.profile.Rpc.RpcHost,
-		Port:      n.profile.Rpc.RpcPort,
-		IsMaster:  n.profile.Node.IsMaster,
-		IsWorker:  n.profile.Node.IsWorker,
+		Cluster:   n.config.Cluster.ClusterId,
+		OuterHost: n.config.Rpc.OuterHost,
+		OuterPort: n.config.Rpc.OuterPort,
+		Host:      n.config.Rpc.RpcHost,
+		Port:      n.config.Rpc.RpcPort,
+		IsMaster:  n.config.Node.IsMaster,
+		IsWorker:  n.config.Node.IsWorker,
 		IsOnline:  true,
 	}
 	return nodeInfo

@@ -25,7 +25,7 @@ func (h *RpcHandler) Echo(content string, result *string) error {
 // RegisterWorker register worker node to leader node
 func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, result *core.JsonResult) error {
 	logTitle := "RpcServer.RegisterNode[" + nodeInfo.EndPoint() + "] "
-	if !h.getNode().IsLeader {
+	if !h.getNode().IsLeader() {
 		logger.Default().Warn(logTitle + "can not register to not leader node")
 		*result = createResult(-1001, "can not register to not leader node", nil)
 		return nil
@@ -40,7 +40,7 @@ func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, result *core.JsonResu
 // QueryNodes query node list from leader node
 func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, result *core.JsonResult) error {
 	logTitle := "RpcServer.QueryNodes "
-	if !h.getNode().IsLeader {
+	if !h.getNode().IsLeader() {
 		logger.Default().Warn(logTitle + "can not query nodes from not leader node")
 		*result = createResult(-1001, "can not query nodes from not leader node", nil)
 		return nil
@@ -54,7 +54,7 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, result *core.JsonResult
 // SubmitExecutor submit executor to leader node, then register to worker node
 func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, result *core.JsonResult) error {
 	logTitle := "RpcServer.SubmitExecutor: "
-	if !h.getNode().IsLeader {
+	if !h.getNode().IsLeader() {
 		logger.Default().Warn("can not submit to not leader node")
 		*result = createResult(-1001, "can not submit to not leader node", nil)
 		return nil
@@ -80,7 +80,7 @@ func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, result *core.JsonRe
 // RegisterExecutor register executor to runtime in worker node
 func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, result *core.JsonResult) error {
 	logTitle := "RpcServer.RegisterExecutor: "
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().Config().Node.IsWorker {
 		logger.Default().Warn("unworker node can not register executor")
 		*result = core.JsonResult{RetCode: -1001, RetMsg: "unworker node can not register executor"}
 		return nil
@@ -104,7 +104,7 @@ func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, result *core.Json
 // StartExecutor start executor by taskId
 func (h *RpcHandler) StartExecutor(taskId string, result *core.JsonResult) error {
 	logTitle := "RpcServer.StartExecutor[" + taskId + "] "
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().IsWorker() {
 		logger.Default().Warn("unworker node can not start executor")
 		*result = core.JsonResult{-1001, "unworker node can not start executor", nil}
 		return nil
@@ -123,12 +123,12 @@ func (h *RpcHandler) StartExecutor(taskId string, result *core.JsonResult) error
 // StopExecutor stop executor by taskId
 func (h *RpcHandler) StopExecutor(taskId string, result *core.JsonResult) error {
 	logTitle := "RpcServer.StopExecutor[" + taskId + "] "
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().IsWorker() {
 		logger.Default().Warn(logTitle + "unworker node can not start executor")
 		*result = core.JsonResult{-1001, "unworker node can not start executor", nil}
 		return nil
 	}
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().IsWorker() {
 		logger.Default().Warn(logTitle + "unworker node can not start executor")
 		*result = core.JsonResult{-1001, "unworker node can not start executor", nil}
 		return nil
@@ -149,7 +149,7 @@ func (h *RpcHandler) StopExecutor(taskId string, result *core.JsonResult) error 
 // if task is running, auto stop it first
 func (h *RpcHandler) RemoveExecutor(taskId string, result *core.JsonResult) error {
 	logTitle := "RpcServer.RemoveExecutor[" + taskId + "] "
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().IsWorker() {
 		logger.Default().Warn(logTitle + "unworker node can not start executor")
 		*result = core.JsonResult{-1001, "unworker node can not start executor", nil}
 		return nil
@@ -169,7 +169,7 @@ func (h *RpcHandler) RemoveExecutor(taskId string, result *core.JsonResult) erro
 // if taskId is nil, return all executors
 func (h *RpcHandler) QueryExecutorConfig(taskId string, result *core.JsonResult) error {
 	logTitle := "RpcServer.QueryExecutors [" + taskId + "] "
-	if !h.getNode().Config.IsWorker {
+	if !h.getNode().IsWorker() {
 		logger.Default().Warn(logTitle + "unworker node can not start executor")
 		*result = core.JsonResult{-1001, "unworker node can not start executor", nil}
 		return nil
