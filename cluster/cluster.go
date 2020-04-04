@@ -112,7 +112,7 @@ func (c *Cluster) CreateSession(nodeKey string, nodeInfo *core.NodeInfo) error {
 // LoadOnlineNodes load all online nodes from Registry
 func (c *Cluster) LoadOnlineNodes() error {
 	logTitle := "Cluster.LoadOnlineNodes "
-	nodeKVs, meta, err := c.RegistryClient.ListKV(c.getNodeKeyPrefix(), nil)
+	nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
@@ -233,7 +233,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	c.lastLoadNodesTime = time.Now()
 }
 
-// watchLeader
+// WatchLeader
 func (c *Cluster) WatchLeader() error {
 	logTitle := "Cluster.WatchLeader "
 	defer func() {
@@ -282,7 +282,7 @@ func (c *Cluster) watchOnlineNodes() error {
 			WaitIndex: c.nodesLastIndex,
 			WaitTime:  time.Minute * 10,
 		}
-		nodeKVs, meta, err := c.RegistryClient.ListKV(c.getNodeKeyPrefix(), opt)
+		nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), opt)
 		if err != nil {
 			return err
 		}
@@ -311,10 +311,6 @@ func (c *Cluster) watchOnlineNodes() error {
 	return nil
 }
 
-func (c *Cluster) getNodeKeyPrefix() string {
-	return core.NodeKeyPrefix + c.ClusterId + "/"
-}
-
 func getLeaderKey(clusterId string) string {
-	return "devfeel/rockman/" + clusterId + "/leader/locker"
+	return "devfeel/rockman/" + clusterId + "/leader"
 }

@@ -2,7 +2,7 @@ package core
 
 import jsonutil "github.com/devfeel/rockman/util/json"
 
-const NodeKeyPrefix = "devfeel/rockman/nodekey/"
+const NodeKeyPrefix = "devfeel/rockman/"
 
 type NodeInfo struct {
 	NodeID    string
@@ -37,5 +37,9 @@ func (n *NodeInfo) LoadFromJson(json string) error {
 }
 
 func (n *NodeInfo) GetNodeKey(clusterId string) string {
-	return NodeKeyPrefix + clusterId + ":" + n.EndPoint()
+	return GetNodeKeyPrefix(clusterId) + n.EndPoint()
+}
+
+func GetNodeKeyPrefix(clusterId string) string {
+	return NodeKeyPrefix + clusterId + "/nodes/"
 }
