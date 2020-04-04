@@ -2,7 +2,7 @@ package scheduler
 
 import (
 	"errors"
-	"github.com/devfeel/rockman/packets"
+	"github.com/devfeel/rockman/core"
 	"sort"
 	"sync"
 )
@@ -18,7 +18,7 @@ type (
 	Scheduler struct {
 		resources          map[string]*ResourceInfo
 		resourceLocker     *sync.RWMutex
-		onlineSubmits      map[string]*packets.SubmitInfo
+		onlineSubmits      map[string]*core.SubmitInfo
 		onlineSubmitLocker *sync.RWMutex
 	}
 )
@@ -30,14 +30,14 @@ func NewScheduler() *Scheduler {
 	scheduler := new(Scheduler)
 	scheduler.resources = make(map[string]*ResourceInfo)
 	scheduler.resourceLocker = new(sync.RWMutex)
-	scheduler.onlineSubmits = make(map[string]*packets.SubmitInfo)
+	scheduler.onlineSubmits = make(map[string]*core.SubmitInfo)
 	scheduler.onlineSubmitLocker = new(sync.RWMutex)
 
 	return scheduler
 }
 
 // AddOnlineSubmit add submit info which is online
-func (s *Scheduler) AddOnlineSubmit(submit *packets.SubmitInfo) {
+func (s *Scheduler) AddOnlineSubmit(submit *core.SubmitInfo) {
 
 	s.resourceLocker.Lock()
 	endPoint := submit.Worker.EndPoint()

@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/devfeel/rockman/cluster/consul"
+	"github.com/devfeel/rockman/config"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/scheduler"
 	"github.com/hashicorp/consul/api"
@@ -23,7 +24,7 @@ type (
 		leaderLastIndex   uint64
 		lastGetLeaderTime time.Time
 		OnLeaderChange    WatchChangeHandle
-		Nodes             map[string]*packets.NodeInfo
+		Nodes             map[string]*core.NodeInfo
 		nodeKVs           api.KVPairs
 		nodesLastIndex    uint64
 		nodesLocker       *sync.RWMutex
@@ -32,25 +33,27 @@ type (
 		rpcClients        map[string]*client.RpcClient
 		rpcClientLocker   *sync.RWMutex
 		Scheduler         *scheduler.Scheduler
+		profile           *config.Profile
 	}
 
 	WatchChangeHandle func()
 )
 
 // NewCluster new cluster and reg server
-func NewCluster(clusterId string, registryServer string) (*Cluster, error) {
+func NewCluster(profile *config.Profile) (*Cluster, error) {
 	cluster := new(Cluster)
-	cluster.ClusterId = clusterId
-	cluster.RegistryServerUrl = registryServer
-	cluster.LeaderKey = getLeaderKey(clusterId)
-	regClient, err := consul.NewConsulClient(registryServer)
+	cluster.profile = profile
+	cluster.ClusterId = profile.Cluster.ClusterId
+	cluster.RegistryServerUrl = profile.Cluster.RegistryServer
+	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
+	regClient, err := consul.NewConsulClient(profile.Cluster.RegistryServer)
 	if err != nil {
 		logger.Node().Debug(fmt.Sprint("Cluster init error", err.Error()))
 		logger.Node().Error(err, "Cluster init error")
 		return nil, err
 	}
 	cluster.RegistryClient = regClient
-	cluster.Nodes = make(map[string]*packets.NodeInfo)
+	cluster.Nodes = make(map[string]*core.NodeInfo)
 	cluster.nodesLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
@@ -84,7 +87,7 @@ func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) error {
 }
 
 // CreateSession create session to registry with node info
-func (c *Cluster) CreateSession(nodeKey string, nodeInfo *packets.NodeInfo) error {
+func (c *Cluster) CreateSession(nodeKey string, nodeInfo *core.NodeInfo) error {
 	opts := &api.LockOptions{
 		Key:   nodeKey,
 		Value: []byte(nodeInfo.Json()),
@@ -144,7 +147,7 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 }
 
 // addNodeToList add node into node list
-func (c *Cluster) AddNodeInfo(nodeInfo *packets.NodeInfo) {
+func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) {
 	key := nodeInfo.EndPoint()
 	c.nodesLocker.Lock()
 	defer c.nodesLocker.Unlock()
@@ -159,14 +162,14 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	var rpcClient *client.RpcClient
 	var isExists bool
 	if rpcClient, isExists = c.rpcClients[endPoint]; !isExists {
-		rpcClient = client.NewRpcClient(endPoint)
+		rpcClient = client.NewRpcClient(endPoint, c.profile.Rpc.ClientCertFile, c.profile.Rpc.ClientKeyFile)
 		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
 }
 
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
-func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
+func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	resources, err := c.Scheduler.Schedule(scheduler.Balance_LowerLoad)
 	if err != nil {
 		return nil, err
@@ -201,12 +204,12 @@ func (c *Cluster) GetLowBalanceWorker() (*packets.NodeInfo, error) {
 }
 
 func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
-	nodes := make(map[string]*packets.NodeInfo)
+	nodes := make(map[string]*core.NodeInfo)
 	for _, s := range nodeKVs {
 		if s.Session == "" {
 			continue
 		}
-		node := new(packets.NodeInfo)
+		node := new(core.NodeInfo)
 		if err := node.LoadFromJson(string(s.Value)); err != nil {
 			continue
 		}
@@ -309,7 +312,7 @@ func (c *Cluster) watchOnlineNodes() error {
 }
 
 func (c *Cluster) getNodeKeyPrefix() string {
-	return packets.NodeKeyPrefix + c.ClusterId + "/"
+	return core.NodeKeyPrefix + c.ClusterId + "/"
 }
 
 func getLeaderKey(clusterId string) string {

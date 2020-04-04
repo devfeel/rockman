@@ -1,11 +1,14 @@
 package rpc
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/rpc/handler"
-	"net"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
@@ -16,6 +19,7 @@ const (
 )
 
 type RpcServer struct {
+	config      *config.Profile
 	RpcHost     string
 	RpcPort     string
 	RpcProtocol string
@@ -24,6 +28,7 @@ type RpcServer struct {
 
 func NewRpcServer(profile *config.Profile, node *node.Node) *RpcServer {
 	s := new(RpcServer)
+	s.config = profile
 	s.Node = node
 	s.RpcHost = profile.Rpc.RpcHost
 	s.RpcPort = profile.Rpc.RpcPort
@@ -33,7 +38,13 @@ func NewRpcServer(profile *config.Profile, node *node.Node) *RpcServer {
 }
 
 func (s *RpcServer) Listen() error {
-	lis, err := net.Listen("tcp", s.RpcHost+":"+s.RpcPort)
+	tlsConfig, err := s.createTlsConfig()
+	if err != nil {
+		logger.Default().Error(err, "RPCServer createTlsConfig error")
+		return err
+	}
+	lis, err := tls.Listen("tcp", s.RpcHost+":"+s.RpcPort, tlsConfig)
+	//lis, err := net.Listen("tcp", s.RpcHost+":"+s.RpcPort)
 	if err != nil {
 		return err
 	}
@@ -41,7 +52,7 @@ func (s *RpcServer) Listen() error {
 
 	srv := rpc.NewServer()
 	if err := srv.RegisterName("Rpc", handler.NewRpcHandler(s.Node)); err != nil {
-		logger.Default().Error(err, "lis.RegisterName error")
+		logger.Default().Error(err, "RPCServer lis.RegisterName error")
 		return err
 	}
 
@@ -55,4 +66,30 @@ func (s *RpcServer) Listen() error {
 		}
 		go srv.ServeCodec(jsonrpc.NewServerCodec(conn))
 	}
+}
+
+func (s *RpcServer) createTlsConfig() (*tls.Config, error) {
+	serverCertFile := s.config.Rpc.ServerCertFile
+	serverKeyFile := s.config.Rpc.ServerKeyFile
+	clientCertFile := s.config.Rpc.ClientCertFile
+	cert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	if err != nil {
+		return nil, err
+	}
+	certBytes, err := ioutil.ReadFile(clientCertFile)
+	if err != nil {
+		return nil, err
+	}
+	clientCertPool := x509.NewCertPool()
+	ok := clientCertPool.AppendCertsFromPEM(certBytes)
+	if !ok {
+		err = errors.New("AppendCertsFromPEM failed")
+		return nil, err
+	}
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCertPool,
+	}
+	return tlsConfig, nil
 }

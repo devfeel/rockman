@@ -3,7 +3,7 @@ package executor
 import (
 	"errors"
 	"github.com/devfeel/dottask"
-	"github.com/devfeel/rockman/packets"
+	"github.com/devfeel/rockman/core"
 )
 
 const (
@@ -22,7 +22,7 @@ type (
 		SetTask(task task.Task)
 		GetTaskID() string
 		GetTargetType() string
-		GetTaskConfig() *packets.TaskConfig
+		GetTaskConfig() *core.TaskConfig
 		Exec(ctx *task.TaskContext) error
 	}
 
@@ -30,7 +30,7 @@ type (
 
 	baseExecutor struct {
 		Task       task.Task
-		TaskConfig *packets.TaskConfig
+		TaskConfig *core.TaskConfig
 	}
 )
 
@@ -48,7 +48,7 @@ func (exec *baseExecutor) GetTaskID() string {
 	return exec.TaskConfig.TaskID
 }
 
-func (exec *baseExecutor) GetTaskConfig() *packets.TaskConfig {
+func (exec *baseExecutor) GetTaskConfig() *core.TaskConfig {
 	return exec.TaskConfig
 }
 

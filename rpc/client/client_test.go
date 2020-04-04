@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/devfeel/rockman/packets"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/runtime/executor"
 	"testing"
 )
@@ -30,7 +30,7 @@ func TestRpcClient_CallEcho(t *testing.T) {
 
 func TestRpcClient_CallRegisterNode(t *testing.T) {
 	client := getRpcClient()
-	worker := &packets.NodeInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
+	worker := &core.NodeInfo{Host: "127.0.0.1", Port: "2401", NodeID: "TestNode"}
 	err, result := client.CallRegisterNode(worker)
 	if err != nil {
 		t.Error(err)
@@ -41,7 +41,7 @@ func TestRpcClient_CallRegisterNode(t *testing.T) {
 
 func TestRpcClient_CallQueryNodes(t *testing.T) {
 	client := getRpcClient()
-	page := &packets.PageInfo{PageIndex: 1, PageSize: 10}
+	page := &core.PageInfo{PageIndex: 1, PageSize: 10}
 	err, result := client.CallQueryNodes(page)
 	if err != nil {
 		t.Error(err)
@@ -52,7 +52,7 @@ func TestRpcClient_CallQueryNodes(t *testing.T) {
 
 func TestRpcClient_CallRegisterHttpExecutor(t *testing.T) {
 	client := getRpcClient()
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = "TestRpcClient-http-debug"
 	conf.TaskType = "cron"
 	conf.TargetType = "http"
@@ -76,7 +76,7 @@ func TestRpcClient_CallRegisterHttpExecutor(t *testing.T) {
 
 func TestRpcClient_CallRegisterShellScriptExecutor(t *testing.T) {
 	client := getRpcClient()
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-Script"
 	conf.TaskType = "cron"
 	conf.TargetType = "shell"
@@ -100,7 +100,7 @@ func TestRpcClient_CallRegisterShellScriptExecutor(t *testing.T) {
 
 func TestRpcClient_CallRegisterShellFileExecutor(t *testing.T) {
 	client := getRpcClient()
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-File"
 	conf.TaskType = "cron"
 	conf.TargetType = "shell"
@@ -124,7 +124,7 @@ func TestRpcClient_CallRegisterShellFileExecutor(t *testing.T) {
 
 func TestRpcClient_CallRegisterGoExecutor(t *testing.T) {
 	client := getRpcClient()
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-Go"
 	conf.TaskType = "cron"
 	conf.TargetType = "goso"
@@ -147,8 +147,8 @@ func TestRpcClient_CallRegisterGoExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(packets.SubmitInfo)
-	conf := &packets.TaskConfig{}
+	submit := new(core.SubmitInfo)
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-http"
 	conf.TaskType = "cron"
 	conf.TargetType = "http"
@@ -163,7 +163,7 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	}
 
 	submit.TaskConfig = conf
-	submit.Worker = &packets.NodeInfo{
+	submit.Worker = &core.NodeInfo{
 		Host: "118.31.32.168",
 		Port: "2398",
 	}
@@ -178,8 +178,8 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(packets.SubmitInfo)
-	conf := &packets.TaskConfig{}
+	submit := new(core.SubmitInfo)
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-Script"
 	conf.TaskType = "cron"
 	conf.TargetType = "shell"
@@ -194,7 +194,7 @@ func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 	}
 
 	submit.TaskConfig = conf
-	submit.Worker = &packets.NodeInfo{
+	submit.Worker = &core.NodeInfo{
 		Host: "118.31.32.168",
 		Port: "2398",
 	}
@@ -209,8 +209,8 @@ func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(packets.SubmitInfo)
-	conf := &packets.TaskConfig{}
+	submit := new(core.SubmitInfo)
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-File"
 	conf.TaskType = "cron"
 	conf.TargetType = "shell"
@@ -225,7 +225,7 @@ func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 	}
 
 	submit.TaskConfig = conf
-	submit.Worker = &packets.NodeInfo{
+	submit.Worker = &core.NodeInfo{
 		Host: "118.31.32.168",
 		Port: "2398",
 	}
@@ -240,8 +240,8 @@ func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(packets.SubmitInfo)
-	conf := &packets.TaskConfig{}
+	submit := new(core.SubmitInfo)
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-GoSo"
 	conf.TaskType = "cron"
 	conf.TargetType = "goso"
@@ -255,7 +255,7 @@ func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 	}
 
 	submit.TaskConfig = conf
-	submit.Worker = &packets.NodeInfo{
+	submit.Worker = &core.NodeInfo{
 		Host: "118.31.32.168",
 		Port: "2398",
 	}
@@ -270,8 +270,8 @@ func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitLBGoExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(packets.SubmitInfo)
-	conf := &packets.TaskConfig{}
+	submit := new(core.SubmitInfo)
+	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-GoSo-LB"
 	conf.TaskType = "cron"
 	conf.TargetType = "goso"
@@ -340,5 +340,5 @@ func TestRpcClient_CallQueryExecutors(t *testing.T) {
 }
 
 func getRpcClient() *RpcClient {
-	return NewRpcClient(serverUrl)
+	return NewRpcClient(serverUrl, "", "")
 }

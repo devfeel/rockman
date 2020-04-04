@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/mapper"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/packets"
 	_http "github.com/devfeel/rockman/util/http"
 	"strings"
 	"time"
@@ -33,7 +33,7 @@ type (
 )
 
 func NewDebugHttpExecutor(taskID string) Executor {
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -50,7 +50,7 @@ func NewDebugHttpExecutor(taskID string) Executor {
 	return exec
 }
 
-func NewHttpExecutor(conf *packets.TaskConfig) (*HttpExecutor, error) {
+func NewHttpExecutor(conf *core.TaskConfig) (*HttpExecutor, error) {
 	exec := new(HttpExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec

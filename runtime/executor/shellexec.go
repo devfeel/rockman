@@ -6,8 +6,8 @@ import (
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/config"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/packets"
 	_file "github.com/devfeel/rockman/util/file"
 	"os/exec"
 	"strings"
@@ -38,7 +38,7 @@ type (
 )
 
 func NewDebugShellExecutor(taskID string) Executor {
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -55,7 +55,7 @@ func NewDebugShellExecutor(taskID string) Executor {
 	return exec
 }
 
-func NewShellExecutor(conf *packets.TaskConfig) (*ShellExecutor, error) {
+func NewShellExecutor(conf *core.TaskConfig) (*ShellExecutor, error) {
 	exec := new(ShellExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec

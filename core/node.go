@@ -1,4 +1,4 @@
-package packets
+package core
 
 import jsonutil "github.com/devfeel/rockman/util/json"
 

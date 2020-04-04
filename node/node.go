@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/packets"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
 	"strconv"
@@ -21,7 +21,7 @@ type (
 		Status             int
 		Config             *NodeConfig
 		profile            *config.Profile
-		onlineSubmits      map[string]*packets.SubmitInfo
+		onlineSubmits      map[string]*core.SubmitInfo
 		onlineSubmitLocker *sync.RWMutex
 		Cluster            *cluster.Cluster
 		Runtime            *runtime.Runtime
@@ -47,7 +47,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 	node := &Node{
 		NodeId:             profile.Node.NodeId,
 		NodeName:           profile.Node.NodeName,
-		onlineSubmits:      make(map[string]*packets.SubmitInfo),
+		onlineSubmits:      make(map[string]*core.SubmitInfo),
 		onlineSubmitLocker: new(sync.RWMutex),
 		profile:            profile,
 		shutdownChan:       shutdown,
@@ -61,9 +61,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 	}
 
 	//init cluster
-	cluster, err := cluster.NewCluster(
-		profile.Cluster.ClusterId,
-		profile.Cluster.RegistryServer)
+	cluster, err := cluster.NewCluster(profile)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +103,7 @@ func (n *Node) Start() error {
 	return err
 }
 
-func (n *Node) SubmitExecutor(submit *packets.SubmitInfo) (error, *packets.JsonResult) {
+func (n *Node) SubmitExecutor(submit *core.SubmitInfo) (error, *core.JsonResult) {
 	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
 	if !n.IsLeader {
 		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, Current node is not leader.")
@@ -187,7 +185,7 @@ func (n *Node) registerNode() error {
 RegisterNode:
 	for {
 		if retryCount > n.profile.Global.RetryLimit {
-			err = errors.New(logTitle + "retry count bigger than 5, now stop it")
+			err = errors.New(logTitle + "retry more than 5 times, now will be stop.")
 			logger.Node().DebugS(logTitle + "error: " + err.Error())
 			return err
 		}
@@ -195,20 +193,20 @@ RegisterNode:
 		// get leader info
 		leaderServer, err = n.Cluster.GetLeaderInfo()
 		if err != nil {
-			logger.Node().Debug(logTitle + "GetLeaderInfo error, will retry 10 seconds after.")
+			logger.Node().Debug(logTitle + "GetLeaderInfo error:" + err.Error() + ", will retry 10 seconds after.")
 			time.Sleep(time.Second * 10)
 			continue RegisterNode
 		} else {
 			logger.Node().Debug(logTitle + "GetLeaderInfo success [" + leaderServer + "]")
-			rpcClient := client.NewRpcClient(leaderServer)
+			rpcClient := client.NewRpcClient(leaderServer, n.profile.Rpc.ClientCertFile, n.profile.Rpc.ClientKeyFile)
 			err, result := rpcClient.CallRegisterNode(nodeInfo)
 			if err != nil {
-				logger.Node().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				logger.Node().Debug(logTitle + "CallRegisterNode error:" + err.Error() + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			}
 			if result.RetCode != result.CorrectCode() {
-				logger.Node().Debug(logTitle + "CallRegisterNode error will retry 10 seconds after.")
+				logger.Node().Debug(logTitle + "CallRegisterNode failed:" + strconv.Itoa(result.RetCode) + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			} else {
@@ -223,7 +221,7 @@ RegisterNode:
 }
 
 // addOnlineSubmit
-func (n *Node) addOnlineSubmit(submit *packets.SubmitInfo) {
+func (n *Node) addOnlineSubmit(submit *core.SubmitInfo) {
 	n.onlineSubmitLocker.Lock()
 	defer n.onlineSubmitLocker.Unlock()
 	n.onlineSubmits[submit.TaskConfig.TaskID] = submit
@@ -304,8 +302,8 @@ func (n *Node) initConfig(conf *config.Profile) error {
 	return nil
 }
 
-func (n *Node) getNodeInfo() *packets.NodeInfo {
-	nodeInfo := &packets.NodeInfo{
+func (n *Node) getNodeInfo() *core.NodeInfo {
+	nodeInfo := &core.NodeInfo{
 		NodeID:    n.NodeId,
 		Cluster:   n.profile.Cluster.ClusterId,
 		OuterHost: n.profile.Rpc.OuterHost,

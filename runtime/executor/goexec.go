@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/devfeel/dottask"
 	"github.com/devfeel/mapper"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/packets"
 	_file "github.com/devfeel/rockman/util/file"
 	"plugin"
 )
@@ -32,7 +32,7 @@ type (
 )
 
 func NewDebugGoExecutor(taskID string) Executor {
-	conf := &packets.TaskConfig{}
+	conf := &core.TaskConfig{}
 	conf.TaskID = taskID + "-debug"
 	conf.TaskType = "cron"
 	conf.IsRun = true
@@ -48,7 +48,7 @@ func NewDebugGoExecutor(taskID string) Executor {
 	return exec
 }
 
-func NewGoExecutor(conf *packets.TaskConfig) (*GoExecutor, error) {
+func NewGoExecutor(conf *core.TaskConfig) (*GoExecutor, error) {
 	exec := new(GoExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec

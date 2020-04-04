@@ -1,4 +1,4 @@
-package packets
+package core
 
 import task "github.com/devfeel/dottask"
 

@@ -1,4 +1,4 @@
-package packets
+package core
 
 type JsonResult struct {
 	RetCode int

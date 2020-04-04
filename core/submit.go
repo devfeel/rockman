@@ -1,4 +1,4 @@
-package packets
+package core
 
 type SubmitInfo struct {
 	TaskConfig     *TaskConfig

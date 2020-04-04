@@ -44,11 +44,15 @@ type (
 	}
 
 	RpcSection struct {
-		OuterHost   string
-		OuterPort   string
-		RpcHost     string
-		RpcPort     string
-		RpcProtocol string //now is json-rpc
+		OuterHost      string
+		OuterPort      string
+		RpcHost        string
+		RpcPort        string
+		RpcProtocol    string //now is json-rpc
+		ServerCertFile string
+		ServerKeyFile  string
+		ClientCertFile string
+		ClientKeyFile  string
 	}
 
 	WebUISection struct {
@@ -74,7 +78,7 @@ func DefaultProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1&loc=Asia%2FShanghai&parseTime=true"}
 	p.Node = &NodeSection{NodeId: _uuid.NewV4().String32(), IsMaster: true, IsWorker: true}
-	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398"}
+	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398", ServerCertFile: "tls/server.crt", ServerKeyFile: "tls/server.key", ClientCertFile: "tls/client.crt", ClientKeyFile: "tls/client.key"}
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime", EnabledShellScript: false}
