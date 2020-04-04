@@ -7,19 +7,21 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"io/ioutil"
+	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
 
 type RpcClient struct {
 	serviceUrl string
+	enableTls  bool
 	certFile   string
 	keyFile    string
 	client     *rpc.Client
 }
 
-func NewRpcClient(serverUrl string, certFile, keyFile string) *RpcClient {
-	return &RpcClient{serviceUrl: serverUrl, certFile: certFile, keyFile: keyFile}
+func NewRpcClient(serverUrl string, enableTls bool, certFile, keyFile string) *RpcClient {
+	return &RpcClient{serviceUrl: serverUrl, enableTls: enableTls, certFile: certFile, keyFile: keyFile}
 }
 
 // getConnClient
@@ -27,19 +29,30 @@ func (c *RpcClient) getConnClient() (*rpc.Client, error) {
 	if c.client != nil {
 		return c.client, nil
 	}
-	tlsConfig, err := c.createTlsConfig()
-	if err != nil {
-		logger.Default().Error(err, "RpcClient createTlsConfig error")
-		return nil, err
-	}
-	conn, err := tls.Dial("tcp", c.serviceUrl, tlsConfig)
-	if err != nil {
-		logger.Default().Error(err, "RpcClient connServer tls.dial error:")
-		return nil, err
+	if c.enableTls {
+		tlsConfig, err := c.createTlsConfig()
+		if err != nil {
+			logger.Default().Error(err, "RpcClient createTlsConfig error")
+			return nil, err
+		}
+		conn, err := tls.Dial("tcp", c.serviceUrl, tlsConfig)
+		if err != nil {
+			logger.Default().Error(err, "RpcClient connServer tls.dial error:")
+			return nil, err
+		} else {
+			c.client = jsonrpc.NewClient(conn)
+		}
 	} else {
-		c.client = jsonrpc.NewClient(conn)
+		conn, err := net.Dial("tcp", c.serviceUrl)
+		if err != nil {
+			logger.Default().Error(err, "RpcClient connServer net.dial error:")
+			return nil, err
+		} else {
+			c.client = jsonrpc.NewClient(conn)
+		}
 	}
-	return c.client, err
+
+	return c.client, nil
 }
 
 func (c *RpcClient) CallEcho(message string) (error, string) {

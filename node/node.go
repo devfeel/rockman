@@ -198,7 +198,7 @@ RegisterNode:
 			continue RegisterNode
 		} else {
 			logger.Node().Debug(logTitle + "GetLeaderInfo success [" + leaderServer + "]")
-			rpcClient := client.NewRpcClient(leaderServer, n.profile.Rpc.ClientCertFile, n.profile.Rpc.ClientKeyFile)
+			rpcClient := client.NewRpcClient(leaderServer, n.profile.Rpc.EnableTls, n.profile.Rpc.ClientCertFile, n.profile.Rpc.ClientKeyFile)
 			err, result := rpcClient.CallRegisterNode(nodeInfo)
 			if err != nil {
 				logger.Node().Debug(logTitle + "CallRegisterNode error:" + err.Error() + ", will retry 10 seconds after.")

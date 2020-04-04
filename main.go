@@ -24,8 +24,9 @@ const (
 	cmdOuterHost = "outerhost"
 	cmdOuterPort = "outerport"
 	cmdCluster   = "cluster"
+	cmdEnableTls = "enabletls"
 
-	version = "2020.402"
+	version = "2020.404"
 )
 
 func main() {
@@ -103,10 +104,12 @@ func main() {
 
 func parseFlag(profile *config.Profile) {
 	var nodeType, outerHost, outerPort, cluster string
+	var enableTls bool
 	flag.StringVar(&nodeType, cmdNodeType, "", "node type, full or master or worker")
 	flag.StringVar(&outerHost, cmdOuterHost, "", "node outer host")
 	flag.StringVar(&outerPort, cmdOuterPort, "", "node outer port")
 	flag.StringVar(&cluster, cmdCluster, "", "node cluster id")
+	flag.BoolVar(&enableTls, cmdEnableTls, false, "enable tls for rpc")
 
 	flag.Parse()
 	if nodeType == "master" {
@@ -122,6 +125,10 @@ func parseFlag(profile *config.Profile) {
 
 	if cluster != "" {
 		profile.Cluster.ClusterId = cluster
+	}
+
+	if enableTls {
+		profile.Rpc.EnableTls = enableTls
 	}
 }
 

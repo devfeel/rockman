@@ -69,7 +69,7 @@ func NewShellExecutor(conf *core.TaskConfig) (*ShellExecutor, error) {
 		exec.shellConfig.Type = ShellType_File
 	}
 	exec.shellConfig.Type = strings.ToUpper(exec.shellConfig.Type)
-	if !config.CurrentProfile.Runtime.EnabledShellScript {
+	if !config.CurrentProfile.Runtime.EnableShellScript {
 		if exec.shellConfig.Type == ShellType_Script {
 			logger.Runtime().Debug("NewShellExecutor error: " + ErrorNotEnabledShellScriptMode.Error())
 			return nil, ErrorNotEnabledShellScriptMode
@@ -115,7 +115,7 @@ func (exec *ShellExecutor) Exec(ctx *task.TaskContext) error {
 }
 
 func execShellScript(s string) (string, error) {
-	if !config.CurrentProfile.Runtime.EnabledShellScript {
+	if !config.CurrentProfile.Runtime.EnableShellScript {
 		return "", ErrorNotEnabledShellScriptMode
 	}
 	cmd := exec.Command("/bin/bash", "-c", s)

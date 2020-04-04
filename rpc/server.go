@@ -9,6 +9,7 @@ import (
 	"github.com/devfeel/rockman/rpc/handler"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
@@ -38,17 +39,24 @@ func NewRpcServer(profile *config.Profile, node *node.Node) *RpcServer {
 }
 
 func (s *RpcServer) Listen() error {
-	tlsConfig, err := s.createTlsConfig()
+	var listener net.Listener
+	var err error
+
+	if s.config.Rpc.EnableTls {
+		tlsConfig, err := s.createTlsConfig()
+		if err != nil {
+			logger.Default().Error(err, "RPCServer createTlsConfig error")
+			return err
+		}
+		listener, err = tls.Listen("tcp", s.RpcHost+":"+s.RpcPort, tlsConfig)
+	} else {
+		listener, err = net.Listen("tcp", s.RpcHost+":"+s.RpcPort)
+	}
+
 	if err != nil {
-		logger.Default().Error(err, "RPCServer createTlsConfig error")
 		return err
 	}
-	lis, err := tls.Listen("tcp", s.RpcHost+":"+s.RpcPort, tlsConfig)
-	//lis, err := net.Listen("tcp", s.RpcHost+":"+s.RpcPort)
-	if err != nil {
-		return err
-	}
-	defer lis.Close()
+	defer listener.Close()
 
 	srv := rpc.NewServer()
 	if err := srv.RegisterName("Rpc", handler.NewRpcHandler(s.Node)); err != nil {
@@ -56,10 +64,10 @@ func (s *RpcServer) Listen() error {
 		return err
 	}
 
-	logger.Default().DebugF("RPCServer begin listen %s", lis.Addr())
+	logger.Default().DebugF("RPCServer begin listen %s", listener.Addr())
 
 	for {
-		conn, err := lis.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			logger.Default().Error(err, "lis.Accept() error")
 			continue

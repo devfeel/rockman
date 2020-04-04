@@ -340,5 +340,5 @@ func TestRpcClient_CallQueryExecutors(t *testing.T) {
 }
 
 func getRpcClient() *RpcClient {
-	return NewRpcClient(serverUrl, "", "")
+	return NewRpcClient(serverUrl, false, "", "")
 }

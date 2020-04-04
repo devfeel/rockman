@@ -162,7 +162,7 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	var rpcClient *client.RpcClient
 	var isExists bool
 	if rpcClient, isExists = c.rpcClients[endPoint]; !isExists {
-		rpcClient = client.NewRpcClient(endPoint, c.profile.Rpc.ClientCertFile, c.profile.Rpc.ClientKeyFile)
+		rpcClient = client.NewRpcClient(endPoint, c.profile.Rpc.EnableTls, c.profile.Rpc.ClientCertFile, c.profile.Rpc.ClientKeyFile)
 		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
