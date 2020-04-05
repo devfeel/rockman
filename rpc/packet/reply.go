@@ -1,4 +1,6 @@
-package core
+package packet
+
+import "github.com/devfeel/rockman/core"
 
 type RpcReply struct {
 	RetCode int
@@ -7,7 +9,7 @@ type RpcReply struct {
 }
 
 func (r *RpcReply) IsSuccess() bool {
-	return r.RetCode == SuccessCode
+	return r.RetCode == core.SuccessCode
 }
 
 func CreateRpcReply(retCode int, retMsg string, message interface{}) RpcReply {
@@ -19,5 +21,5 @@ func CreateFailedReply(retCode int, retMsg string) RpcReply {
 }
 
 func CreateSuccessRpcReply(message interface{}) RpcReply {
-	return RpcReply{RetCode: SuccessCode, RetMsg: "", Message: message}
+	return RpcReply{RetCode: core.SuccessCode, RetMsg: "", Message: message}
 }

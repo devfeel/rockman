@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/rpc/packet"
 	"io/ioutil"
 	"net"
 	"net/rpc"
@@ -70,13 +71,13 @@ func (c *RpcClient) CallEcho(message string) (error, string) {
 	return nil, *reply
 }
 
-func (c *RpcClient) CallQueryResource() (error, *core.RpcReply) {
+func (c *RpcClient) CallQueryResource() (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.QueryResource", "", &reply)
 	if err != nil {
 		return err, nil
@@ -84,13 +85,13 @@ func (c *RpcClient) CallQueryResource() (error, *core.RpcReply) {
 	return nil, &reply
 }
 
-func (c *RpcClient) CallRegisterNode(worker *core.NodeInfo) (error, *core.RpcReply) {
+func (c *RpcClient) CallRegisterNode(worker *core.NodeInfo) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.RegisterNode", worker, &reply)
 	if err != nil {
 		return err, nil
@@ -98,13 +99,13 @@ func (c *RpcClient) CallRegisterNode(worker *core.NodeInfo) (error, *core.RpcRep
 	return nil, &reply
 }
 
-func (c *RpcClient) CallQueryNodes(pageInfo *core.PageInfo) (error, *core.RpcReply) {
+func (c *RpcClient) CallQueryNodes(pageInfo *core.PageInfo) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.QueryNodes", pageInfo, &reply)
 	if err != nil {
 		return err, nil
@@ -112,13 +113,13 @@ func (c *RpcClient) CallQueryNodes(pageInfo *core.PageInfo) (error, *core.RpcRep
 	return nil, &reply
 }
 
-func (c *RpcClient) CallSubmitExecutor(submit *core.SubmitInfo) (error, *core.RpcReply) {
+func (c *RpcClient) CallSubmitExecutor(submit *core.SubmitInfo) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.SubmitExecutor", submit, &reply)
 	if err != nil {
 		return err, nil
@@ -126,13 +127,13 @@ func (c *RpcClient) CallSubmitExecutor(submit *core.SubmitInfo) (error, *core.Rp
 	return nil, &reply
 }
 
-func (c *RpcClient) CallRegisterExecutor(conf *core.TaskConfig) (error, *core.RpcReply) {
+func (c *RpcClient) CallRegisterExecutor(conf *core.TaskConfig) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.RegisterExecutor", conf, &reply)
 	if err != nil {
 		return err, nil
@@ -140,13 +141,13 @@ func (c *RpcClient) CallRegisterExecutor(conf *core.TaskConfig) (error, *core.Rp
 	return nil, &reply
 }
 
-func (c *RpcClient) CallStartExecutor(taskId string) (error, *core.RpcReply) {
+func (c *RpcClient) CallStartExecutor(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.StartExecutor", taskId, &reply)
 	if err != nil {
 		return err, nil
@@ -154,13 +155,13 @@ func (c *RpcClient) CallStartExecutor(taskId string) (error, *core.RpcReply) {
 	return nil, &reply
 }
 
-func (c *RpcClient) CallStopExecutor(taskId string) (error, *core.RpcReply) {
+func (c *RpcClient) CallStopExecutor(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.StopExecutor", taskId, &reply)
 	if err != nil {
 		return err, nil
@@ -168,13 +169,13 @@ func (c *RpcClient) CallStopExecutor(taskId string) (error, *core.RpcReply) {
 	return nil, &reply
 }
 
-func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *core.RpcReply) {
+func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.RemoveExecutor", taskId, &reply)
 	if err != nil {
 		return err, nil
@@ -182,13 +183,13 @@ func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *core.RpcReply) {
 	return nil, &reply
 }
 
-func (c *RpcClient) CallQueryExecutorConfig(taskId string) (error, *core.RpcReply) {
+func (c *RpcClient) CallQueryExecutorConfig(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
-	var reply core.RpcReply
+	var reply packet.RpcReply
 	err = client.Call("Rpc.QueryExecutorConfig", taskId, &reply)
 	if err != nil {
 		return err, nil
