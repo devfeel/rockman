@@ -6,6 +6,7 @@ import (
 )
 
 // RegisterWorker register worker node to leader node
+// it will check cluster id
 func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, reply *core.RpcReply) error {
 	logTitle := "RpcServer.RegisterNode[" + nodeInfo.EndPoint() + "] "
 	if !h.getNode().IsLeader() {
@@ -14,12 +15,19 @@ func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, reply *core.RpcReply)
 		return nil
 	}
 
-	ret := h.getNode().Cluster.AddNodeInfo(nodeInfo)
-	if ret.Error != nil {
-
+	result := h.getNode().Cluster.AddNodeInfo(nodeInfo)
+	if result.Error != nil {
+		logger.Default().DebugS(logTitle+"error:", result.Error.Error())
+		*reply = core.CreateFailedReply(-2001, result.Message())
+	} else {
+		if !result.IsSuccess() {
+			logger.Default().DebugS(logTitle+"failed, ", result.Message())
+			*reply = core.CreateFailedReply(-2002, result.Message())
+		} else {
+			logger.Default().DebugS(logTitle+"success,", nodeInfo.Json())
+			*reply = core.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
+		}
 	}
-	logger.Default().DebugS(logTitle + "success")
-	*reply = core.CreateSuccessRpcReply(len(h.getNode().Cluster.Nodes))
 	return nil
 }
 
@@ -38,6 +46,7 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *core.RpcReply) e
 }
 
 // SubmitExecutor submit executor to leader node, then register to worker node
+// it will check cluster id
 func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, reply *core.RpcReply) error {
 	logTitle := "RpcServer.SubmitExecutor: "
 	if !h.getNode().IsLeader() {
@@ -53,10 +62,10 @@ func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, reply *core.RpcRepl
 		*reply = core.CreateFailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
-			logger.Default().DebugS(logTitle+"failed, reply code:", reply.RetCode)
+			logger.Default().DebugS(logTitle + "failed, " + result.Message())
 			*reply = core.CreateFailedReply(-2002, result.Message())
 		} else {
-			logger.Default().DebugS(logTitle+"success", submit)
+			logger.Default().DebugS(logTitle+"success", submit.TaskConfig.TaskID)
 			*reply = core.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}

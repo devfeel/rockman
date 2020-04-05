@@ -164,8 +164,11 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 
 	submit.TaskConfig = conf
 	submit.Worker = &core.NodeInfo{
-		Host: "118.31.32.168",
-		Port: "2398",
+		//Host: "118.31.32.168",
+		NodeID:  "037be4b10618470c814554d6ad2d9d53",
+		Host:    "",
+		Port:    "2398",
+		Cluster: "dev-rock",
 	}
 
 	err, result := client.CallSubmitExecutor(submit)

@@ -38,7 +38,7 @@ type (
 		rpcClients        map[string]*client.RpcClient
 		rpcClientLocker   *sync.RWMutex
 		Scheduler         *scheduler.Scheduler
-		profile           *config.Profile
+		config            *config.Profile
 	}
 
 	WatchChangeHandle func()
@@ -47,7 +47,7 @@ type (
 // NewCluster new cluster and reg server
 func NewCluster(profile *config.Profile) (*Cluster, error) {
 	cluster := new(Cluster)
-	cluster.profile = profile
+	cluster.config = profile
 	cluster.ClusterId = profile.Cluster.ClusterId
 	cluster.RegistryServerUrl = profile.Cluster.RegistryServer
 	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
@@ -171,13 +171,21 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	return core.CreateSuccessResult()
 }
 
+// FindNode find node info by endpoint
+func (c *Cluster) FindNode(endPoint string) (*core.NodeInfo, bool) {
+	c.nodesLocker.RLock()
+	defer c.nodesLocker.RUnlock()
+	node, exists := c.Nodes[endPoint]
+	return node, exists
+}
+
 func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	defer c.rpcClientLocker.Unlock()
 	c.rpcClientLocker.Lock()
 	var rpcClient *client.RpcClient
 	var isExists bool
 	if rpcClient, isExists = c.rpcClients[endPoint]; !isExists {
-		rpcClient = client.NewRpcClient(endPoint, c.profile.Rpc.EnableTls, c.profile.Rpc.ClientCertFile, c.profile.Rpc.ClientKeyFile)
+		rpcClient = client.NewRpcClient(endPoint, c.config.Rpc.EnableTls, c.config.Rpc.ClientCertFile, c.config.Rpc.ClientKeyFile)
 		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
@@ -394,7 +402,7 @@ func (c *Cluster) cycleQueryWorkerResource() {
 
 	go func() {
 		for {
-			interval := c.profile.Cluster.QueryResourceInterval
+			interval := c.config.Cluster.QueryResourceInterval
 			if interval < MinQueryResourceInterval {
 				interval = MinQueryResourceInterval
 			}

@@ -107,8 +107,27 @@ func (n *Node) IsLeader() bool {
 func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
 	if !n.IsLeader() {
-		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, current node is not leader.")
+		logger.Node().Debug(logTitle + "failed, current node is not leader.")
 		return core.CreateResult(-1001, "current node is not leader", nil)
+	}
+
+	if submit.Worker != nil {
+		if submit.Worker.Cluster != n.Cluster.ClusterId {
+			logger.Node().Debug(logTitle + "failed, not match cluster [" + submit.Worker.Cluster + ", " + n.Cluster.ClusterId + "]")
+			return core.CreateResult(-1002, "not match cluster ["+submit.Worker.Cluster+", "+n.Cluster.ClusterId+"]", nil)
+		}
+
+		endPoint := submit.Worker.EndPoint()
+		node, exists := n.Cluster.FindNode(endPoint)
+		if !exists {
+			logger.Node().Debug(logTitle + "failed, can not find node[" + endPoint + "] in cluster")
+			return core.CreateResult(-1003, "can not find node["+endPoint+"] in cluster", nil)
+		}
+
+		if node.NodeID != submit.Worker.NodeID {
+			logger.Node().Debug(logTitle + "failed, not match node id [" + submit.Worker.NodeID + ", " + node.NodeID + "]")
+			return core.CreateResult(-1004, "not match node id ["+submit.Worker.NodeID+", "+node.NodeID+"]", nil)
+		}
 	}
 
 	var err error
