@@ -3,10 +3,12 @@ package runtime
 import (
 	"errors"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
+	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/runtime/executor"
 	"sync"
 	"time"
@@ -22,19 +24,23 @@ const (
 type (
 	Runtime struct {
 		TaskService     *task.TaskService
+		Registry        *registry.Registry
 		Executors       map[string]executor.Executor
 		executorsLocker *sync.RWMutex
 		Status          int
 		taskLog         *service.TaskService
 		nodeInfo        *core.NodeInfo
+		config          *config.Profile
 	}
 )
 
-func NewRuntime(nodeInfo *core.NodeInfo) *Runtime {
+func NewRuntime(nodeInfo *core.NodeInfo, registry *registry.Registry, profile *config.Profile) *Runtime {
 	r := &Runtime{Status: RuntimeStatus_Init}
 	r.Executors = make(map[string]executor.Executor)
 	r.executorsLocker = new(sync.RWMutex)
+	r.Registry = registry
 	r.nodeInfo = nodeInfo
+	r.config = profile
 	r.TaskService = task.StartNewService()
 	r.taskLog = service.NewTaskService()
 	r.TaskService.SetLogger(logger.Task())
@@ -76,6 +82,20 @@ func (r *Runtime) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, 
 		return nil, err
 	}
 
+	key := core.GetExecutorKeyPrefix(r.config.Cluster.ClusterId) + taskConf.TaskID
+	value := &core.ExecutorInfo{
+		TaskID: taskConf.TaskID,
+		Config: taskConf,
+		Node:   r.nodeInfo,
+	}
+	locker, err := r.Registry.CreateLocker(key, value.Json(), "")
+	if err != nil {
+		r.RemoveExecutor(taskConf.TaskID)
+		return nil, errors.New("create session error[" + err.Error() + "]")
+	} else {
+		exec.SetLocker(locker)
+		locker.Lock()
+	}
 	err = r.registerExecutor(exec)
 	return exec, err
 }
@@ -110,14 +130,14 @@ func (r *Runtime) StopExecutor(taskId string) error {
 	return nil
 }
 
-func (r *Runtime) RemoveExecutor(taskId string) (executor.Executor, error) {
+func (r *Runtime) RemoveExecutor(taskId string) error {
 	r.executorsLocker.RLock()
 	exec, _ := r.Executors[taskId]
 	r.executorsLocker.RUnlock()
 
 	task, exists := r.TaskService.GetTask(taskId)
 	if !exists {
-		return nil, errors.New("not exists this task")
+		return errors.New("not exists this task")
 	}
 	task.Stop()
 	r.TaskService.RemoveTask(taskId)
@@ -125,7 +145,11 @@ func (r *Runtime) RemoveExecutor(taskId string) (executor.Executor, error) {
 	r.executorsLocker.Lock()
 	delete(r.Executors, taskId)
 	r.executorsLocker.Unlock()
-	return exec, nil
+
+	if exec.GetLocker() != nil {
+		exec.GetLocker().UnLock()
+	}
+	return nil
 }
 
 func (r *Runtime) QueryAllExecutorConfig() map[string]core.TaskConfig {

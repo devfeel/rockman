@@ -50,7 +50,7 @@ func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.Rpc
 		return nil
 	}
 
-	exec, err := h.getNode().CreateExecutor(config)
+	exec, err := h.getNode().Runtime.CreateExecutor(config)
 	if err != nil {
 		logger.Rpc().Warn(logTitle + "CreateExecutor error:" + err.Error())
 		*reply = packet.CreateFailedReply(-9001, "CreateExecutor error:"+err.Error())
@@ -113,7 +113,7 @@ func (h *RpcHandler) RemoveExecutor(taskId string, reply *packet.RpcReply) error
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not remove executor")
 		return nil
 	}
-	err := h.getNode().RemoveExecutor(taskId)
+	err := h.getNode().Runtime.RemoveExecutor(taskId)
 	if err != nil {
 		logger.Rpc().Debug(logTitle + "error:" + err.Error())
 		logger.Rpc().Error(err, logTitle+"error")

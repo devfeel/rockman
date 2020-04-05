@@ -6,12 +6,14 @@ import (
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
-	"github.com/devfeel/rockman/runtime/executor"
 	"strconv"
 	"time"
 )
+
+const defaultLockerTTL = "10s"
 
 type (
 	Node struct {
@@ -22,6 +24,7 @@ type (
 		config       *config.Profile
 		nodeInfo     *core.NodeInfo
 		Cluster      *cluster.Cluster
+		Registry     *registry.Registry
 		Runtime      *runtime.Runtime
 		shutdownChan chan string
 	}
@@ -41,8 +44,14 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		shutdownChan: shutdown,
 	}
 
+	registry, err := registry.NewRegistry(profile.Cluster.RegistryServer)
+	if err != nil {
+		return nil, err
+	}
+	node.Registry = registry
+
 	//init cluster
-	cluster, err := cluster.NewCluster(profile)
+	cluster, err := cluster.NewCluster(profile, registry)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +61,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 
 	node.Cluster = cluster
 	if node.config.Node.IsWorker {
-		// create runtime
-		node.Runtime = runtime.NewRuntime(node.NodeInfo())
+		node.Runtime = runtime.NewRuntime(node.NodeInfo(), registry, profile)
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -164,46 +172,6 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 		}
 		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)
 	}
-}
-
-// CreateExecutor create new executor and register to task service
-// create session to registry
-func (n *Node) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, error) {
-	logTitle := "Node.CreateExecutor[" + taskConf.TaskID + "] "
-	exec, err := n.Runtime.CreateExecutor(taskConf)
-	if err == nil {
-		key := core.GetExecutorKeyPrefix(n.Cluster.ClusterId) + taskConf.TaskID
-		value := &core.ExecutorInfo{
-			TaskID: taskConf.TaskID,
-			Config: taskConf,
-			Node:   n.NodeInfo(),
-		}
-		locker, err := n.Cluster.CreateLocker(key, value.Json(), "")
-		if err != nil {
-			n.Runtime.RemoveExecutor(taskConf.TaskID)
-			logger.Node().Warn(logTitle + "create session error[" + err.Error() + "]")
-			return nil, errors.New("create session error[" + err.Error() + "]")
-		} else {
-			exec.SetLocker(locker)
-			locker.Lock()
-			logger.Node().Warn(logTitle + "create session success")
-		}
-	}
-	return exec, err
-}
-
-// RemoveExecutor
-// remove session to registry
-func (n *Node) RemoveExecutor(taskId string) error {
-	exec, err := n.Runtime.RemoveExecutor(taskId)
-	if err != nil {
-		return err
-	} else {
-		if exec.GetLocker() != nil {
-			exec.GetLocker().UnLock()
-		}
-	}
-	return nil
 }
 
 func (n *Node) Shutdown() {
@@ -319,13 +287,17 @@ func (n *Node) onExecutorsChange() {
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
 	logger.Node().Debug("Node create session begin.")
-	err := n.Cluster.CreateNodeSession(nodeKey, n.NodeInfo().Json())
+	locker, err := n.Registry.CreateLocker(nodeKey, n.NodeInfo().Json(), defaultLockerTTL)
 	if err != nil {
 		logger.Node().Debug("Node create session error: " + err.Error())
-	} else {
-		logger.Node().Debug("Node create session success with key {" + nodeKey + "}")
 	}
-	return err
+	_, err = locker.Lock()
+	if err != nil {
+		logger.Node().Debug("Node create session error: " + err.Error())
+		return err
+	}
+	logger.Node().Debug("Node create session success with key {" + nodeKey + "}")
+	return nil
 }
 
 func (n *Node) becomeLeaderRole() {

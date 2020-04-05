@@ -3,8 +3,8 @@ package executor
 import (
 	"errors"
 	"github.com/devfeel/dottask"
-	"github.com/devfeel/rockman/cluster/consul"
 	"github.com/devfeel/rockman/core"
+	"github.com/devfeel/rockman/registry/consul"
 )
 
 const (

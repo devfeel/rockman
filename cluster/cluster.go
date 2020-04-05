@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/devfeel/mapper"
-	"github.com/devfeel/rockman/cluster/consul"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/scheduler"
 	"github.com/hashicorp/consul/api"
@@ -23,9 +23,7 @@ const (
 type (
 	Cluster struct {
 		ClusterId             string
-		RegistryServerUrl     string
-		RegistryClient        *consul.ConsulClient
-		registryLocker        *consul.Locker
+		Registry              *registry.Registry
 		LeaderKey             string
 		LeaderServer          string
 		leaderLastIndex       uint64
@@ -53,11 +51,10 @@ type (
 )
 
 // NewCluster new cluster and reg server
-func NewCluster(profile *config.Profile) (*Cluster, error) {
+func NewCluster(profile *config.Profile, registry *registry.Registry) (*Cluster, error) {
 	cluster := new(Cluster)
 	cluster.config = profile
 	cluster.ClusterId = profile.Cluster.ClusterId
-	cluster.RegistryServerUrl = profile.Cluster.RegistryServer
 	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
 	cluster.Nodes = make(map[string]*core.NodeInfo)
 	cluster.nodesLocker = new(sync.RWMutex)
@@ -66,13 +63,7 @@ func NewCluster(profile *config.Profile) (*Cluster, error) {
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
-	regClient, err := consul.NewConsulClient(profile.Cluster.RegistryServer)
-	if err != nil {
-		logger.Node().Debug(fmt.Sprint("Cluster init error", err.Error()))
-		logger.Node().Error(err, "Cluster init error")
-		return nil, err
-	}
-	cluster.RegistryClient = regClient
+	cluster.Registry = registry
 
 	cluster.Scheduler = scheduler.NewScheduler()
 	logger.Node().Debug("Cluster init success.")
@@ -107,7 +98,7 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 			Behavior: "delete",
 		},
 	}
-	locker, err := c.RegistryClient.CreateLockerOpts(opts)
+	locker, err := c.Registry.CreateLockerOpts(opts)
 	if err != nil {
 		return err
 	}
@@ -119,41 +110,6 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	return nil
 }
 
-// CreateNodeSession create node session to registry with key/value
-func (c *Cluster) CreateNodeSession(key string, value string) error {
-	var err error
-	c.registryLocker, err = c.CreateLocker(key, value, "10s")
-	if err != nil {
-		return err
-	}
-	_, err = c.registryLocker.Lock()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// CreateSession create session to registry with key/value
-func (c *Cluster) CreateLocker(key string, value string, ttl string) (*consul.Locker, error) {
-	if ttl == "" {
-		ttl = "10s"
-	}
-	opts := &api.LockOptions{
-		Key:   key,
-		Value: []byte(value),
-		SessionOpts: &api.SessionEntry{
-			Name:     key,
-			TTL:      ttl,
-			Behavior: "delete",
-		},
-	}
-	locker, err := c.RegistryClient.CreateLockerOpts(opts)
-	if err != nil {
-		return nil, err
-	}
-	return locker, nil
-}
-
 // GetLeaderInfo get leader info from leader key
 // must check is locked by leader session
 // leader changed by watchLeaderChange
@@ -161,7 +117,7 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 	if c.LeaderServer != "" {
 		return c.LeaderServer, nil
 	}
-	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, nil)
+	kvPair, meta, err := c.Registry.Get(c.LeaderKey, nil)
 	if err != nil {
 		return "", err
 	} else {
@@ -294,7 +250,7 @@ func (c *Cluster) QueryNodeResource(endPoint string) (*core.ResourceInfo, *core.
 func (c *Cluster) ClusterInfo() *core.ClusterInfo {
 	return &core.ClusterInfo{
 		ClusterId:             c.ClusterId,
-		RegistryServerUrl:     c.RegistryServerUrl,
+		RegistryServerUrl:     c.Registry.ServerUrl,
 		LeaderKey:             c.LeaderKey,
 		LeaderServer:          c.LeaderServer,
 		NodeNum:               len(c.Nodes),
@@ -306,7 +262,7 @@ func (c *Cluster) ClusterInfo() *core.ClusterInfo {
 // loadOnlineExecutors load all online executors from Registry
 func (c *Cluster) loadOnlineExecutors() error {
 	logTitle := "Cluster.loadOnlineExecutors "
-	execKVs, meta, err := c.RegistryClient.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), nil)
+	execKVs, meta, err := c.Registry.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
@@ -321,7 +277,7 @@ func (c *Cluster) loadOnlineExecutors() error {
 // loadOnlineNodes load all online nodes from Registry
 func (c *Cluster) loadOnlineNodes() error {
 	logTitle := "Cluster.loadOnlineNodes "
-	nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
+	nodeKVs, meta, err := c.Registry.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
@@ -383,6 +339,7 @@ func (c *Cluster) refreshOnlineExecutors(execKVs api.KVPairs) {
 	for _, exec := range c.Executors {
 		if _, exists := execs[exec.TaskID]; !exists {
 			exec.IsOnline = false
+			//TODO log to db
 		} else {
 			exec.IsOnline = true
 		}
@@ -406,7 +363,7 @@ func (c *Cluster) watchOnlineExecutors() {
 			WaitIndex: c.executorsLastIndex,
 			WaitTime:  time.Minute * 10,
 		}
-		nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), opt)
+		nodeKVs, meta, err := c.Registry.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), opt)
 		if err != nil {
 			return err
 		}
@@ -448,7 +405,7 @@ func (c *Cluster) watchOnlineNodes() {
 			WaitIndex: c.nodesLastIndex,
 			WaitTime:  time.Minute * 10,
 		}
-		nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), opt)
+		nodeKVs, meta, err := c.Registry.ListKV(core.GetNodeKeyPrefix(c.ClusterId), opt)
 		if err != nil {
 			return err
 		}
@@ -491,7 +448,7 @@ func (c *Cluster) watchLeader() {
 			WaitIndex: c.leaderLastIndex,
 			WaitTime:  time.Minute * 10,
 		}
-		kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+		kvPair, meta, err := c.Registry.Get(c.LeaderKey, opt)
 		if err != nil {
 			return err
 		}

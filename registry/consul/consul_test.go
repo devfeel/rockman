@@ -2,13 +2,13 @@ package consul
 
 import (
 	"fmt"
-	"github.com/devfeel/rockman/core"
 	"github.com/hashicorp/consul/api"
 	"testing"
 	"time"
 )
 
 var consulServer = "116.62.16.66:8500"
+var nodeKeyPrefix = "locker_rockman"
 
 func TestCreateLocker(t *testing.T) {
 	lockKey := "locker_rockman"
@@ -45,7 +45,7 @@ func TestConsulClient_ListKV(t *testing.T) {
 		t.Error("create consul client error", err)
 		return
 	}
-	nodeKVs, meta, err := client.ListKV(core.NodeKeyPrefix, nil)
+	nodeKVs, meta, err := client.ListKV(nodeKeyPrefix, nil)
 	if err != nil {
 		fmt.Println("RefreshNodes1 error: " + err.Error())
 		return
@@ -55,7 +55,7 @@ func TestConsulClient_ListKV(t *testing.T) {
 		WaitIndex: meta.LastIndex,
 		WaitTime:  time.Minute * 10,
 	}
-	nodeKVs, meta, err = client.ListKV(core.NodeKeyPrefix, opt)
+	nodeKVs, meta, err = client.ListKV(nodeKeyPrefix, opt)
 	if err != nil {
 		fmt.Println("RefreshNodes2 error: " + err.Error())
 	}
