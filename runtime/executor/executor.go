@@ -3,6 +3,7 @@ package executor
 import (
 	"errors"
 	"github.com/devfeel/dottask"
+	"github.com/devfeel/rockman/cluster/consul"
 	"github.com/devfeel/rockman/core"
 )
 
@@ -19,11 +20,13 @@ const (
 type (
 	Executor interface {
 		GetTask() task.Task
-		SetTask(task task.Task)
+		SetTask(task.Task)
 		GetTaskID() string
 		GetTargetType() string
 		GetTaskConfig() *core.TaskConfig
-		Exec(ctx *task.TaskContext) error
+		SetLocker(*consul.Locker)
+		GetLocker() *consul.Locker
+		Exec(*task.TaskContext) error
 	}
 
 	Exec func(ctx *task.TaskContext) error
@@ -31,6 +34,7 @@ type (
 	baseExecutor struct {
 		Task       task.Task
 		TaskConfig *core.TaskConfig
+		locker     *consul.Locker
 	}
 )
 
@@ -54,6 +58,14 @@ func (exec *baseExecutor) GetTaskConfig() *core.TaskConfig {
 
 func (exec *baseExecutor) GetTargetType() string {
 	return exec.TaskConfig.TargetType
+}
+
+func (exec *baseExecutor) SetLocker(locker *consul.Locker) {
+	exec.locker = locker
+}
+
+func (exec *baseExecutor) GetLocker() *consul.Locker {
+	return exec.locker
 }
 
 // ValidateExecType validate the execType is supported

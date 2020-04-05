@@ -8,24 +8,22 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
+	"github.com/devfeel/rockman/runtime/executor"
 	"strconv"
-	"sync"
 	"time"
 )
 
 type (
 	Node struct {
-		NodeId             string
-		NodeName           string
-		isLeader           bool
-		Status             int
-		config             *config.Profile
-		nodeInfo           *core.NodeInfo
-		onlineSubmits      map[string]*core.SubmitInfo
-		onlineSubmitLocker *sync.RWMutex
-		Cluster            *cluster.Cluster
-		Runtime            *runtime.Runtime
-		shutdownChan       chan string
+		NodeId       string
+		NodeName     string
+		isLeader     bool
+		Status       int
+		config       *config.Profile
+		nodeInfo     *core.NodeInfo
+		Cluster      *cluster.Cluster
+		Runtime      *runtime.Runtime
+		shutdownChan chan string
 	}
 )
 
@@ -37,12 +35,10 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 	logger.Node().Debug("Node {" + profile.Node.NodeId + "} begin init...")
 
 	node := &Node{
-		NodeId:             profile.Node.NodeId,
-		NodeName:           profile.Node.NodeName,
-		onlineSubmits:      make(map[string]*core.SubmitInfo),
-		onlineSubmitLocker: new(sync.RWMutex),
-		config:             profile,
-		shutdownChan:       shutdown,
+		NodeId:       profile.Node.NodeId,
+		NodeName:     profile.Node.NodeName,
+		config:       profile,
+		shutdownChan: shutdown,
 	}
 
 	//init cluster
@@ -52,6 +48,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 	}
 	cluster.OnLeaderChange = node.onLeaderChange
 	cluster.OnLeaderChangeFailed = node.onLeaderChangeFailed
+	cluster.OnExecutorsChange = node.onExecutorsChange
 
 	node.Cluster = cluster
 	if node.config.Node.IsWorker {
@@ -159,7 +156,7 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 		logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] error:", err.Error())
 		return core.CreateErrorResult(err)
 	} else {
-		if reply.IsSuccess() {
+		if !reply.IsSuccess() {
 			logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] failed, result:", reply.RetCode)
 		} else {
 			n.Cluster.AddExecutor(submit.ExecutorInfo())
@@ -167,6 +164,46 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 		}
 		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)
 	}
+}
+
+// CreateExecutor create new executor and register to task service
+// create session to registry
+func (n *Node) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, error) {
+	logTitle := "Node.CreateExecutor[" + taskConf.TaskID + "] "
+	exec, err := n.Runtime.CreateExecutor(taskConf)
+	if err == nil {
+		key := core.GetExecutorKeyPrefix(n.Cluster.ClusterId) + taskConf.TaskID
+		value := &core.ExecutorInfo{
+			TaskID: taskConf.TaskID,
+			Config: taskConf,
+			Node:   n.NodeInfo(),
+		}
+		locker, err := n.Cluster.CreateLocker(key, value.Json(), "")
+		if err != nil {
+			n.Runtime.RemoveExecutor(taskConf.TaskID)
+			logger.Node().Warn(logTitle + "create session error[" + err.Error() + "]")
+			return nil, errors.New("create session error[" + err.Error() + "]")
+		} else {
+			exec.SetLocker(locker)
+			locker.Lock()
+			logger.Node().Warn(logTitle + "create session success")
+		}
+	}
+	return exec, err
+}
+
+// RemoveExecutor
+// remove session to registry
+func (n *Node) RemoveExecutor(taskId string) error {
+	exec, err := n.Runtime.RemoveExecutor(taskId)
+	if err != nil {
+		return err
+	} else {
+		if exec.GetLocker() != nil {
+			exec.GetLocker().UnLock()
+		}
+	}
+	return nil
 }
 
 func (n *Node) Shutdown() {
@@ -247,13 +284,6 @@ RegisterNode:
 	return nil
 }
 
-// addOnlineSubmit
-func (n *Node) addOnlineSubmit(submit *core.SubmitInfo) {
-	n.onlineSubmitLocker.Lock()
-	defer n.onlineSubmitLocker.Unlock()
-	n.onlineSubmits[submit.TaskConfig.TaskID] = submit
-}
-
 // onLeaderChange do something when leader is changed
 func (n *Node) onLeaderChange() {
 	err := n.registerNode()
@@ -281,10 +311,15 @@ func (n *Node) onLeaderChangeFailed() {
 	n.Shutdown()
 }
 
+// onExecutorsChange
+func (n *Node) onExecutorsChange() {
+	logger.Node().DebugS("Node.onExecutorsChange")
+}
+
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
 	logger.Node().Debug("Node create session begin.")
-	err := n.Cluster.CreateSession(nodeKey, n.NodeInfo())
+	err := n.Cluster.CreateNodeSession(nodeKey, n.NodeInfo().Json())
 	if err != nil {
 		logger.Node().Debug("Node create session error: " + err.Error())
 	} else {

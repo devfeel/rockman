@@ -165,7 +165,7 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	submit.TaskConfig = conf
 	submit.Worker = &core.NodeInfo{
 		//Host: "118.31.32.168",
-		NodeID:  "037be4b10618470c814554d6ad2d9d53",
+		NodeID:  "a1e97685392845f7b5bbd18f38a10461",
 		Host:    "",
 		Port:    "2398",
 		Cluster: "dev-rock",

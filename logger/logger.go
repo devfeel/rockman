@@ -13,7 +13,9 @@ const (
 	LoggerName_Node       = "NodeLogger"
 	LoggerName_Cluster    = "ClusterLogger"
 	LoggerName_Runtime    = "RuntimeLogger"
+	LoggerName_Task       = "TaskLogger"
 	LoggerName_Default    = "DefaultLogger"
+	LoggerName_Rpc        = "RpcLogger"
 )
 
 type Logger interface {
@@ -34,6 +36,14 @@ func Default() Logger {
 
 func Runtime() Logger {
 	return GetLogger(LoggerName_Runtime)
+}
+
+func Task() Logger {
+	return GetLogger(LoggerName_Task)
+}
+
+func Rpc() Logger {
+	return GetLogger(LoggerName_Rpc)
 }
 
 func Node() Logger {

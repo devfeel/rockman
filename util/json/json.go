@@ -23,7 +23,7 @@ func Marshal(v interface{}) (string, error) {
 	}
 }
 
-// Unmarshal converts the jsonstring into value
-func Unmarshal(jsonstring string, v interface{}) error {
-	return json.Unmarshal([]byte(jsonstring), v)
+// Unmarshal parses the JSON-encoded data and stores the result
+func Unmarshal(value string, v interface{}) error {
+	return json.Unmarshal([]byte(value), v)
 }

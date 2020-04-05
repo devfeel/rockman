@@ -14,10 +14,6 @@ type (
 		addr   string
 	}
 
-	ConsulLocker struct {
-		Locker *consulapi.Lock
-	}
-
 	ServiceConfig struct {
 		Name     string
 		Tags     []string
@@ -94,20 +90,20 @@ func (c *ConsulClient) Get(key string, opt *consulapi.QueryOptions) (*consulapi.
 	return kvPair, meta, nil
 }
 
-func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*ConsulLocker, error) {
+func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*Locker, error) {
 	locker, err := c.GetClient().LockOpts(opts)
 	if err != nil {
 		return nil, err
 	}
-	return &ConsulLocker{Locker: locker}, nil
+	return &Locker{Locker: locker}, nil
 }
 
-func (c *ConsulClient) CreateLocker(key string) (*ConsulLocker, error) {
+func (c *ConsulClient) CreateLocker(key string) (*Locker, error) {
 	locker, err := c.GetClient().LockKey(key)
 	if err != nil {
 		return nil, err
 	}
-	return &ConsulLocker{Locker: locker}, nil
+	return &Locker{Locker: locker}, nil
 }
 
 func (c *ConsulClient) ListSession() ([]*consulapi.SessionEntry, *consulapi.QueryMeta, error) {

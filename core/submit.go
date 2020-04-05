@@ -8,8 +8,8 @@ type SubmitInfo struct {
 
 func (s *SubmitInfo) ExecutorInfo() *ExecutorInfo {
 	return &ExecutorInfo{
-		TaskID:         s.TaskConfig.TaskID,
-		Node:           s.Worker,
-		DistributeType: s.DistributeType,
+		TaskID: s.TaskConfig.TaskID,
+		Config: s.TaskConfig,
+		Node:   s.Worker,
 	}
 }

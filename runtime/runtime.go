@@ -8,33 +8,36 @@ import (
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/runtime/executor"
+	"sync"
 	"time"
 )
 
 const (
-	RuntimeStatus_Init = 0
-	RuntimeStatus_Run  = 1
-	RuntimeStatus_Stop = 2
-
+	RuntimeStatus_Init   = 0
+	RuntimeStatus_Run    = 1
+	RuntimeStatus_Stop   = 2
 	TaskHeader_StartTime = "Rockman.Runtime.StartTime"
 )
 
 type (
 	Runtime struct {
-		TaskService *task.TaskService
-		Executors   map[string]executor.Executor
-		Status      int
-		taskLog     *service.TaskService
-		nodeInfo    *core.NodeInfo
+		TaskService     *task.TaskService
+		Executors       map[string]executor.Executor
+		executorsLocker *sync.RWMutex
+		Status          int
+		taskLog         *service.TaskService
+		nodeInfo        *core.NodeInfo
 	}
 )
 
 func NewRuntime(nodeInfo *core.NodeInfo) *Runtime {
-	r := &Runtime{Status: RuntimeStatus_Init, Executors: make(map[string]executor.Executor)}
+	r := &Runtime{Status: RuntimeStatus_Init}
+	r.Executors = make(map[string]executor.Executor)
+	r.executorsLocker = new(sync.RWMutex)
 	r.nodeInfo = nodeInfo
 	r.TaskService = task.StartNewService()
 	r.taskLog = service.NewTaskService()
-	r.TaskService.SetLogger(logger.GetLogger(logger.LoggerName_Runtime))
+	r.TaskService.SetLogger(logger.Task())
 	r.TaskService.SetOnBeforeHandler(func(ctx *task.TaskContext) error {
 		ctx.Header[TaskHeader_StartTime] = time.Now()
 		return nil
@@ -57,7 +60,7 @@ func (r *Runtime) Start() error {
 	return nil
 }
 
-// CreateCronExecutor create new cron executor and register to task service
+// CreateExecutor create new executor and register to task service
 // now support http\shell\go.so
 func (r *Runtime) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, error) {
 	var exec executor.Executor
@@ -73,16 +76,18 @@ func (r *Runtime) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, 
 		return nil, err
 	}
 
-	err = r.RegisterExecutor(exec)
+	err = r.registerExecutor(exec)
 	return exec, err
 }
 
-func (r *Runtime) RegisterExecutor(exec executor.Executor) error {
+func (r *Runtime) registerExecutor(exec executor.Executor) error {
 	task, err := r.TaskService.CreateTask(convertToDotTaskConfig(exec.GetTaskConfig()))
 	if err != nil {
 		return err
 	}
 	exec.SetTask(task)
+	r.executorsLocker.Lock()
+	defer r.executorsLocker.Unlock()
 	r.Executors[exec.GetTaskID()] = exec
 	return nil
 }
@@ -105,17 +110,27 @@ func (r *Runtime) StopExecutor(taskId string) error {
 	return nil
 }
 
-func (r *Runtime) RemoveExecutor(taskId string) error {
+func (r *Runtime) RemoveExecutor(taskId string) (executor.Executor, error) {
+	r.executorsLocker.RLock()
+	exec, _ := r.Executors[taskId]
+	r.executorsLocker.RUnlock()
+
 	task, exists := r.TaskService.GetTask(taskId)
 	if !exists {
-		return errors.New("not exists this task")
+		return nil, errors.New("not exists this task")
 	}
 	task.Stop()
 	r.TaskService.RemoveTask(taskId)
-	return nil
+
+	r.executorsLocker.Lock()
+	delete(r.Executors, taskId)
+	r.executorsLocker.Unlock()
+	return exec, nil
 }
 
 func (r *Runtime) QueryAllExecutorConfig() map[string]core.TaskConfig {
+	r.executorsLocker.RLock()
+	defer r.executorsLocker.RUnlock()
 	confs := make(map[string]core.TaskConfig)
 	for key, value := range r.Executors {
 		confs[key] = *value.GetTaskConfig()
@@ -169,19 +184,19 @@ func (r *Runtime) writeExecLog(ctx *task.TaskContext) error {
 func registerDemoExecutors(r *Runtime) {
 	logger.Node().Debug("Register Demo Executors Begin")
 	goExec := executor.NewDebugGoExecutor(("go"))
-	err := r.RegisterExecutor(goExec)
+	err := r.registerExecutor(goExec)
 	if err != nil {
 		logger.Node().Error(err, "service.CreateCronTask {go.exec} error!")
 	}
 
 	httpExec := executor.NewDebugHttpExecutor("http")
-	err = r.RegisterExecutor(httpExec)
+	err = r.registerExecutor(httpExec)
 	if err != nil {
 		logger.Node().Error(err, "service.CreateCronTask {http.exec} error!")
 	}
 
 	shellExec := executor.NewDebugShellExecutor("shell")
-	err = r.RegisterExecutor(shellExec)
+	err = r.registerExecutor(shellExec)
 	if err != nil {
 		logger.Node().Error(err, "service.CreateCronTask {shell.exec} error!")
 	}

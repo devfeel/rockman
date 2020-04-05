@@ -25,6 +25,7 @@ type (
 		ClusterId             string
 		RegistryServerUrl     string
 		RegistryClient        *consul.ConsulClient
+		registryLocker        *consul.Locker
 		LeaderKey             string
 		LeaderServer          string
 		leaderLastIndex       uint64
@@ -84,8 +85,13 @@ func (c *Cluster) Start() error {
 	if err != nil {
 		return err
 	}
+	err = c.loadOnlineExecutors()
+	if err != nil {
+		return err
+	}
 	c.watchLeader()
 	c.watchOnlineNodes()
+	c.watchOnlineExecutors()
 	c.cycleQueryWorkerResource()
 	return nil
 }
@@ -113,27 +119,39 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	return nil
 }
 
-// CreateSession create session to registry with node info
-func (c *Cluster) CreateSession(nodeKey string, nodeInfo *core.NodeInfo) error {
+// CreateNodeSession create node session to registry with key/value
+func (c *Cluster) CreateNodeSession(key string, value string) error {
+	var err error
+	c.registryLocker, err = c.CreateLocker(key, value, "10s")
+	if err != nil {
+		return err
+	}
+	_, err = c.registryLocker.Lock()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CreateSession create session to registry with key/value
+func (c *Cluster) CreateLocker(key string, value string, ttl string) (*consul.Locker, error) {
+	if ttl == "" {
+		ttl = "10s"
+	}
 	opts := &api.LockOptions{
-		Key:   nodeKey,
-		Value: []byte(nodeInfo.Json()),
+		Key:   key,
+		Value: []byte(value),
 		SessionOpts: &api.SessionEntry{
-			Name:     nodeKey,
-			TTL:      "10s",
+			Name:     key,
+			TTL:      ttl,
 			Behavior: "delete",
 		},
 	}
 	locker, err := c.RegistryClient.CreateLockerOpts(opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	_, err = locker.Locker.Lock(nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return locker, nil
 }
 
 // GetLeaderInfo get leader info from leader key
@@ -285,13 +303,30 @@ func (c *Cluster) ClusterInfo() *core.ClusterInfo {
 	}
 }
 
+// loadOnlineExecutors load all online executors from Registry
+func (c *Cluster) loadOnlineExecutors() error {
+	logTitle := "Cluster.loadOnlineExecutors "
+	execKVs, meta, err := c.RegistryClient.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), nil)
+	if err != nil {
+		logger.Cluster().Debug(logTitle + "error: " + err.Error())
+		return errors.New(logTitle + "error: " + err.Error())
+	} else {
+		logger.Cluster().Debug(logTitle + "success.")
+	}
+	c.executorsLastIndex = meta.LastIndex
+	c.refreshOnlineExecutors(execKVs)
+	return nil
+}
+
 // loadOnlineNodes load all online nodes from Registry
 func (c *Cluster) loadOnlineNodes() error {
-	logTitle := "Cluster.LoadOnlineNodes "
+	logTitle := "Cluster.loadOnlineNodes "
 	nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
+	} else {
+		logger.Cluster().Debug(logTitle + "success.")
 	}
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
@@ -377,7 +412,7 @@ func (c *Cluster) watchOnlineExecutors() {
 		}
 		if meta.LastIndex != c.executorsLastIndex {
 			logger.Cluster().Debug(logTitle + "some executors changed.")
-			c.nodesLastIndex = meta.LastIndex
+			c.executorsLastIndex = meta.LastIndex
 			c.refreshOnlineExecutors(nodeKVs)
 			if c.OnExecutorsChange != nil {
 				c.OnExecutorsChange()

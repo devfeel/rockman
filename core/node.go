@@ -47,7 +47,3 @@ func (n *NodeInfo) GetNodeKey(clusterId string) string {
 func GetNodeKeyPrefix(clusterId string) string {
 	return ClusterKeyPrefix + clusterId + "/nodes/"
 }
-
-func GetExecutorKeyPrefix(clusterId string) string {
-	return ClusterKeyPrefix + clusterId + "/executors/"
-}

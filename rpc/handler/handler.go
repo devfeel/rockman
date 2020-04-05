@@ -18,7 +18,7 @@ func NewRpcHandler(node *node.Node) *RpcHandler {
 
 // Echo
 func (h *RpcHandler) Echo(content string, reply *string) error {
-	logger.Default().Debug("RpcServer.Echo:" + content)
+	logger.Rpc().Debug("RpcServer.Echo:" + content)
 	*reply = content
 	return nil
 }
@@ -26,7 +26,7 @@ func (h *RpcHandler) Echo(content string, reply *string) error {
 // QueryResource query resource info from worker node
 func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error {
 	if !h.node.IsWorker() {
-		logger.Default().Warn("QueryResource failed: can not query resource from not worker node")
+		logger.Rpc().Warn("QueryResource failed: can not query resource from not worker node")
 		*reply = packet.CreateFailedReply(-1001, "can not query resource from not worker nodee")
 		return nil
 	}
@@ -36,7 +36,7 @@ func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error
 	resource.CpuRate = 1
 	resource.MemoryRate = 1
 
-	logger.Default().DebugS("RpcServer.QueryResource success", *resource)
+	logger.Rpc().DebugS("RpcServer.QueryResource success", *resource)
 	*reply = packet.CreateSuccessRpcReply(resource)
 	return nil
 }
@@ -45,14 +45,14 @@ func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error
 func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.RegisterExecutor: "
 	if !h.getNode().Config().Node.IsWorker {
-		logger.Default().Warn("unworker node can not register executor")
+		logger.Rpc().Warn("unworker node can not register executor")
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not register executor")
 		return nil
 	}
 
-	exec, err := h.getNode().Runtime.CreateExecutor(config)
+	exec, err := h.getNode().CreateExecutor(config)
 	if err != nil {
-		logger.Default().Warn(logTitle + "CreateExecutor error:" + err.Error())
+		logger.Rpc().Warn(logTitle + "CreateExecutor error:" + err.Error())
 		*reply = packet.CreateFailedReply(-9001, "CreateExecutor error:"+err.Error())
 		return nil
 	} else {
@@ -60,7 +60,7 @@ func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.Rpc
 			exec.GetTask().Start()
 		}
 	}
-	logger.Default().DebugS(logTitle+"success", config)
+	logger.Rpc().DebugS(logTitle+"success", config)
 	*reply = packet.CreateSuccessRpcReply(h.getNode().Runtime.Executors)
 	return nil
 }
@@ -69,17 +69,17 @@ func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.Rpc
 func (h *RpcHandler) StartExecutor(taskId string, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.StartExecutor[" + taskId + "] "
 	if !h.getNode().IsWorker() {
-		logger.Default().Warn("unworker node can not start executor")
+		logger.Rpc().Warn("unworker node can not start executor")
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not start executor")
 		return nil
 	}
 	err := h.getNode().Runtime.StartExecutor(taskId)
 	if err != nil {
-		logger.Default().Debug(logTitle + "error:" + err.Error())
-		logger.Default().Error(err, logTitle+"error")
+		logger.Rpc().Debug(logTitle + "error:" + err.Error())
+		logger.Rpc().Error(err, logTitle+"error")
 		*reply = packet.CreateFailedReply(-2001, err.Error())
 	}
-	logger.Default().Debug(logTitle + "success")
+	logger.Rpc().Debug(logTitle + "success")
 	*reply = packet.CreateSuccessRpcReply(nil)
 	return nil
 }
@@ -88,18 +88,18 @@ func (h *RpcHandler) StartExecutor(taskId string, reply *packet.RpcReply) error 
 func (h *RpcHandler) StopExecutor(taskId string, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.StopExecutor[" + taskId + "] "
 	if !h.getNode().IsWorker() {
-		logger.Default().Warn(logTitle + "unworker node can not stop executor")
+		logger.Rpc().Warn(logTitle + "unworker node can not stop executor")
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not stop executor")
 		return nil
 	}
 
 	err := h.getNode().Runtime.StopExecutor(taskId)
 	if err != nil {
-		logger.Default().Debug(logTitle + "error:" + err.Error())
-		logger.Default().Error(err, logTitle+"error")
+		logger.Rpc().Debug(logTitle + "error:" + err.Error())
+		logger.Rpc().Error(err, logTitle+"error")
 		*reply = packet.CreateFailedReply(-2001, logTitle+"error:"+err.Error())
 	}
-	logger.Default().Debug(logTitle + "success")
+	logger.Rpc().Debug(logTitle + "success")
 	*reply = packet.CreateSuccessRpcReply(nil)
 	return nil
 }
@@ -109,17 +109,17 @@ func (h *RpcHandler) StopExecutor(taskId string, reply *packet.RpcReply) error {
 func (h *RpcHandler) RemoveExecutor(taskId string, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.RemoveExecutor[" + taskId + "] "
 	if !h.getNode().IsWorker() {
-		logger.Default().Warn(logTitle + "unworker node can not remove executor")
+		logger.Rpc().Warn(logTitle + "unworker node can not remove executor")
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not remove executor")
 		return nil
 	}
-	err := h.getNode().Runtime.RemoveExecutor(taskId)
+	err := h.getNode().RemoveExecutor(taskId)
 	if err != nil {
-		logger.Default().Debug(logTitle + "error:" + err.Error())
-		logger.Default().Error(err, logTitle+"error")
+		logger.Rpc().Debug(logTitle + "error:" + err.Error())
+		logger.Rpc().Error(err, logTitle+"error")
 		*reply = packet.CreateFailedReply(-2001, logTitle+"error:"+err.Error())
 	}
-	logger.Default().Debug(logTitle + "success")
+	logger.Rpc().Debug(logTitle + "success")
 	*reply = packet.CreateSuccessRpcReply(h.getNode().Runtime.Executors)
 	return nil
 }
@@ -129,7 +129,7 @@ func (h *RpcHandler) RemoveExecutor(taskId string, reply *packet.RpcReply) error
 func (h *RpcHandler) QueryExecutorConfig(taskId string, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.QueryExecutors [" + taskId + "] "
 	if !h.getNode().IsWorker() {
-		logger.Default().Warn(logTitle + "unworker node can not query executor")
+		logger.Rpc().Warn(logTitle + "unworker node can not query executor")
 		*reply = packet.CreateFailedReply(-1001, "unworker node can not query executor")
 		return nil
 	}
@@ -139,13 +139,13 @@ func (h *RpcHandler) QueryExecutorConfig(taskId string, reply *packet.RpcReply) 
 		if !isOk {
 			*reply = packet.CreateFailedReply(-2001, "not exists this taskId")
 		} else {
-			logger.Default().Debug(logTitle + "success")
+			logger.Rpc().Debug(logTitle + "success")
 			configs = make(map[string]core.TaskConfig)
 			configs[taskId] = exec
 			*reply = packet.CreateSuccessRpcReply(configs)
 		}
 	} else {
-		logger.Default().Debug(logTitle + "success, config count = " + strconv.Itoa(len(configs)))
+		logger.Rpc().Debug(logTitle + "success, config count = " + strconv.Itoa(len(configs)))
 		*reply = packet.CreateSuccessRpcReply(configs)
 	}
 	return nil
