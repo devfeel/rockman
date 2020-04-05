@@ -162,7 +162,7 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 		if reply.IsSuccess() {
 			logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] failed, result:", reply.RetCode)
 		} else {
-			n.Cluster.Scheduler.AddOnlineSubmit(submit)
+			n.Cluster.AddExecutor(submit.ExecutorInfo())
 			logger.Node().Debug(logTitle + "to [" + submit.Worker.EndPoint() + "] success.")
 		}
 		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)

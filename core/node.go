@@ -1,8 +1,8 @@
 package core
 
-import jsonutil "github.com/devfeel/rockman/util/json"
+import "github.com/devfeel/rockman/util/json"
 
-const NodeKeyPrefix = "devfeel/rockman/"
+const ClusterKeyPrefix = "devfeel/rockman/"
 
 type NodeInfo struct {
 	NodeID    string
@@ -29,11 +29,11 @@ func (n *NodeInfo) EndPoint() string {
 }
 
 func (n *NodeInfo) Json() string {
-	return jsonutil.GetJsonString(n)
+	return _json.GetJsonString(n)
 }
 
 func (n *NodeInfo) LoadFromJson(json string) error {
-	return jsonutil.Unmarshal(json, n)
+	return _json.Unmarshal(json, n)
 }
 
 func (n *NodeInfo) GetEmptyResource() *ResourceInfo {
@@ -45,5 +45,9 @@ func (n *NodeInfo) GetNodeKey(clusterId string) string {
 }
 
 func GetNodeKeyPrefix(clusterId string) string {
-	return NodeKeyPrefix + clusterId + "/nodes/"
+	return ClusterKeyPrefix + clusterId + "/nodes/"
+}
+
+func GetExecutorKeyPrefix(clusterId string) string {
+	return ClusterKeyPrefix + clusterId + "/executors/"
 }

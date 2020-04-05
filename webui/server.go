@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	testController = new(controllers.TestController)
-	taskController = new(controllers.TaskController)
-	nodeController = new(controllers.NodeController)
+	testController    = new(controllers.TestController)
+	taskController    = new(controllers.TaskController)
+	nodeController    = new(controllers.NodeController)
+	clusterController = new(controllers.ClusterController)
 )
 
 type WebServer struct {
@@ -52,6 +53,10 @@ func (s *WebServer) initRoute() {
 	g.GET("/logs", taskController.ShowLogs)
 
 	g = s.webApp.HttpServer.Group("/node")
-	g.GET("/list", nodeController.ShowNodeList)
-	g.GET("/resource", nodeController.ShowResource)
+	g.GET("/list", nodeController.ShowNodes)
+
+	g = s.webApp.HttpServer.Group("/cluster")
+	g.GET("/resources", clusterController.ShowResources)
+	g.GET("/executors", clusterController.ShowExecutors)
+
 }

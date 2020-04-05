@@ -16,10 +16,8 @@ const (
 
 type (
 	Scheduler struct {
-		resources          map[string]*core.ResourceInfo
-		resourceLocker     *sync.RWMutex
-		onlineSubmits      map[string]*core.SubmitInfo
-		onlineSubmitLocker *sync.RWMutex
+		resources      map[string]*core.ResourceInfo
+		resourceLocker *sync.RWMutex
 	}
 )
 
@@ -30,33 +28,8 @@ func NewScheduler() *Scheduler {
 	scheduler := new(Scheduler)
 	scheduler.resources = make(map[string]*core.ResourceInfo)
 	scheduler.resourceLocker = new(sync.RWMutex)
-	scheduler.onlineSubmits = make(map[string]*core.SubmitInfo)
-	scheduler.onlineSubmitLocker = new(sync.RWMutex)
 
 	return scheduler
-}
-
-// AddOnlineSubmit add submit info which is online
-func (s *Scheduler) AddOnlineSubmit(submit *core.SubmitInfo) {
-
-	s.resourceLocker.Lock()
-	endPoint := submit.Worker.EndPoint()
-	resource, isExists := s.resources[endPoint]
-	if !isExists {
-		resource := &core.ResourceInfo{EndPoint: endPoint, TaskCount: 1}
-		resource.RefreshLoadValue()
-		s.resources[endPoint] = resource
-	} else {
-		resource.TaskCount += 1
-		resource.RefreshLoadValue()
-		s.resources[endPoint] = resource
-	}
-	s.resourceLocker.Unlock()
-
-	s.onlineSubmitLocker.Lock()
-	s.onlineSubmits[submit.TaskConfig.TaskID] = submit
-	s.onlineSubmitLocker.Unlock()
-
 }
 
 // RefreshResource refresh resource value

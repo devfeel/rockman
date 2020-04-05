@@ -10,7 +10,7 @@ import (
 type NodeController struct {
 }
 
-func (c *NodeController) ShowNodeList(ctx dotweb.Context) error {
+func (c *NodeController) ShowNodes(ctx dotweb.Context) error {
 	item, isExists := ctx.AppItems().Get(_const.ItemKey_Node)
 	if !isExists {
 		return ctx.WriteJson(contract.CreateResponse(-1001, "not exists node in app items", nil))
@@ -20,16 +20,4 @@ func (c *NodeController) ShowNodeList(ctx dotweb.Context) error {
 		return ctx.WriteJson(contract.CreateResponse(-1002, "not exists correct node in app items", nil))
 	}
 	return ctx.WriteJson(contract.CreateResponse(0, "", node.Cluster.Nodes))
-}
-
-func (c *NodeController) ShowResource(ctx dotweb.Context) error {
-	item, isExists := ctx.AppItems().Get(_const.ItemKey_Node)
-	if !isExists {
-		return ctx.WriteJson(contract.CreateResponse(-1001, "not exists node in app items", nil))
-	}
-	node, isOk := item.(*node.Node)
-	if !isOk {
-		return ctx.WriteJson(contract.CreateResponse(-1002, "not exists correct node in app items", nil))
-	}
-	return ctx.WriteJson(contract.CreateResponse(0, "", node.Cluster.Scheduler.Resources()))
 }

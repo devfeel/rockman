@@ -22,24 +22,29 @@ const (
 
 type (
 	Cluster struct {
-		ClusterId            string
-		RegistryServerUrl    string
-		RegistryClient       *consul.ConsulClient
-		LeaderKey            string
-		LeaderServer         string
-		leaderLastIndex      uint64
-		lastGetLeaderTime    time.Time
-		OnLeaderChange       WatchChangeHandle
-		OnLeaderChangeFailed WatchFailedHandle
-		Nodes                map[string]*core.NodeInfo
-		nodesLastIndex       uint64
-		nodesLocker          *sync.RWMutex
-		OnNodesChange        WatchChangeHandle
-		lastLoadNodesTime    time.Time
-		rpcClients           map[string]*client.RpcClient
-		rpcClientLocker      *sync.RWMutex
-		Scheduler            *scheduler.Scheduler
-		config               *config.Profile
+		ClusterId             string
+		RegistryServerUrl     string
+		RegistryClient        *consul.ConsulClient
+		LeaderKey             string
+		LeaderServer          string
+		leaderLastIndex       uint64
+		lastGetLeaderTime     time.Time
+		OnLeaderChange        WatchChangeHandle
+		OnLeaderChangeFailed  WatchFailedHandle
+		Nodes                 map[string]*core.NodeInfo
+		nodesLastIndex        uint64
+		nodesLocker           *sync.RWMutex
+		OnNodesChange         WatchChangeHandle
+		lastLoadNodesTime     time.Time
+		Executors             map[string]*core.ExecutorInfo
+		executorsLastIndex    uint64
+		executorsLocker       *sync.RWMutex
+		OnExecutorsChange     WatchChangeHandle
+		lastLoadExecutorsTime time.Time
+		rpcClients            map[string]*client.RpcClient
+		rpcClientLocker       *sync.RWMutex
+		Scheduler             *scheduler.Scheduler
+		config                *config.Profile
 	}
 
 	WatchChangeHandle func()
@@ -55,6 +60,8 @@ func NewCluster(profile *config.Profile) (*Cluster, error) {
 	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
 	cluster.Nodes = make(map[string]*core.NodeInfo)
 	cluster.nodesLocker = new(sync.RWMutex)
+	cluster.Executors = make(map[string]*core.ExecutorInfo)
+	cluster.executorsLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
@@ -77,8 +84,8 @@ func (c *Cluster) Start() error {
 	if err != nil {
 		return err
 	}
-	c.watchOnlineNodes()
 	c.watchLeader()
+	c.watchOnlineNodes()
 	c.cycleQueryWorkerResource()
 	return nil
 }
@@ -173,6 +180,18 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	defer c.nodesLocker.Unlock()
 	c.Scheduler.SetResource(resource)
 	c.Nodes[key] = nodeInfo
+	return core.CreateSuccessResult()
+}
+
+// AddExecutor add executor info into executor list
+func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
+	if execInfo.Node.Cluster != c.ClusterId {
+		return core.CreateResult(-1001, "not match cluster", nil)
+	}
+	//TODO check exec from remote node
+	c.executorsLocker.Lock()
+	defer c.executorsLocker.Unlock()
+	c.Executors[execInfo.TaskID] = execInfo
 	return core.CreateSuccessResult()
 }
 
@@ -309,6 +328,75 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	c.lastLoadNodesTime = time.Now()
 }
 
+func (c *Cluster) refreshOnlineExecutors(execKVs api.KVPairs) {
+	execs := make(map[string]*core.ExecutorInfo)
+	for _, s := range execKVs {
+		if s.Session == "" {
+			continue
+		}
+		execInfo := new(core.ExecutorInfo)
+		if err := execInfo.LoadFromJson(string(s.Value)); err != nil {
+			continue
+		}
+		execs[execInfo.TaskID] = execInfo
+		if _, exists := c.Executors[execInfo.TaskID]; !exists {
+			c.AddExecutor(execInfo)
+		}
+	}
+	c.executorsLocker.Lock()
+	defer c.executorsLocker.Unlock()
+	for _, exec := range c.Executors {
+		if _, exists := execs[exec.TaskID]; !exists {
+			exec.IsOnline = false
+		} else {
+			exec.IsOnline = true
+		}
+	}
+	c.lastLoadExecutorsTime = time.Now()
+}
+
+// watchOnlineExecutors watch online executors change
+func (c *Cluster) watchOnlineExecutors() {
+	logTitle := "Cluster.watchOnlineExecutors "
+	logger.Cluster().Debug(logTitle + "running...")
+	doQuery := func() error {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
+			}
+		}()
+
+		opt := &api.QueryOptions{
+			WaitIndex: c.executorsLastIndex,
+			WaitTime:  time.Minute * 10,
+		}
+		nodeKVs, meta, err := c.RegistryClient.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), opt)
+		if err != nil {
+			return err
+		}
+		if meta.LastIndex != c.executorsLastIndex {
+			logger.Cluster().Debug(logTitle + "some executors changed.")
+			c.nodesLastIndex = meta.LastIndex
+			c.refreshOnlineExecutors(nodeKVs)
+			if c.OnExecutorsChange != nil {
+				c.OnExecutorsChange()
+			}
+		}
+		return nil
+	}
+
+	go func() {
+		for {
+			err := doQuery()
+			if err != nil {
+				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
+				time.Sleep(time.Second * 10)
+			}
+		}
+	}()
+}
+
 // watchOnlineNodes watch online nodes change
 func (c *Cluster) watchOnlineNodes() {
 	logTitle := "Cluster.watchOnlineNodes "
@@ -317,7 +405,7 @@ func (c *Cluster) watchOnlineNodes() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"error, now will retry it")
+				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
 			}
 		}()
 
@@ -330,7 +418,7 @@ func (c *Cluster) watchOnlineNodes() {
 			return err
 		}
 		if meta.LastIndex != c.nodesLastIndex {
-			logger.Cluster().Debug("Cluster.watchNodesChange: some nodes changed.")
+			logger.Cluster().Debug(logTitle + "some nodes changed.")
 			c.nodesLastIndex = meta.LastIndex
 			c.refreshOnlineNodes(nodeKVs)
 			if c.OnNodesChange != nil {
@@ -360,7 +448,7 @@ func (c *Cluster) watchLeader() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"error")
+				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
 			}
 		}()
 
@@ -415,8 +503,7 @@ func (c *Cluster) cycleQueryWorkerResource() {
 		defer func() {
 			if err := recover(); err != nil {
 				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"error")
-				logger.Cluster().Debug(logTitle + "error[" + errInfo.Error() + "], wait next time")
+				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
 			}
 		}()
 		queryNodes := 0
