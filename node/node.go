@@ -104,11 +104,11 @@ func (n *Node) IsLeader() bool {
 	return n.isLeader
 }
 
-func (n *Node) SubmitExecutor(submit *core.SubmitInfo) (error, *core.JsonResult) {
+func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
 	if !n.IsLeader() {
-		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, Current node is not leader.")
-		return ErrorCanNotSubmitToNotLeaderNode, nil
+		logger.Node().Debug("Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] failed, current node is not leader.")
+		return core.CreateResult(-1001, "current node is not leader", nil)
 	}
 
 	var err error
@@ -118,7 +118,7 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) (error, *core.JsonResult)
 		if err != nil {
 			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
 			//TODO log submit result to db log
-			return err, nil
+			return core.CreateErrorResult(err)
 		}
 	}
 
@@ -128,15 +128,15 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) (error, *core.JsonResult)
 	//TODO log submit result to db log
 	if err != nil {
 		logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] error:", err.Error())
-		return err, reply
+		return core.CreateErrorResult(err)
 	} else {
-		if reply.RetCode != reply.CorrectCode() {
+		if reply.IsSuccess() {
 			logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] failed, result:", reply.RetCode)
 		} else {
 			n.Cluster.Scheduler.AddOnlineSubmit(submit)
 			logger.Node().Debug(logTitle + "to [" + submit.Worker.EndPoint() + "] success.")
 		}
-		return err, reply
+		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)
 	}
 }
 
@@ -200,14 +200,14 @@ RegisterNode:
 		} else {
 			logger.Node().Debug(logTitle + "GetLeaderInfo success [" + leaderServer + "]")
 			rpcClient := client.NewRpcClient(leaderServer, n.config.Rpc.EnableTls, n.config.Rpc.ClientCertFile, n.config.Rpc.ClientKeyFile)
-			err, result := rpcClient.CallRegisterNode(nodeInfo)
+			err, reply := rpcClient.CallRegisterNode(nodeInfo)
 			if err != nil {
 				logger.Node().Debug(logTitle + "CallRegisterNode error:" + err.Error() + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			}
-			if result.RetCode != result.CorrectCode() {
-				logger.Node().Debug(logTitle + "CallRegisterNode failed:" + strconv.Itoa(result.RetCode) + ", will retry 10 seconds after.")
+			if !reply.IsSuccess() {
+				logger.Node().Debug(logTitle + "CallRegisterNode failed:" + strconv.Itoa(reply.RetCode) + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
 			} else {

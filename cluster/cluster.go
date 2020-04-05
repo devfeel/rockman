@@ -75,7 +75,7 @@ func (c *Cluster) Start() error {
 		return err
 	}
 	c.watchOnlineNodes()
-	c.cycleLoadWorkerResource()
+	c.cycleQueryWorkerResource()
 	return nil
 }
 
@@ -148,13 +148,27 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 }
 
 // addNodeToList add node into node list
-func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) {
+func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
+	if nodeInfo.Cluster != c.ClusterId {
+		return core.CreateResult(-1001, "not match cluster", nil)
+	}
 	key := nodeInfo.EndPoint()
+	resource, result := c.QueryNodeResource(key)
+	if result.Error != nil {
+		resource = nodeInfo.GetEmptyResource()
+		logger.Cluster().Warn("AddNodeInfo.QueryResource[" + key + "] error: " + result.Error.Error())
+		logger.Cluster().Error(result.Error, "AddNodeInfo.QueryResource["+key+"] error")
+	} else {
+		if !result.IsSuccess() {
+			resource = nodeInfo.GetEmptyResource()
+			logger.Cluster().Warn("AddNodeInfo.QueryResource[" + key + "] failed: " + result.Message())
+		}
+	}
 	c.nodesLocker.Lock()
 	defer c.nodesLocker.Unlock()
-	//TODO get remote worker's resource
-	c.Scheduler.SetResource(nodeInfo.GetEmptyResource())
+	c.Scheduler.SetResource(resource)
 	c.Nodes[key] = nodeInfo
+	return core.CreateSuccessResult()
 }
 
 func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
@@ -235,6 +249,26 @@ func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	}
 	logger.Cluster().Debug("try get lower load worker[" + resource.EndPoint + "] failed 3 times.")
 	return nil, errors.New("no match resource with worker")
+}
+
+// QueryNodeResource query node resource by endpoint
+func (c *Cluster) QueryNodeResource(endPoint string) (*core.ResourceInfo, *core.Result) {
+	client := c.GetRpcClient(endPoint)
+	err, reply := client.CallQueryResource()
+	if err != nil {
+		return nil, core.CreateErrorResult(err)
+	} else {
+		if !reply.IsSuccess() {
+			return nil, core.CreateResult(-1001, "query failed["+strconv.Itoa(reply.RetCode)+", "+reply.RetMsg+"]", nil)
+		} else {
+			resource := new(core.ResourceInfo)
+			err := mapper.MapperMap(reply.Message.(map[string]interface{}), resource)
+			if err != nil {
+				return nil, core.CreateResult(core.ErrorCode, err.Error(), err)
+			}
+			return resource, core.CreateSuccessResult()
+		}
+	}
 }
 
 // loadOnlineNodes load all online nodes from Registry
@@ -323,7 +357,7 @@ func (c *Cluster) watchOnlineNodes() {
 }
 
 // CycleLoadWorkerResource
-func (c *Cluster) cycleLoadWorkerResource() {
+func (c *Cluster) cycleQueryWorkerResource() {
 	logTitle := "Cluster.CycleLoadWorkerResource "
 	logger.Cluster().Debug(logTitle + "running...")
 	doQuery := func() {
@@ -341,26 +375,18 @@ func (c *Cluster) cycleLoadWorkerResource() {
 				continue
 			}
 			queryNodes += 1
-			client := c.GetRpcClient(n.EndPoint())
-			err, reply := client.CallQueryResource()
-			if err != nil {
+			resource, result := c.QueryNodeResource(n.EndPoint())
+			if result.Error != nil {
 				failedNodes += 1
-				logger.Cluster().Error(err, logTitle+"QueryResource["+n.EndPoint()+"] error")
+				logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] error: " + result.Message())
+				logger.Cluster().Error(result.Error, logTitle+"QueryResource["+n.EndPoint()+"] error")
+				continue
 			} else {
-				if reply.RetCode != reply.CorrectCode() {
-					failedNodes += 1
-					logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed[" + strconv.Itoa(reply.RetCode) + ", " + reply.RetMsg + "]")
-				} else {
-					resource := new(core.ResourceInfo)
-					err := mapper.MapperMap(reply.Message.(map[string]interface{}), resource)
-					if err != nil {
-						failedNodes += 1
-						logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed[TypeMapperFailed, " + err.Error() + "]")
-						continue
-					}
-					c.Scheduler.SetResource(resource)
-					logger.Cluster().Trace(logTitle + "QueryResource[" + n.EndPoint() + "] success.")
+				if !result.IsSuccess() {
+					logger.Cluster().Warn(logTitle + "QueryResource[" + n.EndPoint() + "] failed: " + result.Message())
+					continue
 				}
+				c.Scheduler.SetResource(resource)
 			}
 		}
 		logger.Cluster().Debug(logTitle + "success, query nodes[" + strconv.Itoa(queryNodes) + "], failed[" + strconv.Itoa(failedNodes) + "]")

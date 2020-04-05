@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	serverUrl = "116.62.16.66:2398"
+	//serverUrl = "116.62.16.66:2398"
 	//serverUrl = "118.31.32.168:2398"
-	//serverUrl = "127.0.0.1:2398"
+	serverUrl = "127.0.0.1:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {

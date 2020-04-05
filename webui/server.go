@@ -53,4 +53,5 @@ func (s *WebServer) initRoute() {
 
 	g = s.webApp.HttpServer.Group("/node")
 	g.GET("/list", nodeController.ShowNodeList)
+	g.GET("/resource", nodeController.ShowResource)
 }
