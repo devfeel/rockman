@@ -119,36 +119,36 @@ func (n *Node) IsLeader() bool {
 	return n.isLeader
 }
 
-func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
-	logTitle := "Node SubmitExecutor [" + submit.TaskConfig.TaskID + "] "
+func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
+	logTitle := "Node SubmitExecutor [" + execInfo.TaskConfig.TaskID + "] "
 	if !n.IsLeader() {
 		logger.Node().Debug(logTitle + "failed, current node is not leader.")
 		return core.CreateResult(-1001, "current node is not leader", nil)
 	}
 
-	if submit.Worker != nil {
-		if submit.Worker.Cluster != n.Cluster.ClusterId {
-			logger.Node().Debug(logTitle + "failed, not match cluster [" + submit.Worker.Cluster + ", " + n.Cluster.ClusterId + "]")
-			return core.CreateResult(-1002, "not match cluster ["+submit.Worker.Cluster+", "+n.Cluster.ClusterId+"]", nil)
+	if execInfo.Worker != nil {
+		if execInfo.Worker.Cluster != n.Cluster.ClusterId {
+			logger.Node().Debug(logTitle + "failed, not match cluster [" + execInfo.Worker.Cluster + ", " + n.Cluster.ClusterId + "]")
+			return core.CreateResult(-1002, "not match cluster ["+execInfo.Worker.Cluster+", "+n.Cluster.ClusterId+"]", nil)
 		}
 
-		endPoint := submit.Worker.EndPoint()
+		endPoint := execInfo.Worker.EndPoint()
 		node, exists := n.Cluster.FindNode(endPoint)
 		if !exists {
 			logger.Node().Debug(logTitle + "failed, can not find node[" + endPoint + "] in cluster")
 			return core.CreateResult(-1003, "can not find node["+endPoint+"] in cluster", nil)
 		}
 
-		if node.NodeID != submit.Worker.NodeID {
-			logger.Node().Debug(logTitle + "failed, not match node id [" + submit.Worker.NodeID + ", " + node.NodeID + "]")
-			return core.CreateResult(-1004, "not match node id ["+submit.Worker.NodeID+", "+node.NodeID+"]", nil)
+		if node.NodeID != execInfo.Worker.NodeID {
+			logger.Node().Debug(logTitle + "failed, not match node id [" + execInfo.Worker.NodeID + ", " + node.NodeID + "]")
+			return core.CreateResult(-1004, "not match node id ["+execInfo.Worker.NodeID+", "+node.NodeID+"]", nil)
 		}
 	}
 
 	var err error
 	// get low balance worker
-	if submit.Worker == nil {
-		submit.Worker, err = n.Cluster.GetLowBalanceWorker()
+	if execInfo.Worker == nil {
+		execInfo.Worker, err = n.Cluster.GetLowBalanceWorker()
 		if err != nil {
 			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
 			//TODO log submit result to db log
@@ -157,18 +157,18 @@ func (n *Node) SubmitExecutor(submit *core.SubmitInfo) *core.Result {
 	}
 
 	//submit executor to the specified worker node
-	rpcClient := n.Cluster.GetRpcClient(submit.Worker.EndPoint())
-	err, reply := rpcClient.CallRegisterExecutor(submit.TaskConfig)
+	rpcClient := n.Cluster.GetRpcClient(execInfo.Worker.EndPoint())
+	err, reply := rpcClient.CallRegisterExecutor(execInfo.TaskConfig)
 	//TODO log submit result to db log
 	if err != nil {
-		logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] error:", err.Error())
+		logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] error:", err.Error())
 		return core.CreateErrorResult(err)
 	} else {
 		if !reply.IsSuccess() {
-			logger.Node().DebugS(logTitle+"to ["+submit.Worker.EndPoint()+"] failed, result:", reply.RetCode)
+			logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
 		} else {
-			n.Cluster.AddExecutor(submit.ExecutorInfo())
-			logger.Node().Debug(logTitle + "to [" + submit.Worker.EndPoint() + "] success.")
+			n.Cluster.AddExecutor(execInfo)
+			logger.Node().Debug(logTitle + "to [" + execInfo.Worker.EndPoint() + "] success.")
 		}
 		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)
 	}
@@ -284,6 +284,31 @@ func (n *Node) onExecutorsChange() {
 	logger.Node().DebugS("Node.onExecutorsChange")
 }
 
+// onExecutorOffline
+func (n *Node) onExecutorOffline(execInfo *core.ExecutorInfo) {
+	logTitle := "Node.onExecutorOffline[" + execInfo.TaskConfig.TaskID + "] "
+	if !n.isLeader {
+		logger.Node().Warn(logTitle + "is be called, but it's not leader")
+		return
+	}
+	if execInfo.TaskConfig.HAFlag {
+		execInfo.Worker = nil
+		result := n.SubmitExecutor(execInfo)
+		if result.Error != nil {
+			logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
+			//TODO log to db
+		} else {
+			if !result.IsSuccess() {
+				logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
+				//TODO log to db
+			} else {
+				logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
+				//TODO log to db
+			}
+		}
+	}
+}
+
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
 	logger.Node().Debug("Node create session begin.")
@@ -304,6 +329,7 @@ func (n *Node) becomeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to leader
 	logger.Node().Debug(logTitle + "become to leader role")
+	n.Cluster.OnExecutorOffline = n.onExecutorOffline
 	n.isLeader = true
 
 }
@@ -312,6 +338,7 @@ func (n *Node) removeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to not leader
 	logger.Node().Debug(logTitle + "remove leader role")
+	n.Cluster.OnExecutorOffline = nil
 	n.isLeader = false
 }
 

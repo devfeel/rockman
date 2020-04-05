@@ -3,10 +3,10 @@ package core
 import _json "github.com/devfeel/rockman/util/json"
 
 type ExecutorInfo struct {
-	TaskID   string
-	IsOnline bool
-	Config   *TaskConfig
-	Node     *NodeInfo
+	TaskConfig     *TaskConfig
+	Worker         *NodeInfo
+	DistributeType int
+	IsOnline       bool
 }
 
 func (n *ExecutorInfo) Json() string {

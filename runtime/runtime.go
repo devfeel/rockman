@@ -68,29 +68,25 @@ func (r *Runtime) Start() error {
 
 // CreateExecutor create new executor and register to task service
 // now support http\shell\go.so
-func (r *Runtime) CreateExecutor(taskConf *core.TaskConfig) (executor.Executor, error) {
+func (r *Runtime) CreateExecutor(execInfo *core.ExecutorInfo) (executor.Executor, error) {
 	var exec executor.Executor
 	var err error
-	if taskConf.TargetType == executor.TargetType_Http {
-		exec, err = executor.NewHttpExecutor(taskConf)
-	} else if taskConf.TargetType == executor.TargetType_Shell {
-		exec, err = executor.NewShellExecutor(taskConf)
-	} else if taskConf.TargetType == executor.TargetType_GoSo {
-		exec, err = executor.NewGoExecutor(taskConf)
+	if execInfo.TaskConfig.TargetType == executor.TargetType_Http {
+		exec, err = executor.NewHttpExecutor(execInfo.TaskConfig)
+	} else if execInfo.TaskConfig.TargetType == executor.TargetType_Shell {
+		exec, err = executor.NewShellExecutor(execInfo.TaskConfig)
+	} else if execInfo.TaskConfig.TargetType == executor.TargetType_GoSo {
+		exec, err = executor.NewGoExecutor(execInfo.TaskConfig)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	key := core.GetExecutorKeyPrefix(r.config.Cluster.ClusterId) + taskConf.TaskID
-	value := &core.ExecutorInfo{
-		TaskID: taskConf.TaskID,
-		Config: taskConf,
-		Node:   r.nodeInfo,
-	}
+	key := core.GetExecutorKeyPrefix(r.config.Cluster.ClusterId) + execInfo.TaskConfig.TaskID
+	value := execInfo
 	locker, err := r.Registry.CreateLocker(key, value.Json(), "")
 	if err != nil {
-		r.RemoveExecutor(taskConf.TaskID)
+		r.RemoveExecutor(execInfo.TaskConfig.TaskID)
 		return nil, errors.New("create session error[" + err.Error() + "]")
 	} else {
 		exec.SetLocker(locker)

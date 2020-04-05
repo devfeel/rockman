@@ -30,6 +30,7 @@ type (
 		lastGetLeaderTime     time.Time
 		OnLeaderChange        WatchChangeHandle
 		OnLeaderChangeFailed  WatchFailedHandle
+		OnExecutorOffline     ExecutorOfflineHandle
 		Nodes                 map[string]*core.NodeInfo
 		nodesLastIndex        uint64
 		nodesLocker           *sync.RWMutex
@@ -46,8 +47,9 @@ type (
 		config                *config.Profile
 	}
 
-	WatchChangeHandle func()
-	WatchFailedHandle func()
+	WatchChangeHandle     func()
+	WatchFailedHandle     func()
+	ExecutorOfflineHandle func(*core.ExecutorInfo)
 )
 
 // NewCluster new cluster and reg server
@@ -159,13 +161,13 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 
 // AddExecutor add executor info into executor list
 func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
-	if execInfo.Node.Cluster != c.ClusterId {
+	if execInfo.Worker.Cluster != c.ClusterId {
 		return core.CreateResult(-1001, "not match cluster", nil)
 	}
 	//TODO check exec from remote node
 	c.executorsLocker.Lock()
 	defer c.executorsLocker.Unlock()
-	c.Executors[execInfo.TaskID] = execInfo
+	c.Executors[execInfo.TaskConfig.TaskID] = execInfo
 	return core.CreateSuccessResult()
 }
 
@@ -289,6 +291,7 @@ func (c *Cluster) loadOnlineNodes() error {
 	return nil
 }
 
+// refreshOnlineNodes
 func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	nodes := make(map[string]*core.NodeInfo)
 	for _, s := range nodeKVs {
@@ -319,6 +322,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	c.lastLoadNodesTime = time.Now()
 }
 
+// refreshOnlineExecutors
 func (c *Cluster) refreshOnlineExecutors(execKVs api.KVPairs) {
 	execs := make(map[string]*core.ExecutorInfo)
 	for _, s := range execKVs {
@@ -329,17 +333,19 @@ func (c *Cluster) refreshOnlineExecutors(execKVs api.KVPairs) {
 		if err := execInfo.LoadFromJson(string(s.Value)); err != nil {
 			continue
 		}
-		execs[execInfo.TaskID] = execInfo
-		if _, exists := c.Executors[execInfo.TaskID]; !exists {
+		execs[execInfo.TaskConfig.TaskID] = execInfo
+		if _, exists := c.Executors[execInfo.TaskConfig.TaskID]; !exists {
 			c.AddExecutor(execInfo)
 		}
 	}
 	c.executorsLocker.Lock()
 	defer c.executorsLocker.Unlock()
 	for _, exec := range c.Executors {
-		if _, exists := execs[exec.TaskID]; !exists {
+		if _, exists := execs[exec.TaskConfig.TaskID]; !exists {
 			exec.IsOnline = false
-			//TODO log to db
+			if c.OnExecutorOffline != nil {
+				c.OnExecutorOffline(exec)
+			}
 		} else {
 			exec.IsOnline = true
 		}

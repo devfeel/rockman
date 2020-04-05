@@ -113,14 +113,14 @@ func (c *RpcClient) CallQueryNodes(pageInfo *core.PageInfo) (error, *packet.RpcR
 	return nil, &reply
 }
 
-func (c *RpcClient) CallSubmitExecutor(submit *core.SubmitInfo) (error, *packet.RpcReply) {
+func (c *RpcClient) CallSubmitExecutor(execInfo *core.ExecutorInfo) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
 	var reply packet.RpcReply
-	err = client.Call("Rpc.SubmitExecutor", submit, &reply)
+	err = client.Call("Rpc.SubmitExecutor", execInfo, &reply)
 	if err != nil {
 		return err, nil
 	}

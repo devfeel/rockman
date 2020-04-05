@@ -147,7 +147,7 @@ func TestRpcClient_CallRegisterGoExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(core.SubmitInfo)
+	submit := new(core.ExecutorInfo)
 	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-http"
 	conf.TaskType = "cron"
@@ -157,6 +157,7 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = "http-url"
+	conf.HAFlag = true
 	conf.TargetConfig = &executor.HttpConfig{
 		Url:    "http://www.baidu.com",
 		Method: "HEAD",
@@ -181,7 +182,7 @@ func TestRpcClient_CallSubmitHttpExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(core.SubmitInfo)
+	submit := new(core.ExecutorInfo)
 	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-Script"
 	conf.TaskType = "cron"
@@ -191,6 +192,7 @@ func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
+	conf.HAFlag = true
 	conf.TargetConfig = &executor.ShellConfig{
 		Script: "echo ok",
 		Type:   "Script",
@@ -212,7 +214,7 @@ func TestRpcClient_CallSubmitShellScriptExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(core.SubmitInfo)
+	submit := new(core.ExecutorInfo)
 	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-shell-File"
 	conf.TaskType = "cron"
@@ -222,6 +224,7 @@ func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
+	conf.HAFlag = true
 	conf.TargetConfig = &executor.ShellConfig{
 		Script: "hello.sh",
 		Type:   "File",
@@ -243,7 +246,7 @@ func TestRpcClient_CallSubmitShellFileExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(core.SubmitInfo)
+	submit := new(core.ExecutorInfo)
 	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-GoSo"
 	conf.TaskType = "cron"
@@ -253,6 +256,7 @@ func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
+	conf.HAFlag = true
 	conf.TargetConfig = &executor.GoConfig{
 		FileName: "plugin.so",
 	}
@@ -273,7 +277,7 @@ func TestRpcClient_CallSubmitGoExecutor(t *testing.T) {
 
 func TestRpcClient_CallSubmitLBGoExecutor(t *testing.T) {
 	client := getRpcClient()
-	submit := new(core.SubmitInfo)
+	submit := new(core.ExecutorInfo)
 	conf := &core.TaskConfig{}
 	conf.TaskID = "Test-GoSo-LB"
 	conf.TaskType = "cron"
@@ -283,6 +287,7 @@ func TestRpcClient_CallSubmitLBGoExecutor(t *testing.T) {
 	conf.Interval = 0
 	conf.Express = "0 * * * * *"
 	conf.TaskData = ""
+	conf.HAFlag = true
 	conf.TargetConfig = &executor.GoConfig{
 		FileName: "plugin.so",
 	}

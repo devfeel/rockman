@@ -11,6 +11,7 @@ type TaskConfig struct {
 	Interval     int64
 	Express      string
 	TaskData     interface{}
+	HAFlag       bool //HA flag, if set true, leader will watch it, when it offline will resubmit
 	TargetType   string
 	TargetConfig interface{}
 }

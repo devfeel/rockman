@@ -48,7 +48,7 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *packet.RpcReply)
 
 // SubmitExecutor submit executor to leader node, then register to worker node
 // it will check cluster id
-func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, reply *packet.RpcReply) error {
+func (h *RpcHandler) SubmitExecutor(execInfo *core.ExecutorInfo, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.SubmitExecutor: "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn("can not submit to not leader node")
@@ -57,7 +57,7 @@ func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, reply *packet.RpcRe
 	}
 
 	//async send executor to worker node
-	result := h.getNode().SubmitExecutor(submit)
+	result := h.getNode().SubmitExecutor(execInfo)
 	if result.Error != nil {
 		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
 		*reply = packet.CreateFailedReply(-2001, result.Message())
@@ -66,7 +66,7 @@ func (h *RpcHandler) SubmitExecutor(submit *core.SubmitInfo, reply *packet.RpcRe
 			logger.Rpc().DebugS(logTitle + "failed, " + result.Message())
 			*reply = packet.CreateFailedReply(-2002, result.Message())
 		} else {
-			logger.Rpc().DebugS(logTitle+"success", submit.TaskConfig.TaskID)
+			logger.Rpc().DebugS(logTitle+"success", execInfo.TaskConfig.TaskID)
 			*reply = packet.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
