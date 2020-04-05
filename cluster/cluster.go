@@ -22,26 +22,28 @@ const (
 
 type (
 	Cluster struct {
-		ClusterId         string
-		RegistryServerUrl string
-		RegistryClient    *consul.ConsulClient
-		LeaderKey         string
-		LeaderServer      string
-		leaderLastIndex   uint64
-		lastGetLeaderTime time.Time
-		OnLeaderChange    WatchChangeHandle
-		Nodes             map[string]*core.NodeInfo
-		nodesLastIndex    uint64
-		nodesLocker       *sync.RWMutex
-		OnNodesChange     WatchChangeHandle
-		lastLoadNodesTime time.Time
-		rpcClients        map[string]*client.RpcClient
-		rpcClientLocker   *sync.RWMutex
-		Scheduler         *scheduler.Scheduler
-		config            *config.Profile
+		ClusterId            string
+		RegistryServerUrl    string
+		RegistryClient       *consul.ConsulClient
+		LeaderKey            string
+		LeaderServer         string
+		leaderLastIndex      uint64
+		lastGetLeaderTime    time.Time
+		OnLeaderChange       WatchChangeHandle
+		OnLeaderChangeFailed WatchFailedHandle
+		Nodes                map[string]*core.NodeInfo
+		nodesLastIndex       uint64
+		nodesLocker          *sync.RWMutex
+		OnNodesChange        WatchChangeHandle
+		lastLoadNodesTime    time.Time
+		rpcClients           map[string]*client.RpcClient
+		rpcClientLocker      *sync.RWMutex
+		Scheduler            *scheduler.Scheduler
+		config               *config.Profile
 	}
 
 	WatchChangeHandle func()
+	WatchFailedHandle func()
 )
 
 // NewCluster new cluster and reg server
@@ -51,6 +53,11 @@ func NewCluster(profile *config.Profile) (*Cluster, error) {
 	cluster.ClusterId = profile.Cluster.ClusterId
 	cluster.RegistryServerUrl = profile.Cluster.RegistryServer
 	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
+	cluster.Nodes = make(map[string]*core.NodeInfo)
+	cluster.nodesLocker = new(sync.RWMutex)
+	cluster.rpcClients = make(map[string]*client.RpcClient)
+	cluster.rpcClientLocker = new(sync.RWMutex)
+
 	regClient, err := consul.NewConsulClient(profile.Cluster.RegistryServer)
 	if err != nil {
 		logger.Node().Debug(fmt.Sprint("Cluster init error", err.Error()))
@@ -58,10 +65,6 @@ func NewCluster(profile *config.Profile) (*Cluster, error) {
 		return nil, err
 	}
 	cluster.RegistryClient = regClient
-	cluster.Nodes = make(map[string]*core.NodeInfo)
-	cluster.nodesLocker = new(sync.RWMutex)
-	cluster.rpcClients = make(map[string]*client.RpcClient)
-	cluster.rpcClientLocker = new(sync.RWMutex)
 
 	cluster.Scheduler = scheduler.NewScheduler()
 	logger.Node().Debug("Cluster init success.")
@@ -75,12 +78,13 @@ func (c *Cluster) Start() error {
 		return err
 	}
 	c.watchOnlineNodes()
+	c.watchLeader()
 	c.cycleQueryWorkerResource()
 	return nil
 }
 
 // electionLeader election leader role to registry server
-func (c *Cluster) ElectionLeader(leaderServer string, checkUrl string) error {
+func (c *Cluster) ElectionLeader(leaderServer string) error {
 	opts := &api.LockOptions{
 		Key:   c.LeaderKey,
 		Value: []byte(leaderServer),
@@ -147,7 +151,8 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 	}
 }
 
-// addNodeToList add node into node list
+// AddNodeInfo add node into node list
+// it will query remote resource
 func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	if nodeInfo.Cluster != c.ClusterId {
 		return core.CreateResult(-1001, "not match cluster", nil)
@@ -179,7 +184,9 @@ func (c *Cluster) FindNode(endPoint string) (*core.NodeInfo, bool) {
 	return node, exists
 }
 
+// GetRpcClient get rpc client with endpoint
 func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
+	//TODO check endpoint is in cluster
 	defer c.rpcClientLocker.Unlock()
 	c.rpcClientLocker.Lock()
 	var rpcClient *client.RpcClient
@@ -189,39 +196,6 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
-}
-
-// WatchLeader
-func (c *Cluster) WatchLeader() error {
-	logTitle := "Cluster.WatchLeader "
-	defer func() {
-		if err := recover(); err != nil {
-			errInfo := errors.New(fmt.Sprintln(err))
-			logger.Cluster().Error(errInfo, logTitle+"error")
-		}
-	}()
-
-	opt := &api.QueryOptions{
-		WaitIndex: c.leaderLastIndex,
-		WaitTime:  time.Minute * 10,
-	}
-	kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
-	if err != nil {
-		return err
-	}
-	if kvPair.Session == "" {
-		return errors.New("leader lock session is nil")
-	}
-	if meta.LastIndex != c.leaderLastIndex {
-		logger.Cluster().Debug("Cluster.watchLeaderChange: leader changed.")
-		c.leaderLastIndex = meta.LastIndex
-		c.LeaderServer = string(kvPair.Value)
-		c.lastGetLeaderTime = time.Now()
-		if c.OnLeaderChange != nil {
-			c.OnLeaderChange()
-		}
-	}
-	return nil
 }
 
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
@@ -335,10 +309,10 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	c.lastLoadNodesTime = time.Now()
 }
 
-// watchOnlineNodes
+// watchOnlineNodes watch online nodes change
 func (c *Cluster) watchOnlineNodes() {
 	logTitle := "Cluster.watchOnlineNodes "
-	logger.Cluster().Debug(logTitle + "running.")
+	logger.Cluster().Debug(logTitle + "running...")
 	doQuery := func() error {
 		defer func() {
 			if err := recover(); err != nil {
@@ -372,6 +346,62 @@ func (c *Cluster) watchOnlineNodes() {
 			if err != nil {
 				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
 				time.Sleep(time.Second * 10)
+			}
+		}
+	}()
+}
+
+// watchLeader watch leader change
+func (c *Cluster) watchLeader() {
+	logTitle := "Cluster.watchLeader "
+	logger.Cluster().Debug(logTitle + "running...")
+
+	doQuery := func() error {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, logTitle+"error")
+			}
+		}()
+
+		opt := &api.QueryOptions{
+			WaitIndex: c.leaderLastIndex,
+			WaitTime:  time.Minute * 10,
+		}
+		kvPair, meta, err := c.RegistryClient.Get(c.LeaderKey, opt)
+		if err != nil {
+			return err
+		}
+		if kvPair.Session == "" {
+			return errors.New("leader lock session is nil")
+		}
+		if meta.LastIndex != c.leaderLastIndex {
+			logger.Cluster().Debug("Cluster.watchLeaderChange: leader changed.")
+			c.leaderLastIndex = meta.LastIndex
+			c.LeaderServer = string(kvPair.Value)
+			c.lastGetLeaderTime = time.Now()
+			if c.OnLeaderChange != nil {
+				c.OnLeaderChange()
+			}
+		}
+		return nil
+	}
+	go func() {
+		var retryCount int
+		for {
+			retryWaitSeconds := (retryCount + 1) * 10
+			err := doQuery()
+			if err != nil {
+				retryCount += 1
+				if retryCount > config.CurrentProfile.Cluster.WatchLeaderRetryLimit {
+					logger.Cluster().DebugS(logTitle + "error count bigger than max limit")
+					if c.OnLeaderChangeFailed != nil {
+						c.OnLeaderChangeFailed()
+					}
+				} else {
+					logger.Cluster().DebugS(logTitle+"error, will retry after "+strconv.Itoa(retryWaitSeconds)+" seconds:", err.Error())
+				}
+				time.Sleep(time.Second * time.Duration(retryWaitSeconds))
 			}
 		}
 	}()

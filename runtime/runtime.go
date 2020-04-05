@@ -50,10 +50,11 @@ func NewRuntime(nodeInfo *core.NodeInfo) *Runtime {
 	return r
 }
 
-func (r *Runtime) Start() {
+func (r *Runtime) Start() error {
 	logger.Default().Debug("Runtime start...")
 	r.TaskService.StartAllTask()
 	r.Status = RuntimeStatus_Run
+	return nil
 }
 
 // CreateCronExecutor create new cron executor and register to task service

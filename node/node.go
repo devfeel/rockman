@@ -51,9 +51,9 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		return nil, err
 	}
 	cluster.OnLeaderChange = node.onLeaderChange
+	cluster.OnLeaderChangeFailed = node.onLeaderChangeFailed
 
 	node.Cluster = cluster
-
 	if node.config.Node.IsWorker {
 		// create runtime
 		node.Runtime = runtime.NewRuntime(node.NodeInfo())
@@ -64,7 +64,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 }
 
 func (n *Node) Start() error {
-	logger.Node().Debug("Node begin start...")
+	logger.Default().Debug("Node start...")
 	// create session with node info
 	err := n.createSession(n.NodeInfo().GetNodeKey(n.Cluster.ClusterId))
 	if err != nil {
@@ -73,19 +73,29 @@ func (n *Node) Start() error {
 
 	if n.config.Node.IsMaster {
 		n.electionLeader()
-		err := n.Cluster.Start()
+	}
+
+	// register node to cluster
+	err = n.registerNode()
+	if err != nil {
+		return err
+	}
+
+	if n.config.Node.IsMaster {
+		err = n.Cluster.Start()
 		if err != nil {
 			return err
 		}
 	}
 
 	if n.config.Node.IsWorker {
-		go n.Runtime.Start()
+		err = n.Runtime.Start()
+		if err != nil {
+			return err
+		}
 	}
 
-	// register node to cluster
-	err = n.registerNode()
-	return err
+	return nil
 }
 
 func (n *Node) Config() *config.Profile {
@@ -169,26 +179,26 @@ func (n *Node) Shutdown() {
 // electionLeader
 func (n *Node) electionLeader() {
 	logTitle := "Node election leader "
-	logger.Node().Debug(logTitle + "begin...")
+	logger.Node().Debug(logTitle + "begin.")
 
 	go func() {
 		var retryCount int
 		limit := n.config.Global.RetryLimit
 		for {
-			if retryCount > limit {
-				err := errors.New(logTitle + "retry count bigger than " + strconv.Itoa(limit) + ", now stop it.")
-				logger.Node().DebugS(logTitle + "error:" + err.Error())
-				return
-			}
-			retryCount += 1
-
-			err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint(), "")
-			if err == nil {
-				logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
-				n.becomeLeaderRole()
-			} else {
+			err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint())
+			if err != nil {
+				retryCount += 1
+				if retryCount > limit {
+					err := errors.New("retry count bigger than " + strconv.Itoa(limit) + ", now will stop node.")
+					logger.Node().DebugS(logTitle + "error:" + err.Error())
+					n.Shutdown()
+					return
+				}
 				logger.Node().DebugS(logTitle + "error: " + err.Error())
 				logger.Node().Error(err, logTitle+"error")
+			} else {
+				logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
+				n.becomeLeaderRole()
 			}
 		}
 	}()
@@ -201,7 +211,7 @@ func (n *Node) registerNode() error {
 	var err error
 	var retryCount int
 	nodeInfo := n.NodeInfo()
-	logger.Cluster().Debug(logTitle + "begin...")
+	logger.Cluster().Debug(logTitle + "begin.")
 RegisterNode:
 	for {
 		if retryCount > n.config.Global.RetryLimit {
@@ -229,9 +239,6 @@ RegisterNode:
 				logger.Node().Debug(logTitle + "CallRegisterNode failed:" + strconv.Itoa(reply.RetCode) + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
-			} else {
-				// watch leader change
-				n.watchLeader()
 			}
 			break
 		}
@@ -268,9 +275,15 @@ func (n *Node) onLeaderChange() {
 	}
 }
 
+// onLeaderChangeFailed
+func (n *Node) onLeaderChangeFailed() {
+	logger.Node().DebugS("Node.onLeaderChangeFailed, now will shutdown node.")
+	n.Shutdown()
+}
+
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
-	logger.Node().Debug("Node create session begin...")
+	logger.Node().Debug("Node create session begin.")
 	err := n.Cluster.CreateSession(nodeKey, n.NodeInfo())
 	if err != nil {
 		logger.Node().Debug("Node create session error: " + err.Error())
@@ -293,27 +306,6 @@ func (n *Node) removeLeaderRole() {
 	//TODO do something when become to not leader
 	logger.Node().Debug(logTitle + "remove leader role")
 	n.isLeader = false
-}
-
-func (n *Node) watchLeader() {
-	logTitle := "Node.watchLeader "
-	logger.Cluster().Debug(logTitle + "running.")
-	go func() {
-		var retryCount int
-		for {
-			err := n.Cluster.WatchLeader()
-			if err != nil {
-				if retryCount > config.CurrentProfile.Cluster.WatchLeaderRetryLimit {
-					logger.Cluster().DebugS(logTitle + "error num bigger than max limit, now will shutdown node.")
-					n.Shutdown()
-				} else {
-					retryCount += 1
-					logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
-				}
-				time.Sleep(time.Second * 10)
-			}
-		}
-	}()
 }
 
 func (n *Node) NodeInfo() *core.NodeInfo {
