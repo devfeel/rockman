@@ -41,6 +41,15 @@ type (
 		config            *config.Profile
 	}
 
+	ClusterInfo struct {
+		ClusterId         string
+		RegistryServerUrl string
+		LeaderKey         string
+		LeaderServer      string
+		NodeNum           int
+		Config            *config.ClusterSection
+	}
+
 	WatchChangeHandle func()
 )
 
@@ -276,6 +285,17 @@ func (c *Cluster) QueryNodeResource(endPoint string) (*core.ResourceInfo, *core.
 			}
 			return resource, core.CreateSuccessResult()
 		}
+	}
+}
+
+func (c *Cluster) ClusterInfo() *ClusterInfo {
+	return &ClusterInfo{
+		ClusterId:         c.ClusterId,
+		RegistryServerUrl: c.RegistryServerUrl,
+		LeaderKey:         c.LeaderKey,
+		LeaderServer:      c.LeaderServer,
+		NodeNum:           len(c.Nodes),
+		Config:            c.config.Cluster,
 	}
 }
 
