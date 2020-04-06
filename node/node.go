@@ -27,11 +27,13 @@ type (
 		Registry     *registry.Registry
 		Runtime      *runtime.Runtime
 		shutdownChan chan string
+		isSTW        bool //stop the world flag
 	}
 )
 
 var (
 	ErrorCanNotSubmitToNotLeaderNode = errors.New("can not submit to not leader node")
+	ErrorStopTheWorld                = errors.New("node is stop the world")
 )
 
 func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
@@ -48,16 +50,14 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	registry.OnServerOnline = node.onRegistryOnline
+	registry.OnServerOffline = node.onRegistryOffline
 	node.Registry = registry
 
 	//init cluster
-	cluster, err := cluster.NewCluster(profile, registry)
-	if err != nil {
-		return nil, err
-	}
+	cluster := cluster.NewCluster(profile, registry)
 	cluster.OnLeaderChange = node.onLeaderChange
 	cluster.OnLeaderChangeFailed = node.onLeaderChangeFailed
-	cluster.OnExecutorsChange = node.onExecutorsChange
 
 	node.Cluster = cluster
 	if node.config.Node.IsWorker {
@@ -85,6 +85,8 @@ func (n *Node) Start() error {
 	if err != nil {
 		return err
 	}
+
+	n.Registry.Start()
 
 	if n.config.Node.IsMaster {
 		err = n.Cluster.Start()
@@ -181,16 +183,88 @@ func (n *Node) Shutdown() {
 	n.shutdownChan <- "ok"
 }
 
+func (n *Node) NodeInfo() *core.NodeInfo {
+	if n.nodeInfo != nil {
+		return n.nodeInfo
+	}
+	n.nodeInfo = &core.NodeInfo{
+		NodeID:    n.NodeId,
+		Cluster:   n.config.Cluster.ClusterId,
+		OuterHost: n.config.Rpc.OuterHost,
+		OuterPort: n.config.Rpc.OuterPort,
+		Host:      n.config.Rpc.RpcHost,
+		Port:      n.config.Rpc.RpcPort,
+		IsMaster:  n.config.Node.IsMaster,
+		IsWorker:  n.config.Node.IsWorker,
+		IsOnline:  true,
+	}
+	return n.nodeInfo
+}
+
+func (n *Node) stopTheWorld() {
+	lt := "Node stopTheWorld "
+	logger.Node().Debug(lt + "begin.")
+	logger.Node().Debug(lt + "set SWT flag true.")
+	n.isSTW = true
+	n.Cluster.Stop()
+	n.Runtime.Stop()
+	logger.Node().Debug(lt + "success.")
+}
+
+func (n *Node) startTheWorld() {
+	lt := "Node startTheWorld "
+	logger.Node().Debug(lt + "begin.")
+
+	logger.Node().Debug(lt + "set SWT flag false.")
+	n.isSTW = false
+
+	if n.config.Node.IsMaster {
+		cluster := cluster.NewCluster(n.config, n.Registry)
+		cluster.OnLeaderChange = n.onLeaderChange
+		cluster.OnLeaderChangeFailed = n.onLeaderChangeFailed
+		n.Cluster = cluster
+	}
+
+	if n.config.Node.IsWorker {
+		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.Registry, n.config)
+	}
+
+	err := n.Start()
+	if err != nil {
+		logger.Node().Debug(lt + "failed, error: " + err.Error())
+		n.Shutdown()
+	} else {
+		logger.Node().Debug(lt + "success.")
+	}
+}
+
 // electionLeader
 func (n *Node) electionLeader() {
 	logTitle := "Node election leader "
 	logger.Node().Debug(logTitle + "begin.")
 
+	doQuery := func() error {
+		err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint())
+		if err != nil {
+			logger.Node().DebugS(logTitle + "error: " + err.Error() + ", will retry 10 seconds after")
+			logger.Node().Error(err, logTitle+"error")
+			time.Sleep(time.Second * 10)
+			return err
+		} else {
+			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
+			n.becomeLeaderRole()
+			return nil
+		}
+	}
+
 	go func() {
 		var retryCount int
 		limit := n.config.Global.RetryLimit
 		for {
-			err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint())
+			if n.isSTW {
+				return
+			}
+			err := doQuery()
 			if err != nil {
 				retryCount += 1
 				if retryCount > limit {
@@ -199,11 +273,8 @@ func (n *Node) electionLeader() {
 					n.Shutdown()
 					return
 				}
-				logger.Node().DebugS(logTitle + "error: " + err.Error())
-				logger.Node().Error(err, logTitle+"error")
 			} else {
-				logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
-				n.becomeLeaderRole()
+				retryCount = 0
 			}
 		}
 	}()
@@ -219,8 +290,11 @@ func (n *Node) registerNode() error {
 	logger.Cluster().Debug(logTitle + "begin.")
 RegisterNode:
 	for {
+		if n.isSTW {
+			return ErrorStopTheWorld
+		}
 		if retryCount > n.config.Global.RetryLimit {
-			err = errors.New(logTitle + "retry more than 5 times, now will be stop")
+			err = errors.New("retry more than 5 times and stop it")
 			logger.Node().DebugS(logTitle + "error: " + err.Error())
 			return err
 		}
@@ -244,6 +318,8 @@ RegisterNode:
 				logger.Node().Debug(logTitle + "CallRegisterNode failed:" + strconv.Itoa(reply.RetCode) + ", will retry 10 seconds after.")
 				time.Sleep(time.Second * 10)
 				continue RegisterNode
+			} else {
+				retryCount = 0
 			}
 			break
 		}
@@ -309,19 +385,33 @@ func (n *Node) onExecutorOffline(execInfo *core.ExecutorInfo) {
 	}
 }
 
+func (n *Node) onRegistryOnline() {
+	logger.Node().DebugS("Node.onRegistryOnline registry online, now start the world.")
+	if n.isSTW {
+		n.startTheWorld()
+	}
+}
+
+func (n *Node) onRegistryOffline() {
+	logger.Node().DebugS("Node.onRegistryOffline registry offline, now stop the world.")
+	n.stopTheWorld()
+}
+
 // createSession create session to registry server
 func (n *Node) createSession(nodeKey string) error {
-	logger.Node().Debug("Node create session begin.")
+	lt := "Node create session "
+	logger.Node().Debug(lt + "begin.")
+
 	locker, err := n.Registry.CreateLocker(nodeKey, n.NodeInfo().Json(), defaultLockerTTL)
 	if err != nil {
-		logger.Node().Debug("Node create session error: " + err.Error())
+		logger.Node().Debug(lt + "error: " + err.Error())
 	}
 	_, err = locker.Lock()
 	if err != nil {
-		logger.Node().Debug("Node create session error: " + err.Error())
+		logger.Node().Debug(lt + "error: " + err.Error())
 		return err
 	}
-	logger.Node().Debug("Node create session success with key {" + nodeKey + "}")
+	logger.Node().Debug(lt + "success with key {" + nodeKey + "}")
 	return nil
 }
 
@@ -340,22 +430,4 @@ func (n *Node) removeLeaderRole() {
 	logger.Node().Debug(logTitle + "remove leader role")
 	n.Cluster.OnExecutorOffline = nil
 	n.isLeader = false
-}
-
-func (n *Node) NodeInfo() *core.NodeInfo {
-	if n.nodeInfo != nil {
-		return n.nodeInfo
-	}
-	n.nodeInfo = &core.NodeInfo{
-		NodeID:    n.NodeId,
-		Cluster:   n.config.Cluster.ClusterId,
-		OuterHost: n.config.Rpc.OuterHost,
-		OuterPort: n.config.Rpc.OuterPort,
-		Host:      n.config.Rpc.RpcHost,
-		Port:      n.config.Rpc.RpcPort,
-		IsMaster:  n.config.Node.IsMaster,
-		IsWorker:  n.config.Node.IsWorker,
-		IsOnline:  true,
-	}
-	return n.nodeInfo
 }

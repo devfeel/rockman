@@ -66,6 +66,13 @@ func (r *Runtime) Start() error {
 	return nil
 }
 
+func (r *Runtime) Stop() error {
+	logger.Default().Debug("Runtime stop.")
+	r.TaskService.StopAllTask()
+	r.Status = RuntimeStatus_Stop
+	return nil
+}
+
 // CreateExecutor create new executor and register to task service
 // now support http\shell\go.so
 func (r *Runtime) CreateExecutor(execInfo *core.ExecutorInfo) (executor.Executor, error) {

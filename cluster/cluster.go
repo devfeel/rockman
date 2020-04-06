@@ -45,6 +45,7 @@ type (
 		rpcClientLocker       *sync.RWMutex
 		Scheduler             *scheduler.Scheduler
 		config                *config.Profile
+		isSTW                 bool //stop the world flag
 	}
 
 	WatchChangeHandle     func()
@@ -53,7 +54,7 @@ type (
 )
 
 // NewCluster new cluster and reg server
-func NewCluster(profile *config.Profile, registry *registry.Registry) (*Cluster, error) {
+func NewCluster(profile *config.Profile, registry *registry.Registry) *Cluster {
 	cluster := new(Cluster)
 	cluster.config = profile
 	cluster.ClusterId = profile.Cluster.ClusterId
@@ -69,7 +70,7 @@ func NewCluster(profile *config.Profile, registry *registry.Registry) (*Cluster,
 
 	cluster.Scheduler = scheduler.NewScheduler()
 	logger.Node().Debug("Cluster init success.")
-	return cluster, nil
+	return cluster
 }
 
 func (c *Cluster) Start() error {
@@ -86,6 +87,12 @@ func (c *Cluster) Start() error {
 	c.watchOnlineNodes()
 	c.watchOnlineExecutors()
 	c.cycleQueryWorkerResource()
+	return nil
+}
+
+func (c *Cluster) Stop() error {
+	logger.Default().Debug("Cluster Stop.")
+	c.isSTW = true
 	return nil
 }
 
@@ -386,6 +393,9 @@ func (c *Cluster) watchOnlineExecutors() {
 
 	go func() {
 		for {
+			if c.isSTW {
+				return
+			}
 			err := doQuery()
 			if err != nil {
 				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
@@ -428,6 +438,9 @@ func (c *Cluster) watchOnlineNodes() {
 
 	go func() {
 		for {
+			if c.isSTW {
+				return
+			}
 			err := doQuery()
 			if err != nil {
 				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
@@ -475,6 +488,9 @@ func (c *Cluster) watchLeader() {
 	go func() {
 		var retryCount int
 		for {
+			if c.isSTW {
+				return
+			}
 			retryWaitSeconds := (retryCount + 1) * 10
 			err := doQuery()
 			if err != nil {
@@ -535,6 +551,10 @@ func (c *Cluster) cycleQueryWorkerResource() {
 				interval = MinQueryResourceInterval
 			}
 			time.Sleep(time.Second * time.Duration(interval))
+
+			if c.isSTW {
+				return
+			}
 			doQuery()
 		}
 	}()

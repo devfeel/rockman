@@ -22,6 +22,7 @@ type (
 
 	GlobalSection struct {
 		RetryLimit            int
+		CheckNetInterval      int //the interval time for check net, unit for second
 		DataBaseConnectString string
 	}
 
