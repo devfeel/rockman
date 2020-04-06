@@ -10,10 +10,9 @@ import (
 )
 
 var (
-	testController    = new(controllers.TestController)
-	taskController    = new(controllers.TaskController)
-	nodeController    = new(controllers.NodeController)
-	clusterController = new(controllers.ClusterController)
+	executorController = new(controllers.ExecutorController)
+	nodeController     = new(controllers.NodeController)
+	clusterController  = new(controllers.ClusterController)
 )
 
 type WebServer struct {
@@ -45,12 +44,9 @@ func (s *WebServer) ListenAndServe(listenAddr string) error {
 }
 
 func (s *WebServer) initRoute() {
-	g := s.webApp.HttpServer.Group("/test")
-	g.GET("/index", testController.Echo)
-
-	g = s.webApp.HttpServer.Group("/task")
-	g.GET("/list", taskController.ShowTasks)
-	g.GET("/logs", taskController.ShowExecLogs)
+	g := s.webApp.HttpServer.Group("/task")
+	g.GET("/list", executorController.ShowExecutors)
+	g.GET("/logs", executorController.ShowExecLogs)
 
 	g = s.webApp.HttpServer.Group("/node")
 	g.GET("/list", nodeController.ShowNodes)

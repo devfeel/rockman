@@ -8,12 +8,12 @@ import (
 	"github.com/devfeel/rockman/webui/contract"
 )
 
-type TaskController struct {
+type ExecutorController struct {
 }
 
-func (c *TaskController) ShowTasks(ctx dotweb.Context) error {
-	taskService := service.NewTaskService()
-	result, err := taskService.QueryTasks()
+func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
+	taskService := service.NewExecutorService()
+	result, err := taskService.QueryExecutors()
 	if err != nil {
 		return ctx.WriteJson(contract.CreateResponse(-2001, "Query Error", err))
 	}
@@ -21,7 +21,7 @@ func (c *TaskController) ShowTasks(ctx dotweb.Context) error {
 }
 
 // ShowExecLogs
-func (c *TaskController) ShowExecLogs(ctx dotweb.Context) error {
+func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 	taskId := ctx.QueryString("taskid")
 	pageIndex := ctx.QueryInt64("pageindex")
 	pageSize := ctx.QueryInt64("pagesize")
@@ -33,7 +33,7 @@ func (c *TaskController) ShowExecLogs(ctx dotweb.Context) error {
 		pageReq.PageSize = _const.DefaultPageSize
 	}
 
-	taskService := service.NewTaskService()
+	taskService := service.NewExecutorService()
 	result, err := taskService.QueryExecLogs(taskId, pageReq)
 	if err != nil {
 		return ctx.WriteJson(contract.CreateResponse(-2001, "Query Error:"+err.Error(), err))

@@ -9,58 +9,58 @@ import (
 
 const defaultDatabaseID = "demodb"
 
-var defaultTaskRepository *TaskRepository
+var defaultRepository *ExecutorRepository
 var taskRepositoryLocker *sync.Mutex
 
 func init() {
 	taskRepositoryLocker = new(sync.Mutex)
 }
 
-type TaskRepository struct {
+type ExecutorRepository struct {
 	BaseRepository
 }
 
 // GetMessageRepository return MessageRepository which is inited
-func GetTaskRepository() *TaskRepository {
+func GetTaskRepository() *ExecutorRepository {
 	//check default repository is init
-	if defaultTaskRepository == nil {
+	if defaultRepository == nil {
 		taskRepositoryLocker.Lock()
 		defer taskRepositoryLocker.Unlock()
-		if defaultTaskRepository == nil {
-			defaultTaskRepository = NewTaskRepository()
+		if defaultRepository == nil {
+			defaultRepository = NewTaskRepository()
 		}
 	}
-	return defaultTaskRepository
+	return defaultRepository
 }
 
 // NewTaskRepository return new MessageRepository
-func NewTaskRepository() *TaskRepository {
+func NewTaskRepository() *ExecutorRepository {
 	if config.CurrentProfile.Global.DataBaseConnectString == "" {
 		err := errors.New("no config database config")
 		panic(err)
 	}
-	repository := new(TaskRepository)
+	repository := new(ExecutorRepository)
 	repository.Init(config.CurrentProfile.Global.DataBaseConnectString)
 	repository.InitLogger()
 	return repository
 }
 
-func (repository *TaskRepository) QueryTasks() ([]*model.TaskInfo, error) {
+func (repository *ExecutorRepository) QueryExecutors() ([]*model.ExecutorInfo, error) {
 	sql := "SELECT * FROM Task"
-	var dest []*model.TaskInfo
+	var dest []*model.ExecutorInfo
 	var err error
 	err = repository.FindList(&dest, sql)
 	return dest, err
 }
 
 // WriteExecLog
-func (repository *TaskRepository) WriteExecLog(log *model.TaskExecLog) (int64, error) {
+func (repository *ExecutorRepository) WriteExecLog(log *model.TaskExecLog) (int64, error) {
 	sql := "INSERT INTO TaskExecLog(TaskID, NodeID, NodeEndPoint, IsSuccess, StartTime, EndTime, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	return repository.Insert(sql, log.TaskID, log.NodeID, log.NodeEndPoint, log.IsSuccess, log.StartTime, log.EndTime, log.FailureType, log.FailureCause, log.CreateTime)
 }
 
 // QueryExecLogs
-func (repository *TaskRepository) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+func (repository *ExecutorRepository) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM TaskExecLog"
 	countSql := "SELECT count(1) FROM TaskExecLog"
 	if taskId != "" {

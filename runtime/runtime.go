@@ -28,7 +28,7 @@ type (
 		Executors       map[string]executor.Executor
 		executorsLocker *sync.RWMutex
 		Status          int
-		taskLog         *service.TaskService
+		executorLogic   *service.ExecutorService
 		nodeInfo        *core.NodeInfo
 		config          *config.Profile
 	}
@@ -42,7 +42,7 @@ func NewRuntime(nodeInfo *core.NodeInfo, registry *registry.Registry, profile *c
 	r.nodeInfo = nodeInfo
 	r.config = profile
 	r.TaskService = task.StartNewService()
-	r.taskLog = service.NewTaskService()
+	r.executorLogic = service.NewExecutorService()
 	r.TaskService.SetLogger(logger.Task())
 	r.TaskService.SetOnBeforeHandler(func(ctx *task.TaskContext) error {
 		ctx.Header[TaskHeader_StartTime] = time.Now()
@@ -187,7 +187,7 @@ func (r *Runtime) writeExecLog(ctx *task.TaskContext) error {
 		FailureType:  failureType,
 		FailureCause: failureCause,
 	}
-	err := r.taskLog.WriteExecLog(execLog)
+	err := r.executorLogic.WriteExecLog(execLog)
 	return err
 }
 
