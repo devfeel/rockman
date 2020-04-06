@@ -45,17 +45,51 @@ func NewTaskRepository() *TaskRepository {
 	return repository
 }
 
-func (repository *TaskRepository) QueryTasks(dest interface{}) error {
+func (repository *TaskRepository) QueryTasks() ([]*model.TaskInfo, error) {
 	sql := "SELECT * FROM Task"
-	return repository.FindList(dest, sql)
+	var dest []*model.TaskInfo
+	var err error
+	err = repository.FindList(&dest, sql)
+	return dest, err
 }
 
+// WriteExecLog
 func (repository *TaskRepository) WriteExecLog(log *model.TaskExecLog) (int64, error) {
 	sql := "INSERT INTO TaskExecLog(TaskID, NodeID, NodeEndPoint, IsSuccess, StartTime, EndTime, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	return repository.Insert(sql, log.TaskID, log.NodeID, log.NodeEndPoint, log.IsSuccess, log.StartTime, log.EndTime, log.FailureType, log.FailureCause, log.CreateTime)
 }
 
-func (repository *TaskRepository) QueryLogs(dest interface{}) error {
-	sql := "SELECT * FROM TaskExecLog LIMIT 100"
-	return repository.FindList(dest, sql)
+// QueryExecLogs
+func (repository *TaskRepository) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM TaskExecLog"
+	countSql := "SELECT count(1) FROM TaskExecLog"
+	if taskId != "" {
+		dataSql += " WHERE TaskID = ?"
+		countSql += " WHERE TaskID = ?"
+	}
+	dataSql += pageReq.GetPageSql()
+	var dest []*model.TaskExecLog
+	var err error
+	if taskId != "" {
+		err = repository.FindList(&dest, dataSql, taskId)
+	} else {
+		err = repository.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if taskId != "" {
+		count, err = repository.Count(countSql, taskId)
+	} else {
+		count, err = repository.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
 }

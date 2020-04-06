@@ -1,22 +1,15 @@
 package model
 
 type TaskInfo struct {
-	ID         int
-	TargetType string //http/shell/goso
-	TaskID     string
-	TaskType   string
-	IsRun      bool
-	DueTime    int64
-	Interval   int64
-	Express    string
-	TaskData   string
-}
-
-type HttpTaskInfo struct {
-	TaskInfo
-	Url         string
-	Method      string
-	ContentType string
-	PostBody    string
-	Timeout     int //单位为秒
+	ID           int
+	TaskID       string
+	TaskType     string
+	IsRun        bool
+	DueTime      int64
+	Interval     int64
+	Express      string
+	TaskData     interface{}
+	HAFlag       bool //HA flag, if set true, leader will watch it, when it offline will resubmit
+	TargetType   string
+	TargetConfig interface{}
 }

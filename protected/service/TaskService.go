@@ -29,10 +29,8 @@ func NewTaskService() *TaskService {
 
 // QueryTasks
 func (service *TaskService) QueryTasks() ([]*model.TaskInfo, error) {
-	var results []*model.TaskInfo
-	var err error
-	err = service.taskRepository.QueryTasks(&results)
-	return results, err
+	result, err := service.taskRepository.QueryTasks()
+	return result, err
 }
 
 // WriteExecLog
@@ -42,9 +40,8 @@ func (service *TaskService) WriteExecLog(log *model.TaskExecLog) error {
 	return err
 }
 
-func (service *TaskService) QueryLogs() ([]*model.TaskExecLog, error) {
-	var results []*model.TaskExecLog
-	var err error
-	err = service.taskRepository.QueryLogs(&results)
-	return results, err
+// QueryExecLogs
+func (service *TaskService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.taskRepository.QueryExecLogs(taskId, pageReq)
+	return result, err
 }
