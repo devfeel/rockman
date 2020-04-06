@@ -355,34 +355,36 @@ func (n *Node) onLeaderChangeFailed() {
 	n.Shutdown()
 }
 
-// onExecutorsChange
-func (n *Node) onExecutorsChange() {
-	logger.Node().DebugS("Node.onExecutorsChange")
-}
-
-// onExecutorOffline
-func (n *Node) onExecutorOffline(execInfo *core.ExecutorInfo) {
-	logTitle := "Node.onExecutorOffline[" + execInfo.TaskConfig.TaskID + "] "
+// onWorkerNodeOffline
+func (n *Node) onWorkerNodeOffline(nodeInfo *core.NodeInfo) {
+	logTitle := "Node.onWorkerNodeOffline[" + nodeInfo.NodeID + "] "
 	if !n.isLeader {
 		logger.Node().Warn(logTitle + "is be called, but it's not leader")
 		return
 	}
-	if execInfo.TaskConfig.HAFlag {
-		execInfo.Worker = nil
-		result := n.SubmitExecutor(execInfo)
-		if result.Error != nil {
-			logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
-			//TODO log to db
-		} else {
-			if !result.IsSuccess() {
-				logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
-				//TODO log to db
-			} else {
-				logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
-				//TODO log to db
-			}
+	var needReSubmits []*core.ExecutorInfo
+	for _, v := range n.Cluster.Executors {
+		if v.Worker.NodeID == nodeInfo.NodeID {
+			needReSubmits = append(needReSubmits, v)
 		}
 	}
+	go func() {
+		for _, exec := range needReSubmits {
+			result := n.SubmitExecutor(exec)
+			if result.Error != nil {
+				logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
+				//TODO log to db
+			} else {
+				if !result.IsSuccess() {
+					logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
+					//TODO log to db
+				} else {
+					logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
+					//TODO log to db
+				}
+			}
+		}
+	}()
 }
 
 func (n *Node) onRegistryOnline() {
@@ -419,7 +421,7 @@ func (n *Node) becomeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to leader
 	logger.Node().Debug(logTitle + "become to leader role")
-	n.Cluster.OnExecutorOffline = n.onExecutorOffline
+	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
 	n.isLeader = true
 
 }
@@ -428,6 +430,6 @@ func (n *Node) removeLeaderRole() {
 	logTitle := "Node "
 	//TODO do something when become to not leader
 	logger.Node().Debug(logTitle + "remove leader role")
-	n.Cluster.OnExecutorOffline = nil
+	n.Cluster.OnNodeOffline = nil
 	n.isLeader = false
 }

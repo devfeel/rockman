@@ -28,29 +28,28 @@ type (
 		LeaderServer          string
 		leaderLastIndex       uint64
 		lastGetLeaderTime     time.Time
-		OnLeaderChange        WatchChangeHandle
-		OnLeaderChangeFailed  WatchFailedHandle
-		OnExecutorOffline     ExecutorOfflineHandle
 		Nodes                 map[string]*core.NodeInfo
 		nodesLastIndex        uint64
 		nodesLocker           *sync.RWMutex
-		OnNodesChange         WatchChangeHandle
 		lastLoadNodesTime     time.Time
 		Executors             map[string]*core.ExecutorInfo
 		executorsLastIndex    uint64
 		executorsLocker       *sync.RWMutex
-		OnExecutorsChange     WatchChangeHandle
 		lastLoadExecutorsTime time.Time
 		rpcClients            map[string]*client.RpcClient
 		rpcClientLocker       *sync.RWMutex
 		Scheduler             *scheduler.Scheduler
 		config                *config.Profile
 		isSTW                 bool //stop the world flag
+		OnNodesChange         WatchChangeHandle
+		OnNodeOffline         NodeOfflineHandle
+		OnLeaderChange        WatchChangeHandle
+		OnLeaderChangeFailed  WatchFailedHandle
 	}
 
-	WatchChangeHandle     func()
-	WatchFailedHandle     func()
-	ExecutorOfflineHandle func(*core.ExecutorInfo)
+	WatchChangeHandle func()
+	WatchFailedHandle func()
+	NodeOfflineHandle func(info *core.NodeInfo)
 )
 
 // NewCluster new cluster and reg server
@@ -79,13 +78,8 @@ func (c *Cluster) Start() error {
 	if err != nil {
 		return err
 	}
-	err = c.loadOnlineExecutors()
-	if err != nil {
-		return err
-	}
 	c.watchLeader()
 	c.watchOnlineNodes()
-	c.watchOnlineExecutors()
 	c.cycleQueryWorkerResource()
 	return nil
 }
@@ -171,7 +165,6 @@ func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	if execInfo.Worker.Cluster != c.ClusterId {
 		return core.CreateResult(-1001, "not match cluster", nil)
 	}
-	//TODO check exec from remote node
 	c.executorsLocker.Lock()
 	defer c.executorsLocker.Unlock()
 	c.Executors[execInfo.TaskConfig.TaskID] = execInfo
@@ -268,21 +261,6 @@ func (c *Cluster) ClusterInfo() *core.ClusterInfo {
 	}
 }
 
-// loadOnlineExecutors load all online executors from Registry
-func (c *Cluster) loadOnlineExecutors() error {
-	logTitle := "Cluster.loadOnlineExecutors "
-	execKVs, meta, err := c.Registry.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), nil)
-	if err != nil {
-		logger.Cluster().Debug(logTitle + "error: " + err.Error())
-		return errors.New(logTitle + "error: " + err.Error())
-	} else {
-		logger.Cluster().Debug(logTitle + "success.")
-	}
-	c.executorsLastIndex = meta.LastIndex
-	c.refreshOnlineExecutors(execKVs)
-	return nil
-}
-
 // loadOnlineNodes load all online nodes from Registry
 func (c *Cluster) loadOnlineNodes() error {
 	logTitle := "Cluster.loadOnlineNodes "
@@ -322,87 +300,14 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 	for _, node := range c.Nodes {
 		if _, exists := nodes[node.EndPoint()]; !exists {
 			node.IsOnline = false
+			if c.OnNodeOffline != nil {
+				c.OnNodeOffline(node)
+			}
 		} else {
 			node.IsOnline = true
 		}
 	}
 	c.lastLoadNodesTime = time.Now()
-}
-
-// refreshOnlineExecutors
-func (c *Cluster) refreshOnlineExecutors(execKVs api.KVPairs) {
-	execs := make(map[string]*core.ExecutorInfo)
-	for _, s := range execKVs {
-		if s.Session == "" {
-			continue
-		}
-		execInfo := new(core.ExecutorInfo)
-		if err := execInfo.LoadFromJson(string(s.Value)); err != nil {
-			continue
-		}
-		execs[execInfo.TaskConfig.TaskID] = execInfo
-		if _, exists := c.Executors[execInfo.TaskConfig.TaskID]; !exists {
-			c.AddExecutor(execInfo)
-		}
-	}
-	c.executorsLocker.Lock()
-	defer c.executorsLocker.Unlock()
-	for _, exec := range c.Executors {
-		if _, exists := execs[exec.TaskConfig.TaskID]; !exists {
-			exec.IsOnline = false
-			if c.OnExecutorOffline != nil {
-				c.OnExecutorOffline(exec)
-			}
-		} else {
-			exec.IsOnline = true
-		}
-	}
-	c.lastLoadExecutorsTime = time.Now()
-}
-
-// watchOnlineExecutors watch online executors change
-func (c *Cluster) watchOnlineExecutors() {
-	logTitle := "Cluster.watchOnlineExecutors "
-	logger.Cluster().Debug(logTitle + "running...")
-	doQuery := func() error {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
-			}
-		}()
-
-		opt := &api.QueryOptions{
-			WaitIndex: c.executorsLastIndex,
-			WaitTime:  time.Minute * 10,
-		}
-		nodeKVs, meta, err := c.Registry.ListKV(core.GetExecutorKeyPrefix(c.ClusterId), opt)
-		if err != nil {
-			return err
-		}
-		if meta.LastIndex != c.executorsLastIndex {
-			logger.Cluster().Debug(logTitle + "some executors changed.")
-			c.executorsLastIndex = meta.LastIndex
-			c.refreshOnlineExecutors(nodeKVs)
-			if c.OnExecutorsChange != nil {
-				c.OnExecutorsChange()
-			}
-		}
-		return nil
-	}
-
-	go func() {
-		for {
-			if c.isSTW {
-				return
-			}
-			err := doQuery()
-			if err != nil {
-				logger.Cluster().DebugS(logTitle+"error, will retry after 10 seconds:", err.Error())
-				time.Sleep(time.Second * 10)
-			}
-		}
-	}()
 }
 
 // watchOnlineNodes watch online nodes change

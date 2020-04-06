@@ -89,16 +89,6 @@ func (r *Runtime) CreateExecutor(execInfo *core.ExecutorInfo) (executor.Executor
 		return nil, err
 	}
 
-	key := core.GetExecutorKeyPrefix(r.config.Cluster.ClusterId) + execInfo.TaskConfig.TaskID
-	value := execInfo
-	locker, err := r.Registry.CreateLocker(key, value.Json(), "")
-	if err != nil {
-		r.RemoveExecutor(execInfo.TaskConfig.TaskID)
-		return nil, errors.New("create session error[" + err.Error() + "]")
-	} else {
-		exec.SetLocker(locker)
-		locker.Lock()
-	}
 	err = r.registerExecutor(exec)
 	return exec, err
 }
@@ -134,10 +124,6 @@ func (r *Runtime) StopExecutor(taskId string) error {
 }
 
 func (r *Runtime) RemoveExecutor(taskId string) error {
-	r.executorsLocker.RLock()
-	exec, _ := r.Executors[taskId]
-	r.executorsLocker.RUnlock()
-
 	task, exists := r.TaskService.GetTask(taskId)
 	if !exists {
 		return errors.New("not exists this task")
@@ -149,9 +135,6 @@ func (r *Runtime) RemoveExecutor(taskId string) error {
 	delete(r.Executors, taskId)
 	r.executorsLocker.Unlock()
 
-	if exec.GetLocker() != nil {
-		exec.GetLocker().UnLock()
-	}
 	return nil
 }
 
