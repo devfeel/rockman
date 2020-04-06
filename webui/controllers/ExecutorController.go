@@ -11,9 +11,20 @@ import (
 type ExecutorController struct {
 }
 
+// ShowExecutors
 func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
+	nodeId := ctx.QueryString("node")
+	pageIndex := ctx.QueryInt64("pageindex")
+	pageSize := ctx.QueryInt64("pagesize")
+	pageReq := new(model.PageRequest)
+	pageReq.PageIndex = pageIndex
+	pageReq.PageSize = pageSize
+
+	if pageReq.PageSize <= 0 {
+		pageReq.PageSize = _const.DefaultPageSize
+	}
 	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecutors()
+	result, err := taskService.QueryExecutors(nodeId, pageReq)
 	if err != nil {
 		return ctx.WriteJson(contract.CreateResponse(-2001, "Query Error", err))
 	}
@@ -22,7 +33,7 @@ func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
 
 // ShowExecLogs
 func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
-	taskId := ctx.QueryString("taskid")
+	taskId := ctx.QueryString("task")
 	pageIndex := ctx.QueryInt64("pageindex")
 	pageSize := ctx.QueryInt64("pagesize")
 	pageReq := new(model.PageRequest)

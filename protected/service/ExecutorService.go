@@ -27,9 +27,9 @@ func NewExecutorService() *ExecutorService {
 	return service
 }
 
-// QueryTasks
-func (service *ExecutorService) QueryExecutors() ([]*model.ExecutorInfo, error) {
-	result, err := service.executorRepository.QueryExecutors()
+// QueryExecutors
+func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.executorRepository.QueryExecutors(nodeId, pageReq)
 	return result, err
 }
 

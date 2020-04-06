@@ -45,12 +45,39 @@ func NewTaskRepository() *ExecutorRepository {
 	return repository
 }
 
-func (repository *ExecutorRepository) QueryExecutors() ([]*model.ExecutorInfo, error) {
-	sql := "SELECT * FROM Task"
-	var dest []*model.ExecutorInfo
+// QueryExecutors
+func (repository *ExecutorRepository) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM Task"
+	countSql := "SELECT count(1) FROM Task"
+	if nodeId != "" {
+		dataSql += " WHERE TaskID = ?"
+		countSql += " WHERE TaskID = ?"
+	}
+	dataSql += pageReq.GetPageSql()
+	var dest []*model.TaskExecLog
 	var err error
-	err = repository.FindList(&dest, sql)
-	return dest, err
+	if nodeId != "" {
+		err = repository.FindList(&dest, dataSql, nodeId)
+	} else {
+		err = repository.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if nodeId != "" {
+		count, err = repository.Count(countSql, nodeId)
+	} else {
+		count, err = repository.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
 }
 
 // WriteExecLog
