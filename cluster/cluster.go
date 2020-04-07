@@ -139,7 +139,7 @@ func (c *Cluster) GetLeaderInfo() (string, error) {
 // it will query remote resource
 func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	if nodeInfo.Cluster != c.ClusterId {
-		return core.CreateResult(-1001, "not match cluster", nil)
+		return core.FailedResult(-1001, "not match cluster")
 	}
 	key := nodeInfo.EndPoint()
 	resource, result := c.QueryNodeResource(key)
@@ -157,18 +157,18 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	defer c.nodesLocker.Unlock()
 	c.Scheduler.SetResource(resource)
 	c.Nodes[key] = nodeInfo
-	return core.CreateSuccessResult()
+	return core.SuccessResult()
 }
 
 // AddExecutor add executor info into executor list
 func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	if execInfo.Worker.Cluster != c.ClusterId {
-		return core.CreateResult(-1001, "not match cluster", nil)
+		return core.FailedResult(-1001, "not match cluster")
 	}
 	c.executorsLocker.Lock()
 	defer c.executorsLocker.Unlock()
 	c.Executors[execInfo.TaskConfig.TaskID] = execInfo
-	return core.CreateSuccessResult()
+	return core.SuccessResult()
 }
 
 // FindNode find node info by endpoint
@@ -233,17 +233,17 @@ func (c *Cluster) QueryNodeResource(endPoint string) (*core.ResourceInfo, *core.
 	client := c.GetRpcClient(endPoint)
 	err, reply := client.CallQueryResource()
 	if err != nil {
-		return nil, core.CreateErrorResult(err)
+		return nil, core.ErrorResult(err)
 	} else {
 		if !reply.IsSuccess() {
-			return nil, core.CreateResult(-1001, "query failed["+strconv.Itoa(reply.RetCode)+", "+reply.RetMsg+"]", nil)
+			return nil, core.FailedResult(-1001, "query failed["+strconv.Itoa(reply.RetCode)+", "+reply.RetMsg+"]")
 		} else {
 			resource := new(core.ResourceInfo)
 			err := mapper.MapperMap(reply.Message.(map[string]interface{}), resource)
 			if err != nil {
-				return nil, core.CreateResult(core.ErrorCode, err.Error(), err)
+				return nil, core.NewResult(core.ErrorCode, err.Error(), err)
 			}
-			return resource, core.CreateSuccessResult()
+			return resource, core.SuccessResult()
 		}
 	}
 }

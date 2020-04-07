@@ -13,16 +13,20 @@ type Result struct {
 	Error   error
 }
 
-func CreateResult(retCode int, retMsg string, err error) *Result {
+func NewResult(retCode int, retMsg string, err error) *Result {
 	return &Result{RetCode: retCode, RetMsg: retMsg, Error: err}
 }
 
-func CreateErrorResult(err error) *Result {
+func ErrorResult(err error) *Result {
 	return &Result{RetCode: ErrorCode, RetMsg: err.Error(), Error: err}
 }
 
-func CreateSuccessResult() *Result {
+func SuccessResult() *Result {
 	return &Result{RetCode: SuccessCode, RetMsg: "", Error: nil}
+}
+
+func FailedResult(retCode int, retMsg string) *Result {
+	return &Result{RetCode: retCode, RetMsg: retMsg, Error: nil}
 }
 
 func (r *Result) IsSuccess() bool {

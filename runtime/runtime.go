@@ -7,7 +7,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
-	"github.com/devfeel/rockman/protected/service"
+	executor2 "github.com/devfeel/rockman/protected/service/executor"
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/runtime/executor"
 	"sync"
@@ -28,7 +28,7 @@ type (
 		Executors       map[string]executor.Executor
 		executorsLocker *sync.RWMutex
 		Status          int
-		executorLogic   *service.ExecutorService
+		executorLogic   *executor2.ExecutorService
 		nodeInfo        *core.NodeInfo
 		config          *config.Profile
 	}
@@ -42,7 +42,7 @@ func NewRuntime(nodeInfo *core.NodeInfo, registry *registry.Registry, profile *c
 	r.nodeInfo = nodeInfo
 	r.config = profile
 	r.TaskService = task.StartNewService()
-	r.executorLogic = service.NewExecutorService()
+	r.executorLogic = executor2.NewExecutorService()
 	r.TaskService.SetLogger(logger.Task())
 	r.TaskService.SetOnBeforeHandler(func(ctx *task.TaskContext) error {
 		ctx.Header[TaskHeader_StartTime] = time.Now()

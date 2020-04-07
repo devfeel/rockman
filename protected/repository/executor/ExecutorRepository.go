@@ -1,40 +1,40 @@
-package repository
+package executor
 
 import (
 	"errors"
+	"github.com/devfeel/database"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
+	"github.com/devfeel/rockman/protected/repository"
 	"sync"
 )
 
-const defaultDatabaseID = "demodb"
-
 var defaultRepository *ExecutorRepository
-var taskRepositoryLocker *sync.Mutex
+var repositoryLocker *sync.Mutex
 
 func init() {
-	taskRepositoryLocker = new(sync.Mutex)
+	repositoryLocker = new(sync.Mutex)
 }
 
 type ExecutorRepository struct {
-	BaseRepository
+	repository.BaseRepository
 }
 
-// GetMessageRepository return MessageRepository which is inited
-func GetTaskRepository() *ExecutorRepository {
+// GetRepository return ExecutorRepository which is init
+func GetRepository() *ExecutorRepository {
 	//check default repository is init
 	if defaultRepository == nil {
-		taskRepositoryLocker.Lock()
-		defer taskRepositoryLocker.Unlock()
+		repositoryLocker.Lock()
+		defer repositoryLocker.Unlock()
 		if defaultRepository == nil {
-			defaultRepository = NewTaskRepository()
+			defaultRepository = NewRepository()
 		}
 	}
 	return defaultRepository
 }
 
-// NewTaskRepository return new MessageRepository
-func NewTaskRepository() *ExecutorRepository {
+// NewRepository return new ExecutorRepository
+func NewRepository() *ExecutorRepository {
 	if config.CurrentProfile.Global.DataBaseConnectString == "" {
 		err := errors.New("no config database config")
 		panic(err)
@@ -43,6 +43,68 @@ func NewTaskRepository() *ExecutorRepository {
 	repository.Init(config.CurrentProfile.Global.DataBaseConnectString)
 	repository.InitLogger()
 	return repository
+}
+
+// InsertOnce
+func (repository *ExecutorRepository) InsertOnce(model *model.ExecutorInfo) error {
+	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,Interval,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
+	n, err := repository.Insert(sql,
+		model.TaskID, model.TaskType, 0, model.DueTime, model.Interval,
+		model.Express, "", model.TargetType, model.TargetConfig,
+		model.DistributeType, model.Remark)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+
+	return nil
+}
+
+// UpdateOnce
+func (repository *ExecutorRepository) UpdateOnce(model *model.ExecutorInfo) error {
+	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, Interval= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
+	n, err := repository.Update(sql,
+		model.TaskID,
+		model.TaskType, model.DueTime, model.Interval, model.Express,
+		model.TargetType, model.TargetConfig, model.Remark, model.ID)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+	return nil
+}
+
+// DeleteOnce
+func (repository *ExecutorRepository) DeleteOnce(id int64) error {
+	n, err := repository.Delete("DELETE FROM Task WHERE Id=?;", id)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+	return nil
+}
+
+// GetExecutorById
+func (repository *ExecutorRepository) GetExecutorById(id int64) (*model.ExecutorInfo, error) {
+	result := &model.ExecutorInfo{}
+	err := repository.FindOne(result, "SELECT * FROM Task WHERE Id=?;", id)
+	return result, err
+}
+
+// GetExecutorByTaskId
+func (repository *ExecutorRepository) GetExecutorByTaskId(taskId string) (*model.ExecutorInfo, error) {
+	result := &model.ExecutorInfo{}
+	err := repository.FindOne(result, "SELECT * FROM Task WHERE TaskID=?;", taskId)
+	return result, err
 }
 
 // QueryExecutors

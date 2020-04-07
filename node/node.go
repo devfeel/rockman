@@ -125,25 +125,25 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	logTitle := "Node SubmitExecutor [" + execInfo.TaskConfig.TaskID + "] "
 	if !n.IsLeader() {
 		logger.Node().Debug(logTitle + "failed, current node is not leader.")
-		return core.CreateResult(-1001, "current node is not leader", nil)
+		return core.FailedResult(-1001, "current node is not leader")
 	}
 
 	if execInfo.Worker != nil {
 		if execInfo.Worker.Cluster != n.Cluster.ClusterId {
 			logger.Node().Debug(logTitle + "failed, not match cluster [" + execInfo.Worker.Cluster + ", " + n.Cluster.ClusterId + "]")
-			return core.CreateResult(-1002, "not match cluster ["+execInfo.Worker.Cluster+", "+n.Cluster.ClusterId+"]", nil)
+			return core.FailedResult(-1002, "not match cluster ["+execInfo.Worker.Cluster+", "+n.Cluster.ClusterId+"]")
 		}
 
 		endPoint := execInfo.Worker.EndPoint()
 		node, exists := n.Cluster.FindNode(endPoint)
 		if !exists {
 			logger.Node().Debug(logTitle + "failed, can not find node[" + endPoint + "] in cluster")
-			return core.CreateResult(-1003, "can not find node["+endPoint+"] in cluster", nil)
+			return core.FailedResult(-1003, "can not find node["+endPoint+"] in cluster")
 		}
 
 		if node.NodeID != execInfo.Worker.NodeID {
 			logger.Node().Debug(logTitle + "failed, not match node id [" + execInfo.Worker.NodeID + ", " + node.NodeID + "]")
-			return core.CreateResult(-1004, "not match node id ["+execInfo.Worker.NodeID+", "+node.NodeID+"]", nil)
+			return core.FailedResult(-1004, "not match node id ["+execInfo.Worker.NodeID+", "+node.NodeID+"]")
 		}
 	}
 
@@ -154,7 +154,7 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 		if err != nil {
 			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
 			//TODO log submit result to db log
-			return core.CreateErrorResult(err)
+			return core.ErrorResult(err)
 		}
 	}
 
@@ -164,7 +164,7 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	//TODO log submit result to db log
 	if err != nil {
 		logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] error:", err.Error())
-		return core.CreateErrorResult(err)
+		return core.ErrorResult(err)
 	} else {
 		if !reply.IsSuccess() {
 			logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
@@ -172,7 +172,7 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 			n.Cluster.AddExecutor(execInfo)
 			logger.Node().Debug(logTitle + "to [" + execInfo.Worker.EndPoint() + "] success.")
 		}
-		return core.CreateResult(reply.RetCode, reply.RetMsg, nil)
+		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
 	}
 }
 

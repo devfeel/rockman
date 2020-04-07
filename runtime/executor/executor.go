@@ -56,8 +56,8 @@ func (exec *baseExecutor) GetTargetType() string {
 	return exec.TaskConfig.TargetType
 }
 
-// ValidateExecType validate the execType is supported
-func ValidateExecType(execType string) bool {
+// ValidateTargetType validate the TargetType is supported
+func ValidateTargetType(execType string) bool {
 	if execType != TargetType_Http && execType != TargetType_GoSo && execType != TargetType_Shell {
 		return false
 	}

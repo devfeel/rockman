@@ -6,7 +6,6 @@ import (
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/rockman/node"
 	_const "github.com/devfeel/rockman/webui/const"
-	"github.com/devfeel/rockman/webui/contract"
 	"html/template"
 )
 
@@ -16,25 +15,25 @@ type ClusterController struct {
 func (c *ClusterController) ShowExecutors(ctx dotweb.Context) error {
 	item, isExists := ctx.AppItems().Get(_const.ItemKey_Node)
 	if !isExists {
-		return ctx.WriteJson(contract.CreateResponse(-1001, "not exists node in app items", nil))
+		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
 	}
 	node, isOk := item.(*node.Node)
 	if !isOk {
-		return ctx.WriteJson(contract.CreateResponse(-1002, "not exists correct node in app items", nil))
+		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
-	return ctx.WriteHtml(FormatJson(contract.CreateResponse(0, "", node.Cluster.Executors)))
+	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.Executors)))
 }
 
 func (c *ClusterController) ShowResources(ctx dotweb.Context) error {
 	item, isExists := ctx.AppItems().Get(_const.ItemKey_Node)
 	if !isExists {
-		return ctx.WriteJson(contract.CreateResponse(-1001, "not exists node in app items", nil))
+		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
 	}
 	node, isOk := item.(*node.Node)
 	if !isOk {
-		return ctx.WriteJson(contract.CreateResponse(-1002, "not exists correct node in app items", nil))
+		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
-	return ctx.WriteHtml(FormatJson(contract.CreateResponse(0, "", node.Cluster.Scheduler.Resources())))
+	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.Scheduler.Resources())))
 }
 
 func FormatJson(data interface{}) string {
