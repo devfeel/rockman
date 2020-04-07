@@ -1,11 +1,10 @@
-package executor
+package service
 
 import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository/executor"
-	"github.com/devfeel/rockman/protected/service"
 	runtime "github.com/devfeel/rockman/runtime/executor"
 	"strings"
 	"time"
@@ -16,7 +15,7 @@ var (
 )
 
 type ExecutorService struct {
-	service.BaseService
+	BaseService
 	executorRepository *executor.ExecutorRepository
 }
 
@@ -49,33 +48,6 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())
 	} else {
-		if model.IsRun {
-			// submit executor to leader node
-			submit := new(core.ExecutorInfo)
-			conf := &core.TaskConfig{}
-			conf.TaskID = model.TaskID
-			conf.TaskType = model.TaskType
-			conf.TargetType = model.TargetType
-			conf.IsRun = model.IsRun
-			conf.DueTime = model.DueTime
-			conf.Interval = model.Interval
-			conf.Express = model.Express
-			conf.TaskData = model.TaskData
-			conf.HAFlag = true
-			if model.TargetType == runtime.TargetType_Http {
-				conf.TargetConfig = model.RealTargetConfig.(*runtime.HttpConfig)
-			}
-			if model.TargetType == runtime.TargetType_GoSo {
-				conf.TargetConfig = model.RealTargetConfig.(*runtime.GoConfig)
-			}
-			if model.TargetType == runtime.TargetType_Shell {
-				conf.TargetConfig = model.RealTargetConfig.(*runtime.ShellConfig)
-			}
-			submit.TaskConfig = conf
-			submit.DistributeType = model.DistributeType
-			//TODO submit to rpc
-		}
-
 		return core.SuccessResult()
 	}
 }

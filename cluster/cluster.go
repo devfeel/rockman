@@ -193,6 +193,11 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	return rpcClient
 }
 
+// GetLeaderRpcClient get leader rpc client
+func (c *Cluster) GetLeaderRpcClient() *client.RpcClient {
+	return c.GetRpcClient(c.LeaderServer)
+}
+
 // GetLowBalanceWorker get lower balance worker, if not match, it will try 3 times
 func (c *Cluster) GetLowBalanceWorker() (*core.NodeInfo, error) {
 	resources, err := c.Scheduler.Schedule(scheduler.Balance_LowerLoad)
