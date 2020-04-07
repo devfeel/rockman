@@ -13,6 +13,7 @@ var (
 	executorController = new(controllers.ExecutorController)
 	nodeController     = new(controllers.NodeController)
 	clusterController  = new(controllers.ClusterController)
+	userController     = new(controllers.UserController)
 )
 
 type WebServer struct {
@@ -54,5 +55,10 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/cluster")
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
+
+	g = s.webApp.HttpServer.Group("/user")
+	g.GET("/login", userController.Login)
+
+	s.webApp.HttpServer.Router().ServerFile("/*filepath", "/wwwroot/")
 
 }
