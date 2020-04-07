@@ -29,6 +29,9 @@ type NodeTraceLog struct {
 	LogID        int64
 	NodeID       string
 	NodeEndPoint string
+	IsLeader     bool
+	IsMaster     bool
+	IsWorker     bool
 	Event        string
 	IsSuccess    bool
 	FailureType  string
