@@ -20,6 +20,7 @@ func NewExecutorController() *ExecutorController {
 	}
 }
 
+// SaveExecutor
 func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	result, node := getNode(ctx)
 	if !result.IsSuccess() {
@@ -39,6 +40,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 		} else {
 			if !model.IsRun {
 				//TODO stop executor stop
+
 			}
 		}
 	} else {
@@ -66,6 +68,59 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 				//TODO update db IsSubmit = true
 			} else {
 				return ctx.WriteJson(FailedResponse(-1202, "CallSubmitExecutor failed: "+reply.RetMsg))
+			}
+		}
+	}
+	return ctx.WriteJson(SuccessResponse(nil))
+}
+
+// UpdateExecutor
+func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
+	result, node := getNode(ctx)
+	if !result.IsSuccess() {
+		return ctx.WriteJson(FailedResponse(-1001, result.Message()))
+	}
+
+	model := &model.ExecutorInfo{}
+	err := ctx.Bind(model)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
+	}
+
+	dbExecInfo, err := c.executorService.QueryExecutorById(model.ID)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1003, "query task error:"+err.Error()))
+	}
+	if dbExecInfo == nil {
+		return ctx.WriteJson(FailedResponse(-1004, "not exists this task"))
+	}
+
+	result = c.executorService.UpdateExecutor(model)
+	if !result.IsSuccess() {
+		return ctx.WriteJson(FailedResponse(result.RetCode, "UpdateExecutor failed: "+result.Message()))
+	} else {
+		if dbExecInfo.IsRun && !model.IsRun {
+			err, reply := node.Cluster.GetLeaderRpcClient().CallSubmitStopExecutor(model.TaskID)
+			if err != nil {
+				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStopExecutor error: "+err.Error()))
+			} else {
+				if reply.IsSuccess() {
+					//TODO log something
+				} else {
+					return ctx.WriteJson(FailedResponse(-1202, "CallSubmitStopExecutor failed: "+reply.RetMsg))
+				}
+			}
+		}
+		if !dbExecInfo.IsRun && model.IsRun {
+			err, reply := node.Cluster.GetLeaderRpcClient().CallSubmitStartExecutor(model.TaskID)
+			if err != nil {
+				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStartExecutor error: "+err.Error()))
+			} else {
+				if reply.IsSuccess() {
+					//TODO log something
+				} else {
+					return ctx.WriteJson(FailedResponse(-1202, "CallSubmitStartExecutor failed: "+reply.RetMsg))
+				}
 			}
 		}
 	}

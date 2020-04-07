@@ -179,6 +179,14 @@ func (c *Cluster) FindNode(endPoint string) (*core.NodeInfo, bool) {
 	return node, exists
 }
 
+// FindExecutor find executor info by task id
+func (c *Cluster) FindExecutor(taskId string) (*core.ExecutorInfo, bool) {
+	c.executorsLocker.RLock()
+	defer c.executorsLocker.RUnlock()
+	exec, exists := c.Executors[taskId]
+	return exec, exists
+}
+
 // GetRpcClient get rpc client with endpoint
 func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 	//TODO check endpoint is in cluster

@@ -176,6 +176,76 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	}
 }
 
+func (n *Node) SubmitStopExecutor(taskId string) *core.Result {
+	logTitle := "Node SubmitStopExecutor [" + taskId + "] "
+	if !n.IsLeader() {
+		logger.Node().Debug(logTitle + "failed, current node is not leader.")
+		return core.FailedResult(-1001, "current node is not leader")
+	}
+
+	runExecInfo, exists := n.Cluster.FindExecutor(taskId)
+	if !exists {
+		logger.Node().Debug(logTitle + "failed, can not find executor is running cluster.")
+		return core.FailedResult(-1001, "can not find executor is running cluster")
+	}
+
+	if !runExecInfo.TaskConfig.IsRun {
+		return core.SuccessResult()
+	}
+
+	//submit executor to the specified worker node
+	rpcClient := n.Cluster.GetRpcClient(runExecInfo.Worker.EndPoint())
+	err, reply := rpcClient.CallStopExecutor(taskId)
+	//TODO log submit result to db log
+	if err != nil {
+		logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] error:", err.Error())
+		return core.ErrorResult(err)
+	} else {
+		if !reply.IsSuccess() {
+			logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
+		} else {
+			runExecInfo.TaskConfig.IsRun = false
+			logger.Node().Debug(logTitle + "to [" + runExecInfo.Worker.EndPoint() + "] success.")
+		}
+		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
+	}
+}
+
+func (n *Node) SubmitStartExecutor(taskId string) *core.Result {
+	logTitle := "Node SubmitStartExecutor [" + taskId + "] "
+	if !n.IsLeader() {
+		logger.Node().Debug(logTitle + "failed, current node is not leader.")
+		return core.FailedResult(-1001, "current node is not leader")
+	}
+
+	runExecInfo, exists := n.Cluster.FindExecutor(taskId)
+	if !exists {
+		logger.Node().Debug(logTitle + "failed, can not find executor is running cluster.")
+		return core.FailedResult(-1001, "can not find executor is running cluster")
+	}
+
+	if runExecInfo.TaskConfig.IsRun {
+		return core.SuccessResult()
+	}
+
+	//submit executor to the specified worker node
+	rpcClient := n.Cluster.GetRpcClient(runExecInfo.Worker.EndPoint())
+	err, reply := rpcClient.CallStartExecutor(runExecInfo.TaskConfig.TaskID)
+	//TODO log submit result to db log
+	if err != nil {
+		logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] error:", err.Error())
+		return core.ErrorResult(err)
+	} else {
+		if !reply.IsSuccess() {
+			logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
+		} else {
+			runExecInfo.TaskConfig.IsRun = true
+			logger.Node().Debug(logTitle + "to [" + runExecInfo.Worker.EndPoint() + "] success.")
+		}
+		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
+	}
+}
+
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
 	//TODO add some check
