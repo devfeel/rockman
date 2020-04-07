@@ -14,3 +14,24 @@ type TaskExecLog struct {
 	FailureCause string
 	CreateTime   time.Time
 }
+
+type TaskStateLog struct {
+	LogID        int64
+	TaskID       string
+	NodeID       string
+	NodeEndPoint string
+	State        bool
+	Message      string
+	CreateTime   time.Time
+}
+
+type NodeTraceLog struct {
+	LogID        int64
+	NodeID       string
+	NodeEndPoint string
+	Event        string
+	IsSuccess    bool
+	FailureType  string
+	FailureCause string
+	CreateTime   time.Time
+}
