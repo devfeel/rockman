@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	_http "github.com/devfeel/rockman/util/http"
+	_json "github.com/devfeel/rockman/util/json"
 	"strings"
 	"time"
 )
@@ -109,4 +110,8 @@ func (exec *HttpExecutor) Exec(ctx *task.TaskContext) error {
 	logger.Runtime().Debug(logTitle + "not support http method [" + exec.httpConfig.Method + "]")
 	ctx.Error = errors.New(logTitle + "not support http method [" + exec.httpConfig.Method + "]")
 	return nil
+}
+
+func (c *HttpConfig) LoadFromJson(json string) error {
+	return _json.Unmarshal(json, c)
 }

@@ -44,11 +44,37 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 	if data != nil {
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
+
 	err = service.executorRepository.InsertOnce(model)
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())
 	} else {
-		//TODO submit executor to leader node
+		if model.IsRun {
+			// submit executor to leader node
+			submit := new(core.ExecutorInfo)
+			conf := &core.TaskConfig{}
+			conf.TaskID = model.TaskID
+			conf.TaskType = model.TaskType
+			conf.TargetType = model.TargetType
+			conf.IsRun = model.IsRun
+			conf.DueTime = model.DueTime
+			conf.Interval = model.Interval
+			conf.Express = model.Express
+			conf.TaskData = model.TaskData
+			conf.HAFlag = true
+			if model.TargetType == runtime.TargetType_Http {
+				conf.TargetConfig = model.RealTargetConfig.(*runtime.HttpConfig)
+			}
+			if model.TargetType == runtime.TargetType_GoSo {
+				conf.TargetConfig = model.RealTargetConfig.(*runtime.GoConfig)
+			}
+			if model.TargetType == runtime.TargetType_Shell {
+				conf.TargetConfig = model.RealTargetConfig.(*runtime.ShellConfig)
+			}
+			submit.TaskConfig = conf
+			submit.DistributeType = model.DistributeType
+			//TODO submit to rpc
+		}
 
 		return core.SuccessResult()
 	}
@@ -116,6 +142,9 @@ func (service *ExecutorService) QueryExecLogs(taskId string, pageReq *model.Page
 
 // validateExecutorInfo
 func validateExecutorInfo(model *model.ExecutorInfo) *core.Result {
+	if model == nil {
+		return core.FailedResult(-2000, "executor info is nil")
+	}
 	if model.TaskID == "" {
 		return core.FailedResult(-2001, "TaskID is empty")
 	}
@@ -142,8 +171,40 @@ func validateExecutorInfo(model *model.ExecutorInfo) *core.Result {
 	if !runtime.ValidateTargetType(model.TargetType) {
 		return core.FailedResult(-2008, "TargetType is not match")
 	}
-	if len(model.Remark) > 100 {
-		return core.FailedResult(-2009, "Remark is more than 100 characters")
+	if model.TargetConfig == "" {
+		return core.FailedResult(-2009, "TargetConfig is empty")
 	}
+	if len(model.Remark) > 100 {
+		return core.FailedResult(-2010, "Remark is more than 100 characters")
+	}
+
+	if model.TargetType == runtime.TargetType_Http {
+		conf := new(runtime.HttpConfig)
+		err := conf.LoadFromJson(model.TargetConfig)
+		if err != nil {
+			return core.FailedResult(-2011, "convert http config failed: "+err.Error())
+		} else {
+			model.RealTargetConfig = conf
+		}
+	}
+	if model.TargetType == runtime.TargetType_GoSo {
+		conf := new(runtime.GoConfig)
+		err := conf.LoadFromJson(model.TargetConfig)
+		if err != nil {
+			return core.FailedResult(-2011, "convert go so config failed: "+err.Error())
+		} else {
+			model.RealTargetConfig = conf
+		}
+	}
+	if model.TargetType == runtime.TargetType_Shell {
+		conf := new(runtime.ShellConfig)
+		err := conf.LoadFromJson(model.TargetConfig)
+		if err != nil {
+			return core.FailedResult(-2011, "convert shell config failed: "+err.Error())
+		} else {
+			model.RealTargetConfig = conf
+		}
+	}
+
 	return core.SuccessResult()
 }

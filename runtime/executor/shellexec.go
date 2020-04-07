@@ -9,6 +9,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	_file "github.com/devfeel/rockman/util/file"
+	_json "github.com/devfeel/rockman/util/json"
 	"os/exec"
 	"strings"
 )
@@ -141,4 +142,8 @@ func execShellFile(f string) (string, error) {
 	str := strings.Replace(out.String(), " ", "", -1)
 	str = strings.Replace(out.String(), "\n", "", -1)
 	return str, err
+}
+
+func (c *ShellConfig) LoadFromJson(json string) error {
+	return _json.Unmarshal(json, c)
 }

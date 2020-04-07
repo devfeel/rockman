@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	_file "github.com/devfeel/rockman/util/file"
+	_json "github.com/devfeel/rockman/util/json"
 	"plugin"
 )
 
@@ -96,4 +97,8 @@ func (exec *GoExecutor) Exec(ctx *task.TaskContext) error {
 		ctx.Error = err
 		return nil
 	}
+}
+
+func (c *GoConfig) LoadFromJson(json string) error {
+	return _json.Unmarshal(json, c)
 }
