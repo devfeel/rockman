@@ -2,11 +2,13 @@ package executor
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/devfeel/database"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository"
-	"sync"
+	"github.com/devfeel/rockman/protected/viewmodel"
 )
 
 var defaultRepository *ExecutorRepository
@@ -47,7 +49,7 @@ func NewRepository() *ExecutorRepository {
 
 // InsertOnce
 func (repository *ExecutorRepository) InsertOnce(model *model.ExecutorInfo) error {
-	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,Interval,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
+	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,`Interval`,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
 	n, err := repository.Insert(sql,
 		model.TaskID, model.TaskType, 0, model.DueTime, model.Interval,
 		model.Express, "", model.TargetType, model.TargetConfig,
@@ -65,7 +67,7 @@ func (repository *ExecutorRepository) InsertOnce(model *model.ExecutorInfo) erro
 
 // UpdateOnce
 func (repository *ExecutorRepository) UpdateOnce(model *model.ExecutorInfo) error {
-	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, Interval= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
+	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, `Interval`= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
 	n, err := repository.Update(sql,
 		model.TaskID,
 		model.TaskType, model.DueTime, model.Interval, model.Express,
@@ -107,19 +109,28 @@ func (repository *ExecutorRepository) GetExecutorByTaskId(taskId string) (*model
 	return result, err
 }
 
+// IsExistExecutorByTaskId
+func (repository *ExecutorRepository) IsExistExecutorByTaskId(taskId string) (bool, error) {
+	count, err := repository.Count("SELECT count(1) FROM Task WHERE TaskID=?;", taskId)
+	return count > 0, err
+}
+
 // QueryExecutors
-func (repository *ExecutorRepository) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+func (repository *ExecutorRepository) QueryExecutors(qc *viewmodel.ExecutorQC) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM Task"
 	countSql := "SELECT count(1) FROM Task"
-	if nodeId != "" {
-		dataSql += " WHERE TaskID = ?"
-		countSql += " WHERE TaskID = ?"
+	if qc.NodeID != "" {
+		dataSql += " WHERE NodeID = ?"
+		countSql += " WHERE NodeID = ?"
+		qc.AddParam(qc.NodeID)
 	}
-	dataSql += pageReq.GetPageSql()
-	var dest []*model.TaskExecLog
+	dataSql += " ORDER BY CreateTime DESC "
+	dataSql += qc.GetPageSql()
+	params := qc.GetParams()
+	var dest []*model.ExecutorInfo
 	var err error
-	if nodeId != "" {
-		err = repository.FindList(&dest, dataSql, nodeId)
+	if len(params) != 0 {
+		err = repository.FindList(&dest, dataSql, params...)
 	} else {
 		err = repository.FindList(&dest, dataSql)
 	}
@@ -128,8 +139,8 @@ func (repository *ExecutorRepository) QueryExecutors(nodeId string, pageReq *mod
 	}
 
 	var count int64
-	if nodeId != "" {
-		count, err = repository.Count(countSql, nodeId)
+	if len(params) != 0 {
+		count, err = repository.Count(countSql, params...)
 	} else {
 		count, err = repository.Count(countSql)
 	}

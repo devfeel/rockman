@@ -2,10 +2,9 @@ export default {
     data() {
         return {
             queryParam: {
-                isQuickModel: true,
-                pageIndex: 1,
-                pageSize: 10,
-                params: {}
+                PageIndex: 1,
+                PageSize: 10
+                // params: {}
             },
             dataSource: {
                 colDefs: {

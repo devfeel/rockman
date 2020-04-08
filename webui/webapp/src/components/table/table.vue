@@ -1,6 +1,6 @@
 <template>
     <div>
-        <i-table :columns="columns" :loading="loading" :max-height="maxHeight" :data="dataSource.pageData" class="v-table" border>
+        <i-table :columns="columns" :loading="loading" :max-height="maxHeight" :data="dataSource.PageData" class="v-table" border>
         </i-table>
         <div style="margin: 10px;overflow: hidden">
             <div style="float: right;">
@@ -66,7 +66,7 @@
             dataSource: {
                 handler: function () {
                     this.colDefs = this.dataSource.ColDefs;
-                    this.totalCount = this.dataSource.totalCount;
+                    this.totalCount = this.dataSource.TotalCount;
                 },
                 deep: true
             }

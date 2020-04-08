@@ -30,11 +30,7 @@ const codeMessage = {
 }
 
 axios.interceptors.response.use(response => {
-  if (response.data.RetCode === 0) {
-    return Promise.resolve(response.data);
-  }
-  Message.error(response.data.RetMsg);
-  return Promise.reject(response.data);
+  return Promise.resolve(response.data);
 }, error => {
   if (error.response) {
     let code = error.response.status;

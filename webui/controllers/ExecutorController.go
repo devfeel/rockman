@@ -2,10 +2,12 @@ package controllers
 
 import (
 	"github.com/devfeel/dotweb"
+	"github.com/devfeel/rockman-webui/src/protected/viewModel/task"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
+	"github.com/devfeel/rockman/protected/viewmodel"
 	"github.com/devfeel/rockman/runtime/executor"
 	_const "github.com/devfeel/rockman/webui/const"
 )
@@ -32,9 +34,9 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
 	}
-
+	taskService := service.NewExecutorService()
 	if model.ID > 0 {
-		result = c.executorService.UpdateExecutor(model)
+		result = taskService.UpdateExecutor(model)
 		if !result.IsSuccess() {
 			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 		} else {
@@ -44,7 +46,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 			}
 		}
 	} else {
-		result = c.executorService.AddExecutor(model)
+		result = taskService.AddExecutor(model)
 		if !result.IsSuccess() {
 			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 		}
@@ -134,27 +136,47 @@ func (c *ExecutorController) QueryById(ctx dotweb.Context) error {
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-1001, "parameter bind failed: "+err.Error()))
 	}
-	result, err := c.executorService.QueryExecutorById(model.ID)
+	taskService := service.NewExecutorService()
+	result, err := taskService.QueryExecutorById(model.ID)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "query failed: "+err.Error()))
 	}
 	return ctx.WriteJson(SuccessResponse(result))
 }
 
+func (c *ExecutorController) DeleteById(ctx dotweb.Context) error {
+	model := task.ExecutorInfo{}
+	err := ctx.Bind(&model)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1001, "parameter bind failed: "+err.Error()))
+	}
+	result := service.NewExecutorService().RemoveExecutor(model.ID)
+	if !result.IsSuccess() {
+		return ctx.WriteJson(FailedResponse(result.RetCode, "RemoveExecutor failed: "+err.Error()))
+	}
+	return ctx.WriteJson(SuccessResponse(nil))
+}
+
 // ShowExecutors
 func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
-	nodeId := ctx.QueryString("node")
-	pageIndex := ctx.QueryInt64("pageindex")
-	pageSize := ctx.QueryInt64("pagesize")
-	pageReq := new(model.PageRequest)
-	pageReq.PageIndex = pageIndex
-	pageReq.PageSize = pageSize
+	// nodeId := ctx.QueryString("node")
+	// pageIndex := ctx.QueryInt64("pageindex")
+	// pageSize := ctx.QueryInt64("pagesize")
+	// pageReq := new(model.PageRequest)
+	// pageReq.PageIndex = pageIndex
+	// pageReq.PageSize = pageSize
 
-	if pageReq.PageSize <= 0 {
-		pageReq.PageSize = _const.DefaultPageSize
+	qc := new(viewmodel.ExecutorQC)
+	//自动组装参数
+	err := ctx.Bind(qc)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
+	}
+	if qc.PageSize <= 0 {
+		qc.PageSize = _const.DefaultPageSize
 	}
 	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecutors(nodeId, pageReq)
+	result, err := taskService.QueryExecutors(qc)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}

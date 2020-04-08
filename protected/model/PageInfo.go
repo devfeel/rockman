@@ -1,6 +1,8 @@
 package model
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type (
 	PageResult struct {
@@ -11,6 +13,7 @@ type (
 	PageRequest struct {
 		PageIndex int64
 		PageSize  int64
+		params    []interface{}
 	}
 )
 
@@ -27,4 +30,13 @@ func (page *PageRequest) GetLimit() int64 {
 
 func (page *PageRequest) GetPageSql() string {
 	return " limit " + strconv.FormatInt(page.GetSkip(), 10) + "," + strconv.FormatInt(page.GetLimit(), 10)
+}
+
+func (page *PageRequest) AddParam(param interface{}) *PageRequest {
+	page.params = append(page.params, param)
+	return page
+}
+
+func (page *PageRequest) GetParams() []interface{} {
+	return page.params
 }

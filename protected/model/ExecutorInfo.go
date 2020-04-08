@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type ExecutorInfo struct {
 	ID                int64
 	TaskID            string
@@ -16,4 +18,5 @@ type ExecutorInfo struct {
 	DistributeType    int
 	IsSubmitToCluster bool
 	Remark            string
+	CreateTime        time.Time
 }
