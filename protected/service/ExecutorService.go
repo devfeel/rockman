@@ -4,7 +4,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
-	"github.com/devfeel/rockman/protected/repository/executor"
+	"github.com/devfeel/rockman/protected/repository"
 	runtime "github.com/devfeel/rockman/runtime/executor"
 	"strings"
 	"time"
@@ -16,7 +16,7 @@ var (
 
 type ExecutorService struct {
 	BaseService
-	executorRepository *executor.ExecutorRepository
+	executorRepo *repository.ExecutorRepo
 }
 
 func init() {
@@ -25,7 +25,7 @@ func init() {
 
 func NewExecutorService() *ExecutorService {
 	service := &ExecutorService{
-		executorRepository: executor.GetRepository(),
+		executorRepo: repository.GetExecutorRepo(),
 	}
 	return service
 }
@@ -44,7 +44,7 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
 
-	err = service.executorRepository.InsertOnce(model)
+	err = service.executorRepo.InsertOnce(model)
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())
 	} else {
@@ -65,7 +65,7 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 	if data == nil {
 		return core.FailedResult(-2101, "not exists this TaskID["+model.TaskID+"]")
 	}
-	err = service.executorRepository.UpdateOnce(model)
+	err = service.executorRepo.UpdateOnce(model)
 	if err != nil {
 		return core.FailedResult(-3001, "UpdateOnce error: "+err.Error())
 	} else {
@@ -80,35 +80,35 @@ func (service *ExecutorService) RemoveExecutor(id int64) error {
 	// TODO check data
 	// TODO remove executor to leader node
 	// TODO remove log?
-	return service.executorRepository.DeleteOnce(id)
+	return service.executorRepo.DeleteOnce(id)
 }
 
 // QueryExecutorById
 func (service *ExecutorService) QueryExecutorById(id int64) (*model.ExecutorInfo, error) {
-	return service.executorRepository.GetExecutorById(id)
+	return service.executorRepo.GetExecutorById(id)
 }
 
 // QueryExecutorByTaskId
 func (service *ExecutorService) QueryExecutorByTaskId(taskId string) (*model.ExecutorInfo, error) {
-	return service.executorRepository.GetExecutorByTaskId(taskId)
+	return service.executorRepo.GetExecutorByTaskId(taskId)
 }
 
 // QueryExecutors
 func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepository.QueryExecutors(nodeId, pageReq)
+	result, err := service.executorRepo.QueryExecutors(nodeId, pageReq)
 	return result, err
 }
 
 // WriteExecLog
 func (service *ExecutorService) WriteExecLog(log *model.TaskExecLog) error {
 	log.CreateTime = time.Now()
-	_, err := service.executorRepository.WriteExecLog(log)
+	_, err := service.executorRepo.WriteExecLog(log)
 	return err
 }
 
 // QueryExecLogs
 func (service *ExecutorService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepository.QueryExecLogs(taskId, pageReq)
+	result, err := service.executorRepo.QueryExecLogs(taskId, pageReq)
 	return result, err
 }
 
