@@ -45,20 +45,24 @@ func (s *WebServer) ListenAndServe(listenAddr string) error {
 }
 
 func (s *WebServer) initRoute() {
-	g := s.webApp.HttpServer.Group("/task")
-	g.GET("/list", executorController.ShowExecutors)
-	g.GET("/logs", executorController.ShowExecLogs)
+	
 
-	g = s.webApp.HttpServer.Group("/node")
-	g.GET("/list", nodeController.ShowNodes)
+	// g := s.webApp.HttpServer.Group("/task")
+	// g.GET("/list", executorController.ShowExecutors)
+	// g.GET("/logs", executorController.ShowExecLogs)
 
-	g = s.webApp.HttpServer.Group("/cluster")
-	g.GET("/resources", clusterController.ShowResources)
-	g.GET("/executors", clusterController.ShowExecutors)
+	// g = s.webApp.HttpServer.Group("/node")
+	// g.GET("/list", nodeController.ShowNodes)
 
-	g = s.webApp.HttpServer.Group("/user")
-	g.GET("/login", userController.Login)
+	// g = s.webApp.HttpServer.Group("/cluster")
+	// g.GET("/resources", clusterController.ShowResources)
+	// g.GET("/executors", clusterController.ShowExecutors)
 
-	s.webApp.HttpServer.Router().ServerFile("/*filepath", "/wwwroot/")
+	// g = s.webApp.HttpServer.Group("/user")
+	// g.GET("/login", userController.Login)
+
+	// g = s.webApp.HttpServer.Group("/*")
+
+	s.webApp.HttpServer.Router().ServerFile("/*", "wwwroot/")
 
 }
