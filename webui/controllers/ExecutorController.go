@@ -21,7 +21,6 @@ func NewExecutorController() *ExecutorController {
 
 // SaveExecutor
 func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
-
 	model := &model.ExecutorInfo{}
 	err := ctx.Bind(model)
 	if err != nil {
@@ -54,8 +53,12 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 			return ctx.WriteJson(FailedResponse(-1101, "Submit.TaskConfig.TargetConfig is nil"))
 		}
 		submit.DistributeType = model.DistributeType
+		leader := getLeader(ctx)
+		if leader == "" {
+			return ctx.WriteJson(FailedResponse(-1102, "Leader is nil"))
+		}
 		// submit to rpc
-		err, reply := GetRpcClient(getLeader(ctx)).CallSubmitExecutor(submit)
+		err, reply := GetRpcClient(leader).CallSubmitExecutor(submit)
 		if err != nil {
 			return ctx.WriteJson(FailedResponse(-1201, "CallSubmitExecutor error: "+err.Error()))
 		} else {
@@ -89,8 +92,12 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 	if !result.IsSuccess() {
 		return ctx.WriteJson(FailedResponse(result.RetCode, "UpdateExecutor failed: "+result.Message()))
 	} else {
+		leader := getLeader(ctx)
+		if leader == "" {
+			return ctx.WriteJson(FailedResponse(-1101, "Leader is nil"))
+		}
 		if dbExecInfo.IsRun && !model.IsRun {
-			err, reply := GetRpcClient(getLeader(ctx)).CallSubmitStopExecutor(model.TaskID)
+			err, reply := GetRpcClient(leader).CallSubmitStopExecutor(model.TaskID)
 			if err != nil {
 				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStopExecutor error: "+err.Error()))
 			} else {
@@ -102,7 +109,7 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 			}
 		}
 		if !dbExecInfo.IsRun && model.IsRun {
-			err, reply := GetRpcClient(getLeader(ctx)).CallSubmitStartExecutor(model.TaskID)
+			err, reply := GetRpcClient(leader).CallSubmitStartExecutor(model.TaskID)
 			if err != nil {
 				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStartExecutor error: "+err.Error()))
 			} else {
