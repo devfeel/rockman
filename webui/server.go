@@ -27,7 +27,8 @@ func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s.webApp.SetEnabledLog(true)
 	s.webApp.UseRequestLog()
 	s.webApp.Use(cors.Middleware(cors.NewConfig().UseDefault()))
-	s.webApp.Items.Set(_const.ItemKey_Node, node)
+	s.webApp.Items.Set(_const.ItemKeyNode, node)
+
 	s.initRoute()
 	logger.Default().Debug("WebUI init success.")
 	return s

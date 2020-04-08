@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/rockman/core"
-	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/runtime/executor"
@@ -22,10 +21,6 @@ func NewExecutorController() *ExecutorController {
 
 // SaveExecutor
 func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
-	result, node := getNode(ctx)
-	if !result.IsSuccess() {
-		return ctx.WriteJson(FailedResponse(-1001, result.Message()))
-	}
 
 	model := &model.ExecutorInfo{}
 	err := ctx.Bind(model)
@@ -34,7 +29,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	}
 
 	if model.ID > 0 {
-		result = c.executorService.UpdateExecutor(model)
+		result := c.executorService.UpdateExecutor(model)
 		if !result.IsSuccess() {
 			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 		} else {
@@ -44,7 +39,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 			}
 		}
 	} else {
-		result = c.executorService.AddExecutor(model)
+		result := c.executorService.AddExecutor(model)
 		if !result.IsSuccess() {
 			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 		}
@@ -60,7 +55,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 		}
 		submit.DistributeType = model.DistributeType
 		// submit to rpc
-		err, reply := node.Cluster.GetLeaderRpcClient().CallSubmitExecutor(submit)
+		err, reply := GetRpcClient(getLeader(ctx)).CallSubmitExecutor(submit)
 		if err != nil {
 			return ctx.WriteJson(FailedResponse(-1201, "CallSubmitExecutor error: "+err.Error()))
 		} else {
@@ -76,11 +71,6 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 
 // UpdateExecutor
 func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
-	result, node := getNode(ctx)
-	if !result.IsSuccess() {
-		return ctx.WriteJson(FailedResponse(-1001, result.Message()))
-	}
-
 	model := &model.ExecutorInfo{}
 	err := ctx.Bind(model)
 	if err != nil {
@@ -95,12 +85,12 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 		return ctx.WriteJson(FailedResponse(-1004, "not exists this task"))
 	}
 
-	result = c.executorService.UpdateExecutor(model)
+	result := c.executorService.UpdateExecutor(model)
 	if !result.IsSuccess() {
 		return ctx.WriteJson(FailedResponse(result.RetCode, "UpdateExecutor failed: "+result.Message()))
 	} else {
 		if dbExecInfo.IsRun && !model.IsRun {
-			err, reply := node.Cluster.GetLeaderRpcClient().CallSubmitStopExecutor(model.TaskID)
+			err, reply := GetRpcClient(getLeader(ctx)).CallSubmitStopExecutor(model.TaskID)
 			if err != nil {
 				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStopExecutor error: "+err.Error()))
 			} else {
@@ -112,7 +102,7 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 			}
 		}
 		if !dbExecInfo.IsRun && model.IsRun {
-			err, reply := node.Cluster.GetLeaderRpcClient().CallSubmitStartExecutor(model.TaskID)
+			err, reply := GetRpcClient(getLeader(ctx)).CallSubmitStartExecutor(model.TaskID)
 			if err != nil {
 				return ctx.WriteJson(FailedResponse(-1201, "CallSubmitStartExecutor error: "+err.Error()))
 			} else {
@@ -203,16 +193,4 @@ func getTaskConfig(model *model.ExecutorInfo) *core.TaskConfig {
 		conf.TargetConfig = model.RealTargetConfig.(*executor.ShellConfig)
 	}
 	return conf
-}
-
-func getNode(ctx dotweb.Context) (*core.Result, *node.Node) {
-	nodeItem, exists := ctx.AppItems().Get(_const.ItemKey_Node)
-	if !exists {
-		return core.FailedResult(-1001, "not exists node in app items"), nil
-	}
-	node, ok := nodeItem.(*node.Node)
-	if !ok {
-		return core.FailedResult(-1002, "not exists correct node in app items"), nil
-	}
-	return core.SuccessResult(), node
 }
