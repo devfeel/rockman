@@ -40,7 +40,7 @@ router.beforeEach(({meta, path}, from, next) => {
   // true用户已登录， false用户未登录
   var isLogin = Boolean(store.state.user.token)
   if (auth && !isLogin && path !== '/login') {
-    return next({path: '/login'})
+    // return next({ path: '/static/login' })
   }
   next()
 })

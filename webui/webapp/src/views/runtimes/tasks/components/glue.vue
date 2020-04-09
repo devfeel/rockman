@@ -12,7 +12,7 @@
     <div class="glue-conext">
         <codemirror
             ref="mycode"
-            v-model="data.TargetConfig"
+            v-model="shellConfigForm.Script"
             :options="defaultOption">
         </codemirror>
     </div>
@@ -37,6 +37,10 @@ export default {
                 line: true,
                 addModeClass: false,
                 lineWrapping: true // 是否强制换行
+            },
+            shellConfigForm: {
+                Type: '',
+                Script: ''
             }
         }
     },
@@ -54,14 +58,15 @@ export default {
     },
     methods: {
         init() {
-
+            this.shellConfigForm = JSON.parse(this.data.TargetConfig);
         },
         onSave() {
+             this.data.TargetConfig = JSON.stringify(this.shellConfigForm);
             taskSave(this.data).then(res => {
-                if (res.code === 200) {
+                if (res.RetCode === 0) {
                     this.$Message.success('保存成功');
                 } else {
-                    this.$Message.error(res.msg);
+                    this.$Message.error(res.RetMsg);
                 }
             })
         }

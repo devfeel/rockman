@@ -50,7 +50,7 @@
                         <Input v-model="taskForm.Express" placeholder="cron表达式,配置作业触发时间"/>
                     </form-item>
                     <form-item label="任务延迟时间" prop='DueTime'>
-                        <InputNumber  :min="1" :step="1" v-model="taskForm.DueTime" placeholder="任务延迟时间"></InputNumber>
+                        <InputNumber  :min="1" :step="1" v-model="taskForm.DueTime" ></InputNumber>
                     </form-item>
                     <div name="http" v-if="taskForm.TargetType==='http'">
                         <Divider />
@@ -245,7 +245,7 @@ export default {
                 TargetType: '',
                 TaskType: '',
                 Express: '',
-                DueTime: '',
+                DueTime: 0,
                 TargetConfig: '',
                 Remark: ''
             },

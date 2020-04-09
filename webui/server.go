@@ -66,6 +66,6 @@ func (s *WebServer) initRoute() {
 
 	// g = s.webApp.HttpServer.Group("/*")
 
-	//s.webApp.HttpServer.Router().ServerFile("/*", "wwwroot/")
+	//s.webApp.HttpServer.Router().ServerFile("/static/*", "wwwroot/")
 
 }

@@ -59,11 +59,11 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 	if !result.IsSuccess() {
 		return result
 	}
-	isExist, err := service.executorRepository.IsExistExecutorByTaskId(model.TaskID)
+	task, err := service.executorRepository.GetExecutorByTaskId(model.TaskID)
 	if err != nil {
 		return core.FailedResult(-3001, "QueryExecutor error: "+err.Error())
 	}
-	if isExist {
+	if task.ID != model.ID {
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
 	err = service.executorRepository.UpdateOnce(model)
