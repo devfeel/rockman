@@ -16,10 +16,10 @@ func CreateRpcReply(retCode int, retMsg string, message interface{}) RpcReply {
 	return RpcReply{RetCode: retCode, RetMsg: retMsg, Message: message}
 }
 
-func CreateFailedReply(retCode int, retMsg string) RpcReply {
+func FailedReply(retCode int, retMsg string) RpcReply {
 	return RpcReply{RetCode: retCode, RetMsg: retMsg}
 }
 
-func CreateSuccessRpcReply(message interface{}) RpcReply {
+func SuccessRpcReply(message interface{}) RpcReply {
 	return RpcReply{RetCode: core.SuccessCode, RetMsg: "", Message: message}
 }

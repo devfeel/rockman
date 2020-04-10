@@ -12,21 +12,21 @@ func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, reply *packet.RpcRepl
 	logTitle := "RpcServer.RegisterNode[" + nodeInfo.EndPoint() + "] "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn(logTitle + "can not register to not leader node")
-		*reply = packet.CreateFailedReply(-1001, "can not register to not leader node")
+		*reply = packet.FailedReply(-1001, "can not register to not leader node")
 		return nil
 	}
 
 	result := h.getNode().Cluster.AddNodeInfo(nodeInfo)
 	if result.Error != nil {
 		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
-		*reply = packet.CreateFailedReply(-2001, result.Message())
+		*reply = packet.FailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
 			logger.Rpc().DebugS(logTitle+"failed, ", result.Message())
-			*reply = packet.CreateFailedReply(-2002, result.Message())
+			*reply = packet.FailedReply(-2002, result.Message())
 		} else {
 			logger.Rpc().DebugS(logTitle+"success,", nodeInfo.Json())
-			*reply = packet.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
+			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
 	return nil
@@ -37,12 +37,12 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *packet.RpcReply)
 	logTitle := "RpcServer.QueryNodes "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn(logTitle + "can not query nodes from not leader node")
-		*reply = packet.CreateFailedReply(-1001, "can not query nodes from not leader node")
+		*reply = packet.FailedReply(-1001, "can not query nodes from not leader node")
 		return nil
 	}
 
 	logger.Rpc().DebugS(logTitle + "success")
-	*reply = packet.CreateSuccessRpcReply(h.getNode().Cluster.Nodes)
+	*reply = packet.SuccessRpcReply(h.getNode().Cluster.Nodes)
 	return nil
 }
 
@@ -52,7 +52,7 @@ func (h *RpcHandler) SubmitExecutor(execInfo *core.ExecutorInfo, reply *packet.R
 	logTitle := "RpcServer.SubmitExecutor: "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn("can not submit to not leader node")
-		*reply = packet.CreateFailedReply(-1001, "can not submit to not leader node")
+		*reply = packet.FailedReply(-1001, "can not submit to not leader node")
 		return nil
 	}
 
@@ -60,14 +60,14 @@ func (h *RpcHandler) SubmitExecutor(execInfo *core.ExecutorInfo, reply *packet.R
 	result := h.getNode().SubmitExecutor(execInfo)
 	if result.Error != nil {
 		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
-		*reply = packet.CreateFailedReply(-2001, result.Message())
+		*reply = packet.FailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
 			logger.Rpc().DebugS(logTitle + "failed, " + result.Message())
-			*reply = packet.CreateFailedReply(-2002, result.Message())
+			*reply = packet.FailedReply(-2002, result.Message())
 		} else {
 			logger.Rpc().DebugS(logTitle+"success", execInfo.TaskConfig.TaskID)
-			*reply = packet.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
+			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
 	return nil
@@ -78,7 +78,7 @@ func (h *RpcHandler) SubmitStopExecutor(taskId string, reply *packet.RpcReply) e
 	logTitle := "RpcServer.SubmitStopExecutor: "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn("can not submit to not leader node")
-		*reply = packet.CreateFailedReply(-1001, "can not submit to not leader node")
+		*reply = packet.FailedReply(-1001, "can not submit to not leader node")
 		return nil
 	}
 
@@ -86,14 +86,14 @@ func (h *RpcHandler) SubmitStopExecutor(taskId string, reply *packet.RpcReply) e
 	result := h.getNode().SubmitStopExecutor(taskId)
 	if result.Error != nil {
 		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
-		*reply = packet.CreateFailedReply(-2001, result.Message())
+		*reply = packet.FailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
 			logger.Rpc().DebugS(logTitle + "failed, " + result.Message())
-			*reply = packet.CreateFailedReply(-2002, result.Message())
+			*reply = packet.FailedReply(-2002, result.Message())
 		} else {
 			logger.Rpc().DebugS(logTitle+"success", taskId)
-			*reply = packet.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
+			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
 	return nil
@@ -104,7 +104,7 @@ func (h *RpcHandler) SubmitStartExecutor(taskId string, reply *packet.RpcReply) 
 	logTitle := "RpcServer.SubmitStartExecutor: "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn("can not submit to not leader node")
-		*reply = packet.CreateFailedReply(-1001, "can not submit to not leader node")
+		*reply = packet.FailedReply(-1001, "can not submit to not leader node")
 		return nil
 	}
 
@@ -112,14 +112,14 @@ func (h *RpcHandler) SubmitStartExecutor(taskId string, reply *packet.RpcReply) 
 	result := h.getNode().SubmitStartExecutor(taskId)
 	if result.Error != nil {
 		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
-		*reply = packet.CreateFailedReply(-2001, result.Message())
+		*reply = packet.FailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
 			logger.Rpc().DebugS(logTitle + "failed, " + result.Message())
-			*reply = packet.CreateFailedReply(-2002, result.Message())
+			*reply = packet.FailedReply(-2002, result.Message())
 		} else {
 			logger.Rpc().DebugS(logTitle+"success", taskId)
-			*reply = packet.CreateSuccessRpcReply(len(h.getNode().Runtime.Executors))
+			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
 	return nil

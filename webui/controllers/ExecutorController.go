@@ -157,8 +157,8 @@ func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 		pageReq.PageSize = _const.DefaultPageSize
 	}
 
-	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecLogs(taskId, pageReq)
+	logService := service.NewLogService()
+	result, err := logService.QueryExecLogs(taskId, pageReq)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
