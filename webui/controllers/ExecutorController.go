@@ -27,24 +27,10 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
 	}
 
-	if model.ID > 0 {
-		result := c.executorService.UpdateExecutor(model)
-		if !result.IsSuccess() {
-			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
-		} else {
-			if !model.IsRun {
-				//TODO stop executor stop
-
-			}
-		}
-	} else {
-		result := c.executorService.AddExecutor(model)
-		if !result.IsSuccess() {
-			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
-		}
-
+	result := c.executorService.AddExecutor(model)
+	if !result.IsSuccess() {
+		return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 	}
-
 	if model.IsRun {
 		// submit executor to leader node
 		submit := new(core.ExecutorInfo)
