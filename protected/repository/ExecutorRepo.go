@@ -181,3 +181,9 @@ func (repo *ExecutorRepo) QueryExecLogs(taskId string, pageReq *model.PageReques
 	pageResult.PageData = dest
 	return pageResult, err
 }
+
+// WriteNodeTraceLog
+func (repo *ExecutorRepo) WriteNodeTraceLog(log *model.NodeTraceLog) (int64, error) {
+	sql := "INSERT INTO NodeTraceLog(NodeID, NodeEndPoint, IsLeader, IsMaster, IsWorker, Event, IsSuccess, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	return repo.Insert(sql, log.NodeID, log.NodeEndPoint, log.IsLeader, log.IsMaster, log.IsWorker, log.Event, log.IsSuccess, log.FailureType, log.FailureCause, log.CreateTime)
+}
