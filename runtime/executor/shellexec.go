@@ -57,13 +57,14 @@ func NewDebugShellExecutor(taskID string) Executor {
 }
 
 func NewShellExecutor(conf *core.TaskConfig) (*ShellExecutor, error) {
+	lt := "NewShellExecutor[" + conf.TaskID + "] "
 	exec := new(ShellExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
 	exec.shellConfig = new(ShellConfig)
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.shellConfig)
 	if err != nil {
-		logger.Runtime().Error(err, "convert config error")
+		logger.Runtime().Error(err, lt+"convert config error")
 		return nil, err
 	}
 	if exec.shellConfig.Type == "" {
@@ -72,20 +73,20 @@ func NewShellExecutor(conf *core.TaskConfig) (*ShellExecutor, error) {
 	exec.shellConfig.Type = strings.ToUpper(exec.shellConfig.Type)
 	if !config.CurrentProfile.Runtime.EnableShellScript {
 		if exec.shellConfig.Type == ShellType_Script {
-			logger.Runtime().Debug("NewShellExecutor error: " + ErrorNotEnabledShellScriptMode.Error())
+			logger.Runtime().Debug(lt + "error: " + ErrorNotEnabledShellScriptMode.Error())
 			return nil, ErrorNotEnabledShellScriptMode
 		}
 	}
 
 	if exec.shellConfig.Type != ShellType_File && exec.shellConfig.Type != ShellType_Script {
-		logger.Runtime().Debug("NewShellExecutor error: " + ErrorNotSupportShellType.Error())
+		logger.Runtime().Debug(lt + "error: " + ErrorNotSupportShellType.Error())
 		return nil, ErrorNotSupportShellType
 	}
 
 	if exec.shellConfig.Type == ShellType_File {
 		exec.shellConfig.Script = ShellFilePath + exec.shellConfig.Script
 		if !_file.ExistsInPath(ShellFilePath, exec.shellConfig.Script) {
-			logger.Runtime().Debug("NewShellExecutor error: " + ErrorShellFileNotInSpecifyPath.Error())
+			logger.Runtime().Debug(lt + "error: " + ErrorShellFileNotInSpecifyPath.Error())
 			return nil, ErrorShellFileNotInSpecifyPath
 		}
 	}

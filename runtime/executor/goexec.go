@@ -50,19 +50,20 @@ func NewDebugGoExecutor(taskID string) Executor {
 }
 
 func NewGoExecutor(conf *core.TaskConfig) (*GoExecutor, error) {
+	lt := "NewGoExecutor[" + conf.TaskID + "] "
 	exec := new(GoExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
 	exec.goConfig = new(GoConfig)
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.goConfig)
 	if err != nil {
-		logger.Runtime().Error(err, "convert config error")
+		logger.Runtime().Error(err, lt+"convert config error")
 		return nil, err
 	}
 
 	exec.goConfig.FileName = GoFilePath + exec.goConfig.FileName
 	if !_file.ExistsInPath(GoFilePath, exec.goConfig.FileName) {
-		logger.Runtime().Debug("NewGoExecutor error: " + ErrorGoSoFileNotInSpecifyPath.Error())
+		logger.Runtime().Debug(lt + "error: " + ErrorGoSoFileNotInSpecifyPath.Error())
 		return nil, ErrorGoSoFileNotInSpecifyPath
 	}
 	return exec, nil
