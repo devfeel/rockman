@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/devfeel/database"
@@ -75,7 +76,7 @@ func (repo *ExecutorRepo) UpdateOnce(model *model.ExecutorInfo) error {
 		return err
 	}
 
-	if n <= 0 {
+	if n < 0 {
 		return database.ErrorNoRowsAffected
 	}
 	return nil
@@ -111,6 +112,7 @@ func (repo *ExecutorRepo) GetExecutorByTaskId(taskId string) (*model.ExecutorInf
 // IsExistExecutorByTaskId
 func (repo *ExecutorRepo) IsExistExecutorByTaskId(taskId string) (bool, error) {
 	count, err := repo.Count("SELECT count(1) FROM Task WHERE TaskID=?;", taskId)
+	fmt.Println(count)
 	return count > 0, err
 }
 

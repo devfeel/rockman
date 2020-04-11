@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 	if !result.IsSuccess() {
 		return result
 	}
+	fmt.Println(service.executorRepo)
 	isExist, err := service.executorRepo.IsExistExecutorByTaskId(model.TaskID)
 	if err != nil {
 		return core.FailedResult(-3001, "QueryExecutor error: "+err.Error())
@@ -41,7 +43,7 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 	if isExist {
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
-
+	fmt.Println(model)
 	err = service.executorRepo.InsertOnce(model)
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())

@@ -11,4 +11,6 @@ export const getTaskOnce = (data) => get(`${GLOBAL.HOME}/task/get`, data)
 
 export const taskSave = (data) => post(`${GLOBAL.HOME}/task/save`, data)
 
+export const taskUpdate = (data) => post(`${GLOBAL.HOME}/task/update`, data)
+
 export const taskDelete = (data) => get(`${GLOBAL.HOME}/task/delete`, data)

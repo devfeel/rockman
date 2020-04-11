@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/rockman-webui/src/protected/viewModel/task"
 	"github.com/devfeel/rockman/core"
@@ -27,8 +29,10 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
 	}
-
-	result := c.executorService.AddExecutor(model)
+	service := service.NewExecutorService()
+	fmt.Println(c)
+	fmt.Println(service)
+	result := service.AddExecutor(model)
 	if !result.IsSuccess() {
 		return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
 	}
@@ -67,7 +71,8 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
 	}
 
-	dbExecInfo, err := c.executorService.QueryExecutorById(model.ID)
+	service := service.NewExecutorService()
+	dbExecInfo, err := service.QueryExecutorById(model.ID)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-1003, "query task error:"+err.Error()))
 	}
@@ -75,7 +80,7 @@ func (c *ExecutorController) UpdateExecutor(ctx dotweb.Context) error {
 		return ctx.WriteJson(FailedResponse(-1004, "not exists this task"))
 	}
 
-	result := c.executorService.UpdateExecutor(model)
+	result := service.UpdateExecutor(model)
 	if !result.IsSuccess() {
 		return ctx.WriteJson(FailedResponse(result.RetCode, "UpdateExecutor failed: "+result.Message()))
 	} else {

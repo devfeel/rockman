@@ -125,7 +125,7 @@ import Minix from '@/common/tableminix.js';
 import tableC from '@/components/table/table.vue';
 import tableH from '@/components/table/table-header.vue';
 import glue from './components/glue.vue';
-import { getTaskList, taskSave, getTaskOnce, taskDelete } from '@/api/task.js';
+import { getTaskList, taskSave, taskUpdate, getTaskOnce, taskDelete } from '@/api/task.js';
 require('codemirror/mode/javascript/javascript');
 export default {
     components: { tableC, tableH, glue },
@@ -378,15 +378,27 @@ export default {
                     if (this.taskForm.TargetType === 'goso') {
                       this.taskForm.TargetConfig = JSON.stringify(this.goConfigForm);
                     }
-                    taskSave(this.taskForm).then(res => {
-                        if (res.RetCode === 0) {
-                            this.$Message.success('保存成功');
-                            this.init();
-                            this.model = false;
-                        } else {
-                            this.$Message.error(res.RetMsg);
-                        }
-                    })
+                    if (this.taskForm.ID === 0) {
+                        taskSave(this.taskForm).then(res => {
+                            if (res.RetCode === 0) {
+                                this.$Message.success('保存成功');
+                                this.init();
+                                this.model = false;
+                            } else {
+                                this.$Message.error(res.RetMsg);
+                            }
+                        })
+                    } else {
+                        taskUpdate(this.taskForm).then(res => {
+                            if (res.RetCode === 0) {
+                                this.$Message.success('保存成功');
+                                this.init();
+                                this.model = false;
+                            } else {
+                                this.$Message.error(res.RetMsg);
+                            }
+                        })
+                    }
                 } else {
                     return false;
                 }

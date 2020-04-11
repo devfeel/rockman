@@ -1,63 +1,31 @@
 <template>
     <div >
         <div class="tb">
-      <tableH icon="md-apps" text="Node列表">
-        <div slot="content"></div>
-        <slot>
-          <div style="text-align: right;float: right;">
-              <div class="search" >
-                  <!-- <Input v-model="queryParam.Name" placeholder="Node名称" style="width:160px;"/> -->
-              </div>
-              <div class="btn">
-                   <Input v-model="queryParam.Name" placeholder="Node名称" style="width:160px;"/>
-                <i-button type="info" icon="md-add" @click="onAdd">新建Node</i-button>
-                <i-button type="info" icon="md-refresh" @click="onRefresh(false)">刷新</i-button>
-              </div>
-          </div>
-        </slot>
-      </tableH>
-      <tableC
-        id="table"
-        :loading="loading"
-        :columns="columns"
-        :dataSource="dataSource"
-        :queryParam="queryParam"
-        @onPageChange="onPageChange"
-        ref="table"
-      ></tableC>
+            <tableH icon="md-apps" text="Node列表">
+                <div slot="content"></div>
+                <slot>
+                <div style="text-align: right;float: right;">
+                    <div class="search" >
+                        <!-- <Input v-model="queryParam.Name" placeholder="Node名称" style="width:160px;"/> -->
+                    </div>
+                    <div class="btn">
+                        <!-- <Input v-model="queryParam.Name" placeholder="Node名称" style="width:160px;"/> -->
+                        <!-- <i-button type="info" icon="md-add" @click="onAdd">新建Node</i-button> -->
+                        <i-button type="info" icon="md-refresh" @click="onRefresh(false)">刷新</i-button>
+                    </div>
+                </div>
+                </slot>
+            </tableH>
+            <i-table ref="table" :columns="columns" :loading="loading" :data="NodeLists" border>
+            </i-table>
         </div>
-      <Modal v-model="model"
-            v-bind:title="modelMessage"
-            width="660"
-            v-bind:mask-closable="closable"
-            v-bind:footer-hide="footerHide"
-            @on-ok="onSave('formValidate')"
-            class-name="vertical-center-modal">
-            <div class="model-content">
-                <i-form ref="formValidate" :label-width="120" :rules="ruleValidate" :model="formData">
-                    <FormItem label="Node名称" prop='Name'>
-                        <Input v-model="formData.Name" placeholder="Node名称"></Input>
-                    </FormItem>
-                    <FormItem label="Node服务器IP" prop='ServerIp'>
-                        <Input v-model="formData.ServerIp" placeholder="Node服务器IP"></Input>
-                    </FormItem>
-                    <FormItem label="备注" prop='Remark'>
-                        <Input v-model="formData.Remark" type="textarea" :autosize="{minRows: 2,maxRows: 5}" placeholder="备注"></Input>
-                    </FormItem>
-                </i-form>
-            </div>
-            <div slot="footer">
-                <Button @click="model=false">取消</Button>
-                <Button type="primary" @click="onSave('formValidate')">确定</Button>
-            </div>
-        </Modal>
     </div>
 </template>
 <script>
 import Minix from '@/common/tableminix.js';
 import tableC from '@/components/table/table.vue';
 import tableH from '@/components/table/table-header.vue';
-import { getNodeList, nodeSave, getNodeOnce, nodeDelete } from '@/api/node.js';
+import { getNodeList, nodeSave, getNodeOnce } from '@/api/node.js';
 export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -65,28 +33,25 @@ export default {
         return {
             columns: [
                 {
-                    title: 'Node服务器Host',
-                    key: 'Host'
+                    title: 'Node编码',
+                    key: 'NodeId'
                 }, {
-                    title: 'Node服务器Port',
-                    key: 'Port'
+                    title: 'Node名称',
+                    key: 'NodeName'
                 }, {
-                    title: '状态',
-                    key: 'IsMaster',
+                    title: '是否Leader',
+                    key: 'isLeader',
                     render: (h, params) => {
                             const row = params.row;
                             let str = ''
-                            if (row.IsMaster) {
-                                str += '主节点 '
-                            }
-                            if (row.IsWorker) {
-                                str += '工作节点 '
-                            }
-                            if (row.IsOnline) {
-                                str += '在线'
+                            if (row.isLeader) {
+                                str += 'Leader'
                             }
                             return h('Span', str);
                     }
+                }, {
+                    title: '状态',
+                    key: 'Status'
                 }, {
                     title: '操作',
                     key: 'action',
@@ -104,7 +69,7 @@ export default {
                                     },
                                     on: {
                                         click: () => {
-
+                                            this.$Message.success('暂未实现!');
                                         }
                                     }
 
@@ -115,7 +80,7 @@ export default {
                                     },
                                     on: {
                                         click: () => {
-                                            this.onRowDelete(params.row);
+                                            this.$Message.success('暂未实现!');
                                         }
                                     }
                                 }, '删除')
@@ -128,6 +93,7 @@ export default {
             modelMessage: 'Node编辑',
             closable: false,
             footerHide: false,
+            NodeLists: [],
             formData: {
                 Name: '',
                 ServerIp: '',
@@ -144,15 +110,12 @@ export default {
     },
     methods: {
         init() {
-          this.onPageChange(this.queryParam)
-        },
-        onPageChange(param) {
-          this.queryParam = param;
-          if (!param.params) param.params = {};
           this.loading = true;
-          getNodeList(param).then(res => {
-            if (res.code === 200) {
-              this.dataSource = res.data;
+          getNodeList().then(res => {
+            if (res.RetCode === 0) {
+                this.NodeLists = res.data;
+            } else {
+                this.$Message.error(res.RetMsg);
             }
             this.loading = false;
           })
@@ -192,14 +155,7 @@ export default {
             })
         },
         onRowDelete(row) {
-            nodeDelete({Id: row.Id}).then(res => {
-                if (res.code === 200) {
-                    this.$Message.success('删除成功!');
-                    this.init();
-                } else {
-                    this.$Message.error(res.msg);
-                }
-            })
+            this.$Message.success('暂未实现!');
         },
         tiggerAction() {
 

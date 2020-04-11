@@ -1,7 +1,7 @@
 import {get, post} from '../axios/http.js'
 import GLOBAL from '../common/global.js'
 
-export const getNodeList = (data) => post(`${GLOBAL.HOME}/node/query`, data)
+export const getNodeList = (data) => post(`${GLOBAL.HOME}/node/list`, data)
 
 export const getNodeOnce = (data) => get(`${GLOBAL.HOME}/node/get`, data)
 

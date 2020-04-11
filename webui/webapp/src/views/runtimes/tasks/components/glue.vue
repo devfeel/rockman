@@ -23,7 +23,7 @@ import { codemirror } from 'vue-codemirror'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/shell/shell'
 import 'codemirror/theme/duotone-light.css'
-import { taskSave } from '@/api/task.js';
+import { taskUpdate } from '@/api/task.js';
 export default {
     components: { codemirror },
     data() {
@@ -62,7 +62,7 @@ export default {
         },
         onSave() {
              this.data.TargetConfig = JSON.stringify(this.shellConfigForm);
-            taskSave(this.data).then(res => {
+            taskUpdate(this.data).then(res => {
                 if (res.RetCode === 0) {
                     this.$Message.success('保存成功');
                 } else {

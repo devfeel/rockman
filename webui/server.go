@@ -51,13 +51,14 @@ func (s *WebServer) initRoute() {
 	g := s.webApp.HttpServer.Group("/task")
 	g.POST("/list", executorController.ShowExecutors)
 	g.POST("/save", executorController.SaveExecutor)
+	g.POST("/update", executorController.UpdateExecutor)
 	g.GET("/get", executorController.QueryById)
 	g.GET("/delete", executorController.DeleteById)
 	g.POST("/execlogs", executorController.ShowExecLogs)
 	g.POST("/statelogs", executorController.QueryStateLogs)
 
 	g = s.webApp.HttpServer.Group("/node")
-	g.GET("/list", nodeController.ShowNodes)
+	g.POST("/list", nodeController.ShowNodes)
 
 	g = s.webApp.HttpServer.Group("/cluster")
 	g.GET("/resources", clusterController.ShowResources)
