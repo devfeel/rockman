@@ -185,19 +185,40 @@ func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
 
 // ShowExecLogs
 func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
-	taskId := ctx.QueryString("task")
-	pageIndex := ctx.QueryInt64("pageindex")
-	pageSize := ctx.QueryInt64("pagesize")
-	pageReq := new(model.PageRequest)
-	pageReq.PageIndex = pageIndex
-	pageReq.PageSize = pageSize
+	qc := new(viewmodel.TaskExecLogQC)
+	//自动组装参数
+	err := ctx.Bind(qc)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
+	}
 
-	if pageReq.PageSize <= 0 {
-		pageReq.PageSize = _const.DefaultPageSize
+	if qc.PageSize <= 0 {
+		qc.PageSize = _const.DefaultPageSize
 	}
 
 	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecLogs(taskId, pageReq)
+	result, err := taskService.QueryExecLogs(qc)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
+	}
+	return ctx.WriteJson(SuccessResponse(result))
+}
+
+// QueryStateLogs
+func (c *ExecutorController) QueryStateLogs(ctx dotweb.Context) error {
+	qc := new(viewmodel.TaskStateLogQC)
+	//自动组装参数
+	err := ctx.Bind(qc)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
+	}
+
+	if qc.PageSize <= 0 {
+		qc.PageSize = _const.DefaultPageSize
+	}
+
+	taskService := service.NewExecutorService()
+	result, err := taskService.QueryStateLogs(qc)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}

@@ -16,4 +16,5 @@
 /.idea
 /bin
 /wwwroot
+/release
 /logs

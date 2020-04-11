@@ -160,18 +160,21 @@ func (repository *ExecutorRepository) WriteExecLog(log *model.TaskExecLog) (int6
 }
 
 // QueryExecLogs
-func (repository *ExecutorRepository) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+func (repository *ExecutorRepository) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM TaskExecLog"
 	countSql := "SELECT count(1) FROM TaskExecLog"
-	if taskId != "" {
+	if qc.TaskID != "" {
 		dataSql += " WHERE TaskID = ?"
 		countSql += " WHERE TaskID = ?"
+		qc.AddParam(qc.TaskID)
 	}
-	dataSql += pageReq.GetPageSql()
+	dataSql += " ORDER BY CreateTime DESC "
+	dataSql += qc.GetPageSql()
+	params := qc.GetParams()
 	var dest []*model.TaskExecLog
 	var err error
-	if taskId != "" {
-		err = repository.FindList(&dest, dataSql, taskId)
+	if len(params) != 0 {
+		err = repository.FindList(&dest, dataSql, params...)
 	} else {
 		err = repository.FindList(&dest, dataSql)
 	}
@@ -180,8 +183,46 @@ func (repository *ExecutorRepository) QueryExecLogs(taskId string, pageReq *mode
 	}
 
 	var count int64
-	if taskId != "" {
-		count, err = repository.Count(countSql, taskId)
+	if len(params) != 0 {
+		count, err = repository.Count(countSql, params...)
+	} else {
+		count, err = repository.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
+}
+
+// QueryStateLogs
+func (repository *ExecutorRepository) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM TaskStateLog"
+	countSql := "SELECT count(1) FROM TaskStateLog"
+	if qc.TaskID != "" {
+		dataSql += " WHERE TaskID = ?"
+		countSql += " WHERE TaskID = ?"
+		qc.AddParam(qc.TaskID)
+	}
+	dataSql += " ORDER BY CreateTime DESC "
+	dataSql += qc.GetPageSql()
+	params := qc.GetParams()
+	var dest []*model.TaskExecLog
+	var err error
+	if len(params) != 0 {
+		err = repository.FindList(&dest, dataSql, params...)
+	} else {
+		err = repository.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if len(params) != 0 {
+		count, err = repository.Count(countSql, params...)
 	} else {
 		count, err = repository.Count(countSql)
 	}

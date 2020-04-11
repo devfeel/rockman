@@ -52,7 +52,8 @@ func (s *WebServer) initRoute() {
 	g.POST("/save", executorController.SaveExecutor)
 	g.GET("/get", executorController.QueryById)
 	g.GET("/delete", executorController.DeleteById)
-	g.GET("/logs", executorController.ShowExecLogs)
+	g.POST("/execlogs", executorController.ShowExecLogs)
+	g.POST("/statelogs", executorController.QueryStateLogs)
 
 	g = s.webApp.HttpServer.Group("/node")
 	g.GET("/list", nodeController.ShowNodes)
@@ -66,6 +67,6 @@ func (s *WebServer) initRoute() {
 
 	// g = s.webApp.HttpServer.Group("/*")
 
-	s.webApp.HttpServer.Router().ServerFile("/static/*filepath", "wwwroot/")
+	s.webApp.HttpServer.Router().ServerFile("/static/*filepath", "release/wwwroot/")
 
 }

@@ -37,16 +37,15 @@
             </Form>
         </div>
         <Card >
-            <Tabs>
+            <Tabs @on-click="onTabClick">
                 <TabPane label="执行统计" >
-                    <statistics :data="taskForm"></statistics>
+                    <statistics :data="taskForm" :loadData="loadData"></statistics>
                 </TabPane>
-                <TabPane label="执行日志" >
-                    <logs :data="taskForm"></logs>
+                <TabPane label="执行日志" name="execLogs">
+                    <logs :data="taskForm" :loadData="loadExecLogData"></logs>
                 </TabPane>
-                <TabPane label="状态日志" >
-                </TabPane>
-                <TabPane label="提交日志" >
+                <TabPane label="状态日志" name="stateLogs">
+                    <stateLogs :data="taskForm" :loadData="loadStateLogData"></stateLogs>
                 </TabPane>
             </Tabs>
         </Card>
@@ -54,14 +53,18 @@
 </template>
 <script>
 import logs from './components/logs.vue';
+import stateLogs from './components/stateLogs.vue';
 import statistics from './components/statistics.vue';
 import { getUrlParam } from '@/common/utils.js';
 import { getTaskOnce } from '@/api/task.js';
 export default {
-    components: { logs, statistics },
+    components: { logs, statistics, stateLogs },
     data() {
         return {
-            taskForm: {}
+            taskForm: {},
+            loadData: false,
+            loadExecLogData: false,
+            loadStateLogData: false
         }
     },
      mounted() {
@@ -77,12 +80,25 @@ export default {
         init() {
             if (getUrlParam('id')) {
                 getTaskOnce({ID: getUrlParam('id')}).then(res => {
-                    if (res.code === 200) {
-                        this.taskForm = res.data;
+                    if (res.RetCode === 0) {
+                        this.taskForm = res.Message;
                     } else {
-                        this.$Message.error(res.msg);
+                        this.$Message.error(res.RetMsg);
                     }
                 })
+            }
+        },
+        onTabClick(name) {
+            switch (name) {
+                case 'execLogs':
+                    this.loadExecLogData = true;
+                    break;
+                case 'stateLogs':
+                    this.loadStateLogData = true;
+                    break;
+                default:
+                    this.loadExecLogData = false;
+                    this.loadStateLogData = false;
             }
         }
     }

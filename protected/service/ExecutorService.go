@@ -113,8 +113,14 @@ func (service *ExecutorService) WriteExecLog(log *model.TaskExecLog) error {
 }
 
 // QueryExecLogs
-func (service *ExecutorService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepository.QueryExecLogs(taskId, pageReq)
+func (service *ExecutorService) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*model.PageResult, error) {
+	result, err := service.executorRepository.QueryExecLogs(qc)
+	return result, err
+}
+
+// QueryStateLogs
+func (service *ExecutorService) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.PageResult, error) {
+	result, err := service.executorRepository.QueryStateLogs(qc)
 	return result, err
 }
 
