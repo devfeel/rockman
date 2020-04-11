@@ -45,6 +45,7 @@ func (e *ExecutorInfo) TaskConfig() *core.TaskConfig {
 	conf.Interval = e.Interval
 	conf.Express = e.Express
 	conf.TaskData = e.TaskData
+	conf.DistributeType = e.DistributeType
 	conf.HAFlag = true
 	if e.TargetType == executor.TargetType_Http {
 		conf.TargetConfig = e.RealTargetConfig.(*executor.HttpConfig)

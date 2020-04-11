@@ -63,7 +63,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 
 	node.Cluster = cluster
 	if node.config.Node.IsWorker {
-		node.Runtime = runtime.NewRuntime(node.NodeInfo(), registry, profile)
+		node.Runtime = runtime.NewRuntime(node.NodeInfo(), profile)
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -252,6 +252,30 @@ func (n *Node) SubmitStartExecutor(taskId string) *core.Result {
 	}
 }
 
+// RegisterExecutor
+func (n *Node) RegisterExecutor(taskInfo *core.TaskConfig) *core.Result {
+	logTitle := "Node RegisterExecutor [" + taskInfo.TaskID + "] "
+	if !n.IsWorker() {
+		logger.Node().Debug(logTitle + "failed, current node is not worker.")
+		return core.FailedResult(-1001, "current node is not worker")
+	}
+	_, err := n.Runtime.CreateExecutor(taskInfo)
+	if err != nil {
+		logger.Node().Warn(logTitle + "CreateExecutor error:" + err.Error())
+		return core.FailedResult(-2001, err.Error())
+	} else {
+		// reg to registry server
+		execInfo := new(core.ExecutorInfo)
+		execInfo.TaskConfig = taskInfo
+		execInfo.Worker = n.NodeInfo()
+		_, err := n.Registry.Set(execInfo.GetExecutorKey(n.ClusterId()), execInfo.Json(), nil)
+		if err != nil {
+			logger.Node().Warn(logTitle + "sync to registry error:" + err.Error())
+		}
+		return core.SuccessResult()
+	}
+}
+
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
 	//TODO add some check
@@ -302,7 +326,7 @@ func (n *Node) startTheWorld() {
 	}
 
 	if n.config.Node.IsWorker {
-		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.Registry, n.config)
+		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.config)
 	}
 
 	err := n.Start()
@@ -472,7 +496,6 @@ func (n *Node) initExecutorsFromDB() {
 				failureCount += 1
 				continue
 			}
-			submit.DistributeType = exec.DistributeType
 			result := n.SubmitExecutor(submit)
 			if result.Error != nil {
 				logger.Node().DebugS(logTitle+"SubmitExecutor error:", result.Error.Error())

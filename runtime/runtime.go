@@ -8,7 +8,6 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
-	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/runtime/executor"
 	"sync"
 	"time"
@@ -24,7 +23,6 @@ const (
 type (
 	Runtime struct {
 		TaskService     *task.TaskService
-		Registry        *registry.Registry
 		Executors       map[string]executor.Executor
 		executorsLocker *sync.RWMutex
 		Status          int
@@ -34,11 +32,10 @@ type (
 	}
 )
 
-func NewRuntime(nodeInfo *core.NodeInfo, registry *registry.Registry, profile *config.Profile) *Runtime {
+func NewRuntime(nodeInfo *core.NodeInfo, profile *config.Profile) *Runtime {
 	r := &Runtime{Status: RuntimeStatus_Init}
 	r.Executors = make(map[string]executor.Executor)
 	r.executorsLocker = new(sync.RWMutex)
-	r.Registry = registry
 	r.nodeInfo = nodeInfo
 	r.config = profile
 	r.TaskService = task.StartNewService()
@@ -90,6 +87,11 @@ func (r *Runtime) CreateExecutor(taskInfo *core.TaskConfig) (executor.Executor, 
 	}
 
 	err = r.registerExecutor(exec)
+	if err == nil {
+		if exec.GetTaskConfig().IsRun {
+			exec.GetTask().Start()
+		}
+	}
 	return exec, err
 }
 
@@ -100,8 +102,10 @@ func (r *Runtime) registerExecutor(exec executor.Executor) error {
 	}
 	exec.SetTask(task)
 	r.executorsLocker.Lock()
-	defer r.executorsLocker.Unlock()
 	r.Executors[exec.GetTaskID()] = exec
+	r.executorsLocker.Unlock()
+
+	// reg info to registry
 	return nil
 }
 

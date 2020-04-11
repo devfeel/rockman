@@ -43,23 +43,24 @@ func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error
 
 // RegisterExecutor register executor to runtime in worker node
 func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.RpcReply) error {
-	logTitle := "RpcServer.RegisterExecutor: "
+	lt := "RpcServer.RegisterExecutor: "
 	if !h.getNode().Config().Node.IsWorker {
 		logger.Rpc().Warn("unworker node can not register executor")
 		*reply = packet.FailedReply(-1001, "unworker node can not register executor")
 		return nil
 	}
-	exec, err := h.getNode().Runtime.CreateExecutor(config)
-	if err != nil {
-		logger.Rpc().Warn(logTitle + "CreateExecutor error:" + err.Error())
-		*reply = packet.FailedReply(-9001, "CreateExecutor error:"+err.Error())
+	result := h.getNode().RegisterExecutor(config)
+	if result.Error != nil {
+		logger.Rpc().Warn(lt + "error:" + result.Error.Error())
+		*reply = packet.FailedReply(-9001, "error:"+result.Error.Error())
 		return nil
-	} else {
-		if exec.GetTaskConfig().IsRun {
-			exec.GetTask().Start()
-		}
 	}
-	logger.Rpc().DebugS(logTitle+"success", config)
+	if !result.IsSuccess() {
+		logger.Rpc().Warn(lt + "failed:" + result.Message())
+		*reply = packet.FailedReply(-9001, "failed:"+result.Message())
+		return nil
+	}
+	logger.Rpc().DebugS(lt+"success", config)
 	*reply = packet.SuccessRpcReply(h.getNode().Runtime.Executors)
 	return nil
 }
