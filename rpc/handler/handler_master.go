@@ -6,7 +6,7 @@ import (
 	"github.com/devfeel/rockman/rpc/packet"
 )
 
-// RegisterWorker register worker node to leader node
+// RegisterWorker register worker node to leader
 // it will check cluster id
 func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.RegisterNode[" + nodeInfo.EndPoint() + "] "
@@ -32,7 +32,7 @@ func (h *RpcHandler) RegisterNode(nodeInfo *core.NodeInfo, reply *packet.RpcRepl
 	return nil
 }
 
-// QueryNodes query node list from leader node
+// QueryNodes query node list from leader
 func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.QueryNodes "
 	if !h.getNode().IsLeader() {
@@ -122,5 +122,19 @@ func (h *RpcHandler) SubmitStartExecutor(taskId string, reply *packet.RpcReply) 
 			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
+	return nil
+}
+
+// QueryExecutors query executors from leader
+func (h *RpcHandler) QueryExecutors(pageInfo *core.PageInfo, reply *packet.RpcReply) error {
+	logTitle := "RpcServer.QueryExecutors "
+	if !h.getNode().IsLeader() {
+		logger.Rpc().Warn(logTitle + "can not query executors from not leader node")
+		*reply = packet.FailedReply(-1001, "can not query executors from not leader node")
+		return nil
+	}
+
+	logger.Rpc().DebugS(logTitle + "success")
+	*reply = packet.SuccessRpcReply(h.getNode().Cluster.Executors)
 	return nil
 }

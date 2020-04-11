@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/runtime"
@@ -119,6 +120,10 @@ func (n *Node) IsWorker() bool {
 
 func (n *Node) IsLeader() bool {
 	return n.isLeader
+}
+
+func (n *Node) ClusterId() string {
+	return n.Cluster.ClusterId
 }
 
 func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
@@ -398,6 +403,98 @@ RegisterNode:
 	return nil
 }
 
+// createSession create session to registry server
+func (n *Node) createSession(nodeKey string) error {
+	lt := "Node create session "
+	logger.Node().Debug(lt + "begin.")
+
+	locker, err := n.Registry.CreateLocker(nodeKey, n.NodeInfo().Json(), defaultLockerTTL)
+	if err != nil {
+		logger.Node().Debug(lt + "error: " + err.Error())
+	}
+	_, err = locker.Lock()
+	if err != nil {
+		logger.Node().Debug(lt + "error: " + err.Error())
+		return err
+	}
+	logger.Node().Debug(lt + "success with key {" + nodeKey + "}")
+	return nil
+}
+
+func (n *Node) becomeLeaderRole() {
+	logTitle := "Node.becomeLeaderRole "
+	logger.Node().Debug(logTitle + "become to leader role")
+	n.isLeader = true
+
+	// init executors from db
+	// must check init flag on registry
+	n.initExecutorsFromDB()
+
+	//TODO sync all executors
+	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
+
+}
+
+func (n *Node) removeLeaderRole() {
+	logTitle := "Node "
+	//TODO do something when become to not leader
+	logger.Node().Debug(logTitle + "remove leader role")
+	n.Cluster.OnNodeOffline = nil
+	n.isLeader = false
+}
+
+// initExecutorsFromDB init executors from db
+// must check init flag on registry
+func (n *Node) initExecutorsFromDB() {
+	logTitle := "Node initExecutorsFromDB "
+	if !n.IsLeader() {
+		logger.Node().Debug(logTitle + "can not run in not leader node.")
+		return
+	}
+
+	doQuery := func() {
+		execInfos, err := service.NewExecutorService().QueryAllExecutors()
+		if err != nil {
+			logger.Node().Debug(logTitle + "NewExecutorService error:" + err.Error())
+			return
+		}
+		for _, exec := range execInfos {
+			submit := new(core.ExecutorInfo)
+			submit.TaskConfig = exec.TaskConfig()
+			if submit.TaskConfig.TargetConfig == nil {
+				logger.Node().Debug(logTitle + "init submit error: target config is nil")
+				continue
+			}
+			submit.DistributeType = exec.DistributeType
+			result := n.SubmitExecutor(submit)
+			if result.Error != nil {
+				logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
+				//TODO log to db
+				continue
+			}
+
+			if !result.IsSuccess() {
+				logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
+				//TODO log to db
+			} else {
+				logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
+				//TODO log to db
+			}
+		}
+	}
+
+	flag, err := n.getInitFlag()
+	if err != nil {
+		logger.Node().Warn(logTitle + "get init flag error:" + err.Error())
+	} else {
+		if !flag {
+			doQuery()
+			err := n.setInitFlag()
+			logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
+		}
+	}
+}
+
 // onLeaderChange do something when leader is changed
 func (n *Node) onLeaderChange() {
 	err := n.registerNode()
@@ -408,13 +505,13 @@ func (n *Node) onLeaderChange() {
 	}
 	if n.IsLeader() {
 		if n.Cluster.LeaderServer != n.NodeInfo().EndPoint() {
-			n.removeLeaderRole()
+			n.becomeLeaderRole()
 		}
 	}
 
 	if n.IsMaster() && !n.IsLeader() {
 		if n.Cluster.LeaderServer == n.NodeInfo().EndPoint() {
-			n.becomeLeaderRole()
+			n.removeLeaderRole()
 		}
 	}
 }
@@ -469,37 +566,22 @@ func (n *Node) onRegistryOffline() {
 	n.stopTheWorld()
 }
 
-// createSession create session to registry server
-func (n *Node) createSession(nodeKey string) error {
-	lt := "Node create session "
-	logger.Node().Debug(lt + "begin.")
-
-	locker, err := n.Registry.CreateLocker(nodeKey, n.NodeInfo().Json(), defaultLockerTTL)
-	if err != nil {
-		logger.Node().Debug(lt + "error: " + err.Error())
+func (n *Node) getInitFlag() (bool, error) {
+	kv, _, err := n.Registry.Get(getInitFlagKey(n.ClusterId()), nil)
+	if err == nil {
+		return false, err
 	}
-	_, err = locker.Lock()
-	if err != nil {
-		logger.Node().Debug(lt + "error: " + err.Error())
-		return err
+	if kv == nil {
+		return false, nil
 	}
-	logger.Node().Debug(lt + "success with key {" + nodeKey + "}")
-	return nil
+	return true, nil
 }
 
-func (n *Node) becomeLeaderRole() {
-	logTitle := "Node "
-	//TODO do something when become to leader
-	logger.Node().Debug(logTitle + "become to leader role")
-	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
-	n.isLeader = true
-
+func (n *Node) setInitFlag() error {
+	_, err := n.Registry.Set(getInitFlagKey(n.ClusterId()), "true", nil)
+	return err
 }
 
-func (n *Node) removeLeaderRole() {
-	logTitle := "Node "
-	//TODO do something when become to not leader
-	logger.Node().Debug(logTitle + "remove leader role")
-	n.Cluster.OnNodeOffline = nil
-	n.isLeader = false
+func getInitFlagKey(clusterId string) string {
+	return core.ClusterKeyPrefix + clusterId + "/flags/init"
 }

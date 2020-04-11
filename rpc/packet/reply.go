@@ -1,6 +1,9 @@
 package packet
 
-import "github.com/devfeel/rockman/core"
+import (
+	"github.com/devfeel/rockman/core"
+	"strconv"
+)
 
 type RpcReply struct {
 	RetCode int
@@ -10,6 +13,10 @@ type RpcReply struct {
 
 func (r *RpcReply) IsSuccess() bool {
 	return r.RetCode == core.SuccessCode
+}
+
+func (r *RpcReply) FailureMessage() string {
+	return strconv.Itoa(r.RetCode) + "," + r.RetMsg
 }
 
 func CreateRpcReply(retCode int, retMsg string, message interface{}) RpcReply {

@@ -171,6 +171,22 @@ func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	return core.SuccessResult()
 }
 
+func (c *Cluster) GetInitFlag() (bool, error) {
+	kv, _, err := c.Registry.Get(getInitFlagKey(c.ClusterId), nil)
+	if err == nil {
+		return false, err
+	}
+	if kv == nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (c *Cluster) SetInitFlag() error {
+	_, err := c.Registry.Set(getInitFlagKey(c.ClusterId), "true", nil)
+	return err
+}
+
 // FindNode find node info by endpoint
 func (c *Cluster) FindNode(endPoint string) (*core.NodeInfo, bool) {
 	c.nodesLocker.RLock()
@@ -479,5 +495,9 @@ func (c *Cluster) cycleQueryWorkerResource() {
 }
 
 func getLeaderKey(clusterId string) string {
-	return "devfeel/rockman/" + clusterId + "/leader"
+	return core.ClusterKeyPrefix + clusterId + "/leader"
+}
+
+func getInitFlagKey(clusterId string) string {
+	return core.ClusterKeyPrefix + clusterId + "/flags/init"
 }

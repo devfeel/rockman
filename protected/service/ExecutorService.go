@@ -89,6 +89,12 @@ func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.Pag
 	return result, err
 }
 
+// QueryAllExecutors
+func (service *ExecutorService) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
+	result, err := service.executorRepo.QueryAllExecutors()
+	return result, err
+}
+
 // validateExecutorInfo
 func validateExecutorInfo(model *model.ExecutorInfo) *core.Result {
 	if model == nil {

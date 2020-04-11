@@ -141,6 +141,17 @@ func (repo *ExecutorRepo) QueryExecutors(nodeId string, pageReq *model.PageReque
 	return pageResult, err
 }
 
+// QueryAllExecutors
+func (repo *ExecutorRepo) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
+	dataSql := "SELECT * FROM Task"
+	var dest []*model.ExecutorInfo
+	err := repo.FindList(&dest, dataSql)
+	if err != nil {
+		return nil, err
+	}
+	return dest, err
+}
+
 // WriteExecLog
 func (repo *ExecutorRepo) WriteExecLog(log *model.TaskExecLog) (int64, error) {
 	sql := "INSERT INTO TaskExecLog(TaskID, NodeID, NodeEndPoint, IsSuccess, StartTime, EndTime, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"

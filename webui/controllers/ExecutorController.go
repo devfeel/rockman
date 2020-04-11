@@ -5,7 +5,6 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
-	"github.com/devfeel/rockman/runtime/executor"
 	_const "github.com/devfeel/rockman/webui/const"
 )
 
@@ -34,7 +33,7 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	if model.IsRun {
 		// submit executor to leader node
 		submit := new(core.ExecutorInfo)
-		submit.TaskConfig = getTaskConfig(model)
+		submit.TaskConfig = model.TaskConfig()
 		if submit.TaskConfig.TargetConfig == nil {
 			return ctx.WriteJson(FailedResponse(-1101, "Submit.TaskConfig.TargetConfig is nil"))
 		}
@@ -163,27 +162,4 @@ func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
 	return ctx.WriteJson(SuccessResponse(result))
-}
-
-func getTaskConfig(model *model.ExecutorInfo) *core.TaskConfig {
-	conf := &core.TaskConfig{}
-	conf.TaskID = model.TaskID
-	conf.TaskType = model.TaskType
-	conf.TargetType = model.TargetType
-	conf.IsRun = model.IsRun
-	conf.DueTime = model.DueTime
-	conf.Interval = model.Interval
-	conf.Express = model.Express
-	conf.TaskData = model.TaskData
-	conf.HAFlag = true
-	if model.TargetType == executor.TargetType_Http {
-		conf.TargetConfig = model.RealTargetConfig.(*executor.HttpConfig)
-	}
-	if model.TargetType == executor.TargetType_GoSo {
-		conf.TargetConfig = model.RealTargetConfig.(*executor.GoConfig)
-	}
-	if model.TargetType == executor.TargetType_Shell {
-		conf.TargetConfig = model.RealTargetConfig.(*executor.ShellConfig)
-	}
-	return conf
 }
