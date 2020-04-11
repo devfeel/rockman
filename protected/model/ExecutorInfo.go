@@ -6,25 +6,36 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/runtime/executor"
+	"time"
 )
 
-type ExecutorInfo struct {
-	ID                int64
-	TaskID            string
-	TaskType          string
-	IsRun             bool
-	DueTime           int64
-	Interval          int64
-	Express           string
-	TaskData          string
-	TargetType        string
-	TargetConfig      string
-	RealTargetConfig  interface{}
-	NodeID            string
-	DistributeType    int
-	IsSubmitToCluster bool
-	Remark            string
-}
+type (
+	ExecutorInfo struct {
+		ID                int64
+		TaskID            string
+		TaskType          string
+		IsRun             bool
+		DueTime           int64
+		Interval          int64
+		Express           string
+		TaskData          string
+		TargetType        string
+		TargetConfig      string
+		RealTargetConfig  interface{}
+		NodeID            string
+		DistributeType    int
+		IsSubmitToCluster bool
+		Remark            string
+	}
+	ExecutorRunNode struct {
+		LogID          int64
+		TaskID         string
+		NodeID         string
+		NodeEndPoint   string
+		LastUpdateTime time.Time
+		CreateTime     time.Time
+	}
+)
 
 func (e *ExecutorInfo) TaskConfig() *core.TaskConfig {
 	e.InitTargetConfig()
