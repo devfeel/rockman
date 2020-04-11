@@ -10,7 +10,10 @@ import (
 )
 
 func getNode(ctx dotweb.Context) *node.Node {
-	nodeItem, _ := ctx.AppItems().Get(_const.ItemKeyNode)
+	nodeItem, exists := ctx.AppItems().Get(_const.ItemKeyNode)
+	if !exists {
+		return nil
+	}
 	return nodeItem.(*node.Node)
 }
 

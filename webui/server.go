@@ -55,5 +55,6 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/cluster")
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
+	g.GET("/info", clusterController.ShowClusterInfo)
 
 }

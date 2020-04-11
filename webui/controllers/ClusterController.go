@@ -12,6 +12,14 @@ import (
 type ClusterController struct {
 }
 
+func (c *ClusterController) ShowClusterInfo(ctx dotweb.Context) error {
+	node := getNode(ctx)
+	if node == nil {
+		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
+	}
+	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.ClusterInfo())))
+}
+
 func (c *ClusterController) ShowExecutors(ctx dotweb.Context) error {
 	item, isExists := ctx.AppItems().Get(_const.ItemKeyNode)
 	if !isExists {
