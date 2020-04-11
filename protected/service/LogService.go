@@ -8,12 +8,14 @@ import (
 
 type LogService struct {
 	BaseService
-	repo *repository.LogRepo
+	repo        *repository.LogRepo
+	execService *ExecutorService
 }
 
 func NewLogService() *LogService {
 	service := &LogService{
-		repo: repository.NewLogRepo(),
+		repo:        repository.NewLogRepo(),
+		execService: NewExecutorService(),
 	}
 	return service
 }
@@ -42,5 +44,16 @@ func (service *LogService) WriteNodeTraceLog(log *model.NodeTraceLog) error {
 func (service *LogService) WriteSubmitLog(log *model.TaskSubmitLog) error {
 	log.CreateTime = time.Now()
 	_, err := service.repo.WriteSubmitLog(log)
-	return err
+	if err != nil {
+		return err
+	}
+	if log.IsSuccess {
+		runInfo := &model.ExecutorRunInfo{
+			TaskID:       log.TaskID,
+			NodeID:       log.TaskID,
+			NodeEndPoint: log.NodeEndPoint,
+		}
+		service.execService.SetExecutorRunInfo(runInfo)
+	}
+	return nil
 }

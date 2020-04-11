@@ -130,3 +130,41 @@ func (repo *ExecutorRepo) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
 	}
 	return dest, err
 }
+
+// QueryRunInfo
+func (repo *ExecutorRepo) QueryRunInfo(taskId string) (*model.ExecutorRunInfo, error) {
+	result := &model.ExecutorRunInfo{}
+	err := repo.FindOne(result, "SELECT * FROM ExecutorRunInfo WHERE TaskID=?;", taskId)
+	return result, err
+}
+
+// InsertRunInfo
+func (repo *ExecutorRepo) InsertRunInfo(model *model.ExecutorRunInfo) error {
+	sql := "INSERT INTO ExecutorRunInfo (TaskID, NodeID, NodeEndPoint, LastUpdateTime, CreateTime)VALUES(?,?,?,?,?);"
+	n, err := repo.Insert(sql,
+		model.TaskID, model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.CreateTime)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+
+	return nil
+}
+
+// UpdateRunInfo
+func (repo *ExecutorRepo) UpdateRunInfo(model *model.ExecutorRunInfo) error {
+	sql := "UPDATE ExecutorRunInfo SET NodeID = ?, NodeEndPoint = ?, LastUpdateTime= ?, CreateTime = ? WHERE TaskID = ?;;"
+	n, err := repo.Update(sql,
+		model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.CreateTime, model.TaskID)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+	return nil
+}

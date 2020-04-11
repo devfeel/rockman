@@ -6,16 +6,20 @@ import (
 	"github.com/devfeel/rockman/protected/repository"
 	runtime "github.com/devfeel/rockman/runtime/executor"
 	"strings"
+	"sync"
+	"time"
 )
 
 type ExecutorService struct {
 	BaseService
-	repo *repository.ExecutorRepo
+	repo         *repository.ExecutorRepo
+	updateLocker *sync.Mutex
 }
 
 func NewExecutorService() *ExecutorService {
 	service := &ExecutorService{
-		repo: repository.NewExecutorRepo(),
+		repo:         repository.NewExecutorRepo(),
+		updateLocker: new(sync.Mutex),
 	}
 	return service
 }
@@ -62,6 +66,26 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 		//TODO remove executor to leader node
 		//TODO submit executor to leader node
 		return core.SuccessResult()
+	}
+}
+
+// SetExecutorRunInfo
+// if exists, update it
+// if not exists, insert it
+func (service *ExecutorService) SetExecutorRunInfo(model *model.ExecutorRunInfo) error {
+	service.updateLocker.Lock()
+	defer service.updateLocker.Unlock()
+	dbInfo, err := service.repo.QueryRunInfo(model.TaskID)
+	if err != nil {
+		return err
+	}
+	if dbInfo == nil {
+		model.LastUpdateTime = time.Now()
+		model.CreateTime = time.Now()
+		return service.repo.InsertRunInfo(model)
+	} else {
+		model.LastUpdateTime = time.Now()
+		return service.repo.UpdateRunInfo(model)
 	}
 }
 
