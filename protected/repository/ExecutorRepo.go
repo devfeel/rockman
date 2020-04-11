@@ -7,12 +7,7 @@ import (
 	"github.com/devfeel/database"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
-	"github.com/devfeel/rockman/protected/repository"
 	"github.com/devfeel/rockman/protected/viewmodel"
-=======
-	"sync"
->>>>>>> master:protected/repository/ExecutorRepo.go
 )
 
 var executorRepo *ExecutorRepo
@@ -52,15 +47,9 @@ func NewExecutorRepo() *ExecutorRepo {
 }
 
 // InsertOnce
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
-func (repository *ExecutorRepository) InsertOnce(model *model.ExecutorInfo) error {
-	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,`Interval`,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
-	n, err := repository.Insert(sql,
-=======
 func (repo *ExecutorRepo) InsertOnce(model *model.ExecutorInfo) error {
-	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,Interval,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
+	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,`Interval`,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
 	n, err := repo.Insert(sql,
->>>>>>> master:protected/repository/ExecutorRepo.go
 		model.TaskID, model.TaskType, 0, model.DueTime, model.Interval,
 		model.Express, "", model.TargetType, model.TargetConfig,
 		model.DistributeType, model.Remark)
@@ -76,15 +65,9 @@ func (repo *ExecutorRepo) InsertOnce(model *model.ExecutorInfo) error {
 }
 
 // UpdateOnce
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
-func (repository *ExecutorRepository) UpdateOnce(model *model.ExecutorInfo) error {
-	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, `Interval`= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
-	n, err := repository.Update(sql,
-=======
 func (repo *ExecutorRepo) UpdateOnce(model *model.ExecutorInfo) error {
-	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, Interval= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
+	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, `Interval`= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
 	n, err := repo.Update(sql,
->>>>>>> master:protected/repository/ExecutorRepo.go
 		model.TaskID,
 		model.TaskType, model.DueTime, model.Interval, model.Express,
 		model.TargetType, model.TargetConfig, model.Remark, model.ID)
@@ -126,17 +109,13 @@ func (repo *ExecutorRepo) GetExecutorByTaskId(taskId string) (*model.ExecutorInf
 }
 
 // IsExistExecutorByTaskId
-func (repository *ExecutorRepository) IsExistExecutorByTaskId(taskId string) (bool, error) {
-	count, err := repository.Count("SELECT count(1) FROM Task WHERE TaskID=?;", taskId)
+func (repo *ExecutorRepo) IsExistExecutorByTaskId(taskId string) (bool, error) {
+	count, err := repo.Count("SELECT count(1) FROM Task WHERE TaskID=?;", taskId)
 	return count > 0, err
 }
 
 // QueryExecutors
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
-func (repository *ExecutorRepository) QueryExecutors(qc *viewmodel.ExecutorQC) (*model.PageResult, error) {
-=======
-func (repo *ExecutorRepo) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
->>>>>>> master:protected/repository/ExecutorRepo.go
+func (repo *ExecutorRepo) QueryExecutors(qc *viewmodel.ExecutorQC) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM Task"
 	countSql := "SELECT count(1) FROM Task"
 	if qc.NodeID != "" {
@@ -149,13 +128,8 @@ func (repo *ExecutorRepo) QueryExecutors(nodeId string, pageReq *model.PageReque
 	params := qc.GetParams()
 	var dest []*model.ExecutorInfo
 	var err error
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
 	if len(params) != 0 {
-		err = repository.FindList(&dest, dataSql, params...)
-=======
-	if nodeId != "" {
-		err = repo.FindList(&dest, dataSql, nodeId)
->>>>>>> master:protected/repository/ExecutorRepo.go
+		err = repo.FindList(&dest, dataSql, params...)
 	} else {
 		err = repo.FindList(&dest, dataSql)
 	}
@@ -164,13 +138,8 @@ func (repo *ExecutorRepo) QueryExecutors(nodeId string, pageReq *model.PageReque
 	}
 
 	var count int64
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
 	if len(params) != 0 {
-		count, err = repository.Count(countSql, params...)
-=======
-	if nodeId != "" {
-		count, err = repo.Count(countSql, nodeId)
->>>>>>> master:protected/repository/ExecutorRepo.go
+		count, err = repo.Count(countSql, params...)
 	} else {
 		count, err = repo.Count(countSql)
 	}
@@ -201,11 +170,7 @@ func (repo *ExecutorRepo) WriteExecLog(log *model.TaskExecLog) (int64, error) {
 }
 
 // QueryExecLogs
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
-func (repository *ExecutorRepository) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*model.PageResult, error) {
-=======
-func (repo *ExecutorRepo) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
->>>>>>> master:protected/repository/ExecutorRepo.go
+func (repo *ExecutorRepo) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM TaskExecLog"
 	countSql := "SELECT count(1) FROM TaskExecLog"
 	if qc.TaskID != "" {
@@ -219,9 +184,9 @@ func (repo *ExecutorRepo) QueryExecLogs(taskId string, pageReq *model.PageReques
 	var dest []*model.TaskExecLog
 	var err error
 	if len(params) != 0 {
-		err = repository.FindList(&dest, dataSql, params...)
+		err = repo.FindList(&dest, dataSql, params...)
 	} else {
-		err = repository.FindList(&dest, dataSql)
+		err = repo.FindList(&dest, dataSql)
 	}
 	if err != nil {
 		return nil, err
@@ -229,9 +194,9 @@ func (repo *ExecutorRepo) QueryExecLogs(taskId string, pageReq *model.PageReques
 
 	var count int64
 	if len(params) != 0 {
-		count, err = repository.Count(countSql, params...)
+		count, err = repo.Count(countSql, params...)
 	} else {
-		count, err = repository.Count(countSql)
+		count, err = repo.Count(countSql)
 	}
 	if err != nil {
 		return nil, err
@@ -243,7 +208,7 @@ func (repo *ExecutorRepo) QueryExecLogs(taskId string, pageReq *model.PageReques
 }
 
 // QueryStateLogs
-func (repository *ExecutorRepository) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.PageResult, error) {
+func (repo *ExecutorRepo) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM TaskStateLog"
 	countSql := "SELECT count(1) FROM TaskStateLog"
 	if qc.TaskID != "" {
@@ -256,13 +221,8 @@ func (repository *ExecutorRepository) QueryStateLogs(qc *viewmodel.TaskStateLogQ
 	params := qc.GetParams()
 	var dest []*model.TaskExecLog
 	var err error
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
 	if len(params) != 0 {
-		err = repository.FindList(&dest, dataSql, params...)
-=======
-	if taskId != "" {
-		err = repo.FindList(&dest, dataSql, taskId)
->>>>>>> master:protected/repository/ExecutorRepo.go
+		err = repo.FindList(&dest, dataSql, params...)
 	} else {
 		err = repo.FindList(&dest, dataSql)
 	}
@@ -271,13 +231,8 @@ func (repository *ExecutorRepository) QueryStateLogs(qc *viewmodel.TaskStateLogQ
 	}
 
 	var count int64
-<<<<<<< HEAD:protected/repository/executor/ExecutorRepository.go
 	if len(params) != 0 {
-		count, err = repository.Count(countSql, params...)
-=======
-	if taskId != "" {
-		count, err = repo.Count(countSql, taskId)
->>>>>>> master:protected/repository/ExecutorRepo.go
+		count, err = repo.Count(countSql, params...)
 	} else {
 		count, err = repo.Count(countSql)
 	}

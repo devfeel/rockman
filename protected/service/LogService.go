@@ -1,9 +1,11 @@
 package service
 
 import (
+	"time"
+
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository"
-	"time"
+	"github.com/devfeel/rockman/protected/viewmodel"
 )
 
 type LogService struct {
@@ -26,8 +28,8 @@ func (service *LogService) WriteExecLog(log *model.TaskExecLog) error {
 }
 
 // QueryExecLogs
-func (service *LogService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepo.QueryExecLogs(taskId, pageReq)
+func (service *LogService) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*model.PageResult, error) {
+	result, err := service.executorRepo.QueryExecLogs(qc)
 	return result, err
 }
 

@@ -1,13 +1,11 @@
 package model
 
-<<<<<<< HEAD
-import "time"
-=======
 import (
+	"time"
+
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/runtime/executor"
 )
->>>>>>> master
 
 type ExecutorInfo struct {
 	ID                int64

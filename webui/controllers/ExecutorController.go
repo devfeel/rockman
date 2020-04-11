@@ -6,11 +6,7 @@ import (
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
-<<<<<<< HEAD
 	"github.com/devfeel/rockman/protected/viewmodel"
-	"github.com/devfeel/rockman/runtime/executor"
-=======
->>>>>>> master
 	_const "github.com/devfeel/rockman/webui/const"
 )
 
@@ -31,30 +27,10 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-1002, "parameter bind failed: "+err.Error()))
 	}
-<<<<<<< HEAD
-	taskService := service.NewExecutorService()
-	if model.ID > 0 {
-		result = taskService.UpdateExecutor(model)
-		if !result.IsSuccess() {
-			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
-		} else {
-			if !model.IsRun {
-				//TODO stop executor stop
-
-			}
-		}
-	} else {
-		result = taskService.AddExecutor(model)
-		if !result.IsSuccess() {
-			return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
-		}
-
-=======
 
 	result := c.executorService.AddExecutor(model)
 	if !result.IsSuccess() {
 		return ctx.WriteJson(FailedResponse(result.RetCode, "AddExecutor failed: "+result.Message()))
->>>>>>> master
 	}
 	if model.IsRun {
 		// submit executor to leader node
@@ -223,13 +199,8 @@ func (c *ExecutorController) QueryStateLogs(ctx dotweb.Context) error {
 		qc.PageSize = _const.DefaultPageSize
 	}
 
-<<<<<<< HEAD
 	taskService := service.NewExecutorService()
 	result, err := taskService.QueryStateLogs(qc)
-=======
-	logService := service.NewLogService()
-	result, err := logService.QueryExecLogs(taskId, pageReq)
->>>>>>> master
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
