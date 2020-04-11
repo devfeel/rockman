@@ -42,14 +42,13 @@ func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error
 }
 
 // RegisterExecutor register executor to runtime in worker node
-func (h *RpcHandler) RegisterExecutor(config *core.ExecutorInfo, reply *packet.RpcReply) error {
+func (h *RpcHandler) RegisterExecutor(config *core.TaskConfig, reply *packet.RpcReply) error {
 	logTitle := "RpcServer.RegisterExecutor: "
 	if !h.getNode().Config().Node.IsWorker {
 		logger.Rpc().Warn("unworker node can not register executor")
 		*reply = packet.FailedReply(-1001, "unworker node can not register executor")
 		return nil
 	}
-
 	exec, err := h.getNode().Runtime.CreateExecutor(config)
 	if err != nil {
 		logger.Rpc().Warn(logTitle + "CreateExecutor error:" + err.Error())

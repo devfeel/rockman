@@ -396,11 +396,12 @@ RegisterNode:
 				continue RegisterNode
 			} else {
 				retryCount = 0
+				logger.Node().DebugS(logTitle + "success.")
+				n.initExecutorsFromDB()
 			}
 			break
 		}
 	}
-	logger.Node().DebugS(logTitle + "success.")
 	return nil
 }
 
@@ -427,10 +428,6 @@ func (n *Node) becomeLeaderRole() {
 	logger.Node().Debug(logTitle + "become to leader role")
 	n.isLeader = true
 
-	// init executors from db
-	// must check init flag on registry
-	n.initExecutorsFromDB()
-
 	//TODO sync all executors
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
 
@@ -449,7 +446,6 @@ func (n *Node) removeLeaderRole() {
 func (n *Node) initExecutorsFromDB() {
 	logTitle := "Node initExecutorsFromDB "
 	if !n.IsLeader() {
-		logger.Node().Debug(logTitle + "can not run in not leader node.")
 		return
 	}
 	var successCount, failureCount int
@@ -471,8 +467,8 @@ func (n *Node) initExecutorsFromDB() {
 		for _, exec := range execInfos {
 			submit := new(core.ExecutorInfo)
 			submit.TaskConfig = exec.TaskConfig()
-			if submit.TaskConfig.TargetConfig == nil {
-				logger.Node().Debug(logTitle + "init submit error: target config is nil")
+			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
+				logger.Node().Debug(logTitle + "init submit error: TaskConfig is nil or target config is nil")
 				failureCount += 1
 				continue
 			}
