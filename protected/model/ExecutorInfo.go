@@ -27,7 +27,7 @@ type (
 		IsSubmitToCluster bool
 		Remark            string
 	}
-	ExecutorRunNode struct {
+	ExecutorRunInfo struct {
 		LogID          int64
 		TaskID         string
 		NodeID         string
