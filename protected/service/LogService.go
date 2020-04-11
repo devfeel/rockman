@@ -8,12 +8,12 @@ import (
 
 type LogService struct {
 	BaseService
-	executorRepo *repository.ExecutorRepo
+	repo *repository.LogRepo
 }
 
 func NewLogService() *LogService {
 	service := &LogService{
-		executorRepo: repository.GetExecutorRepo(),
+		repo: repository.NewLogRepo(),
 	}
 	return service
 }
@@ -21,19 +21,26 @@ func NewLogService() *LogService {
 // WriteExecLog
 func (service *LogService) WriteExecLog(log *model.TaskExecLog) error {
 	log.CreateTime = time.Now()
-	_, err := service.executorRepo.WriteExecLog(log)
+	_, err := service.repo.WriteExecLog(log)
 	return err
 }
 
 // QueryExecLogs
 func (service *LogService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepo.QueryExecLogs(taskId, pageReq)
+	result, err := service.repo.QueryExecLogs(taskId, pageReq)
 	return result, err
 }
 
 // WriteNodeTraceLog
 func (service *LogService) WriteNodeTraceLog(log *model.NodeTraceLog) error {
 	log.CreateTime = time.Now()
-	_, err := service.executorRepo.WriteNodeTraceLog(log)
+	_, err := service.repo.WriteNodeTraceLog(log)
+	return err
+}
+
+// WriteSubmitLog
+func (service *LogService) WriteSubmitLog(log *model.TaskSubmitLog) error {
+	log.CreateTime = time.Now()
+	_, err := service.repo.WriteSubmitLog(log)
 	return err
 }

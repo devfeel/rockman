@@ -10,12 +10,12 @@ import (
 
 type ExecutorService struct {
 	BaseService
-	executorRepo *repository.ExecutorRepo
+	repo *repository.ExecutorRepo
 }
 
 func NewExecutorService() *ExecutorService {
 	service := &ExecutorService{
-		executorRepo: repository.GetExecutorRepo(),
+		repo: repository.NewExecutorRepo(),
 	}
 	return service
 }
@@ -34,7 +34,7 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
 
-	err = service.executorRepo.InsertOnce(model)
+	err = service.repo.InsertOnce(model)
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())
 	} else {
@@ -55,7 +55,7 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 	if data == nil {
 		return core.FailedResult(-2101, "not exists this TaskID["+model.TaskID+"]")
 	}
-	err = service.executorRepo.UpdateOnce(model)
+	err = service.repo.UpdateOnce(model)
 	if err != nil {
 		return core.FailedResult(-3001, "UpdateOnce error: "+err.Error())
 	} else {
@@ -70,28 +70,28 @@ func (service *ExecutorService) RemoveExecutor(id int64) error {
 	// TODO check data
 	// TODO remove executor to leader node
 	// TODO remove log?
-	return service.executorRepo.DeleteOnce(id)
+	return service.repo.DeleteOnce(id)
 }
 
 // QueryExecutorById
 func (service *ExecutorService) QueryExecutorById(id int64) (*model.ExecutorInfo, error) {
-	return service.executorRepo.GetExecutorById(id)
+	return service.repo.GetExecutorById(id)
 }
 
 // QueryExecutorByTaskId
 func (service *ExecutorService) QueryExecutorByTaskId(taskId string) (*model.ExecutorInfo, error) {
-	return service.executorRepo.GetExecutorByTaskId(taskId)
+	return service.repo.GetExecutorByTaskId(taskId)
 }
 
 // QueryExecutors
 func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.executorRepo.QueryExecutors(nodeId, pageReq)
+	result, err := service.repo.QueryExecutors(nodeId, pageReq)
 	return result, err
 }
 
 // QueryAllExecutors
 func (service *ExecutorService) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
-	result, err := service.executorRepo.QueryAllExecutors()
+	result, err := service.repo.QueryAllExecutors()
 	return result, err
 }
 
