@@ -75,6 +75,10 @@ func GetConfigPath(file string) string {
 	return ConfigPath + file
 }
 
+func GetProfile() *Profile {
+	return CurrentProfile
+}
+
 // DefaultProfile return default profile used to full node role
 func DefaultProfile() *Profile {
 	p := new(Profile)

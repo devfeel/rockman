@@ -90,6 +90,16 @@ func (c *ConsulClient) Get(key string, opt *consulapi.QueryOptions) (*consulapi.
 	return kvPair, meta, nil
 }
 
+func (c *ConsulClient) Set(key string, value string, opt *consulapi.QueryOptions) (*consulapi.WriteMeta, error) {
+	client := c.GetClient()
+	kv := &consulapi.KVPair{
+		Key:   key,
+		Value: []byte(value),
+	}
+	meta, err := client.KV().Put(kv, nil)
+	return meta, err
+}
+
 func (c *ConsulClient) CreateLockerOpts(opts *consulapi.LockOptions) (*Locker, error) {
 	locker, err := c.GetClient().LockOpts(opts)
 	if err != nil {

@@ -2,8 +2,6 @@ package core
 
 import "github.com/devfeel/rockman/util/json"
 
-const ClusterKeyPrefix = "devfeel/rockman/"
-
 type NodeInfo struct {
 	NodeID    string
 	Cluster   string

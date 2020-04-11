@@ -26,7 +26,7 @@ const (
 	cmdCluster   = "cluster"
 	cmdEnableTls = "enabletls"
 
-	version = "2020.406"
+	version = "2020.408"
 )
 
 func main() {
@@ -55,7 +55,7 @@ func main() {
 	//start worker node
 	CurNode, err = node.NewNode(profile, shutdownChan)
 	if err != nil {
-		fmt.Println(err)
+		logger.Default().Error(err, "New Node error")
 		return
 	}
 

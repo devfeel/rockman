@@ -10,7 +10,7 @@ type NodeController struct {
 }
 
 func (c *NodeController) ShowNodes(ctx dotweb.Context) error {
-	item, isExists := ctx.AppItems().Get(_const.ItemKey_Node)
+	item, isExists := ctx.AppItems().Get(_const.ItemKeyNode)
 	if !isExists {
 		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
 	}

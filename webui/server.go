@@ -29,7 +29,8 @@ func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s.webApp.UseRequestLog()
 	s.webApp.HttpServer.SetEnabledAutoOPTIONS(true)
 	s.webApp.Use(cors.Middleware(cors.NewConfig().UseDefault()))
-	s.webApp.Items.Set(_const.ItemKey_Node, node)
+	s.webApp.Items.Set(_const.ItemKeyNode, node)
+
 	s.initRoute()
 	logger.Default().Debug("WebUI init success.")
 	return s
@@ -61,6 +62,7 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/cluster")
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
+	g.GET("/info", clusterController.ShowClusterInfo)
 
 	g = s.webApp.HttpServer.Group("/user")
 	g.GET("/login", userController.Login)

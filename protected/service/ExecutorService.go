@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/devfeel/rockman/core"
-	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
+<<<<<<< HEAD
 	"github.com/devfeel/rockman/protected/repository/executor"
 	"github.com/devfeel/rockman/protected/viewmodel"
 	runtime "github.com/devfeel/rockman/runtime/executor"
@@ -14,20 +14,21 @@ import (
 
 var (
 	defaultLogger logger.Logger
+=======
+	"github.com/devfeel/rockman/protected/repository"
+	runtime "github.com/devfeel/rockman/runtime/executor"
+	"strings"
+>>>>>>> master
 )
 
 type ExecutorService struct {
 	BaseService
-	executorRepository *executor.ExecutorRepository
-}
-
-func init() {
-	defaultLogger = logger.GetLogger(logger.LoggerName_Service)
+	executorRepo *repository.ExecutorRepo
 }
 
 func NewExecutorService() *ExecutorService {
 	service := &ExecutorService{
-		executorRepository: executor.GetRepository(),
+		executorRepo: repository.GetExecutorRepo(),
 	}
 	return service
 }
@@ -45,7 +46,12 @@ func (service *ExecutorService) AddExecutor(model *model.ExecutorInfo) *core.Res
 	if isExist {
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
+<<<<<<< HEAD
 	err = service.executorRepository.InsertOnce(model)
+=======
+
+	err = service.executorRepo.InsertOnce(model)
+>>>>>>> master
 	if err != nil {
 		return core.FailedResult(-3002, "InsertOnce error: "+err.Error())
 	} else {
@@ -66,7 +72,7 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 	if task.ID != model.ID {
 		return core.FailedResult(-2101, "already exists this TaskID["+model.TaskID+"]")
 	}
-	err = service.executorRepository.UpdateOnce(model)
+	err = service.executorRepo.UpdateOnce(model)
 	if err != nil {
 		return core.FailedResult(-3002, "UpdateOnce error: "+err.Error())
 	} else {
@@ -81,25 +87,30 @@ func (service *ExecutorService) RemoveExecutor(id int64) *core.Result {
 	// TODO check data
 	// TODO remove executor to leader node
 	// TODO remove log?
+<<<<<<< HEAD
 	err := service.executorRepository.DeleteOnce(id)
 	if err != nil {
 		return core.FailedResult(-3002, "DeleteOnce error: "+err.Error())
 	} else {
 		return core.SuccessResult()
 	}
+=======
+	return service.executorRepo.DeleteOnce(id)
+>>>>>>> master
 }
 
 // QueryExecutorById
 func (service *ExecutorService) QueryExecutorById(id int64) (*model.ExecutorInfo, error) {
-	return service.executorRepository.GetExecutorById(id)
+	return service.executorRepo.GetExecutorById(id)
 }
 
 // QueryExecutorByTaskId
 func (service *ExecutorService) QueryExecutorByTaskId(taskId string) (*model.ExecutorInfo, error) {
-	return service.executorRepository.GetExecutorByTaskId(taskId)
+	return service.executorRepo.GetExecutorByTaskId(taskId)
 }
 
 // QueryExecutors
+<<<<<<< HEAD
 func (service *ExecutorService) QueryExecutors(qc *viewmodel.ExecutorQC) (*model.PageResult, error) {
 	result, err := service.executorRepository.QueryExecutors(qc)
 	return result, err
@@ -121,6 +132,16 @@ func (service *ExecutorService) QueryExecLogs(qc *viewmodel.TaskExecLogQC) (*mod
 // QueryStateLogs
 func (service *ExecutorService) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.PageResult, error) {
 	result, err := service.executorRepository.QueryStateLogs(qc)
+=======
+func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.executorRepo.QueryExecutors(nodeId, pageReq)
+	return result, err
+}
+
+// QueryAllExecutors
+func (service *ExecutorService) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
+	result, err := service.executorRepo.QueryAllExecutors()
+>>>>>>> master
 	return result, err
 }
 

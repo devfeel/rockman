@@ -155,6 +155,20 @@ func (c *RpcClient) CallSubmitStopExecutor(taskId string) (error, *packet.RpcRep
 	return nil, &reply
 }
 
+func (c *RpcClient) CallQueryExecutors() (error, *packet.RpcReply) {
+	client, err := c.getConnClient()
+	if err != nil {
+		logger.Default().Error(err, "getConnClient error")
+		return err, nil
+	}
+	var reply packet.RpcReply
+	err = client.Call("Rpc.CallQueryExecutors", nil, &reply)
+	if err != nil {
+		return err, nil
+	}
+	return nil, &reply
+}
+
 func (c *RpcClient) CallRegisterExecutor(conf *core.TaskConfig) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
