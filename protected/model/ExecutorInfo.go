@@ -1,9 +1,12 @@
 package model
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/devfeel/rockman/core"
+	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/runtime/executor"
 )
 
@@ -28,6 +31,14 @@ type ExecutorInfo struct {
 
 func (e *ExecutorInfo) TaskConfig() *core.TaskConfig {
 	e.InitTargetConfig()
+
+	defer func() {
+		if err := recover(); err != nil {
+			errInfo := errors.New(fmt.Sprintln(err))
+			logger.Default().Error(errInfo, "ExecutorInfo.TaskConfig() throw unhandled error:"+errInfo.Error())
+		}
+	}()
+
 	conf := &core.TaskConfig{}
 	conf.TaskID = e.TaskID
 	conf.TaskType = e.TaskType
