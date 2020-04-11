@@ -458,6 +458,9 @@ func (n *Node) initExecutorsFromDB() {
 			logger.Node().Debug(logTitle + "NewExecutorService error:" + err.Error())
 			return
 		}
+		if execInfos == nil {
+			return
+		}
 		for _, exec := range execInfos {
 			submit := new(core.ExecutorInfo)
 			submit.TaskConfig = exec.TaskConfig()
@@ -483,6 +486,7 @@ func (n *Node) initExecutorsFromDB() {
 		}
 	}
 
+	logger.Node().Debug(logTitle + "init begin.")
 	flag, err := n.getInitFlag()
 	if err != nil {
 		logger.Node().Warn(logTitle + "get init flag error:" + err.Error())
@@ -490,7 +494,10 @@ func (n *Node) initExecutorsFromDB() {
 		if !flag {
 			doQuery()
 			err := n.setInitFlag()
-			logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
+			if err != nil {
+				logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
+			}
+			logger.Node().Debug(logTitle + "init finish.")
 		}
 	}
 }
