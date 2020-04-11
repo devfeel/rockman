@@ -68,21 +68,21 @@ func (e *ExecutorInfo) InitTargetConfig() {
 	if e.TargetType == executor.TargetType_Http {
 		conf := new(executor.HttpConfig)
 		err := conf.LoadFromJson(e.TargetConfig)
-		if err != nil {
+		if err == nil {
 			e.RealTargetConfig = conf
 		}
 	}
 	if e.TargetType == executor.TargetType_GoSo {
 		conf := new(executor.GoConfig)
 		err := conf.LoadFromJson(e.TargetConfig)
-		if err != nil {
+		if err == nil {
 			e.RealTargetConfig = conf
 		}
 	}
 	if e.TargetType == executor.TargetType_Shell {
 		conf := new(executor.ShellConfig)
 		err := conf.LoadFromJson(e.TargetConfig)
-		if err != nil {
+		if err == nil {
 			e.RealTargetConfig = conf
 		}
 	}

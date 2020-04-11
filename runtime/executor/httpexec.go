@@ -52,13 +52,14 @@ func NewDebugHttpExecutor(taskID string) Executor {
 }
 
 func NewHttpExecutor(conf *core.TaskConfig) (*HttpExecutor, error) {
+	lt := "NewHttpExecutor[" + conf.TaskID + "] "
 	exec := new(HttpExecutor)
 	exec.TaskConfig = conf
 	exec.TaskConfig.Handler = exec.Exec
 	exec.httpConfig = new(HttpConfig)
 	err := mapper.MapperMap(exec.TaskConfig.TargetConfig.(map[string]interface{}), exec.httpConfig)
 	if err != nil {
-		logger.Runtime().Error(err, "convert config error")
+		logger.Runtime().Error(err, lt+"convert config error")
 		return nil, err
 	}
 	if exec.httpConfig.Method == "" {

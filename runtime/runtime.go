@@ -75,15 +75,15 @@ func (r *Runtime) Stop() error {
 
 // CreateExecutor create new executor and register to task service
 // now support http\shell\go.so
-func (r *Runtime) CreateExecutor(execInfo *core.ExecutorInfo) (executor.Executor, error) {
+func (r *Runtime) CreateExecutor(taskInfo *core.TaskConfig) (executor.Executor, error) {
 	var exec executor.Executor
 	var err error
-	if execInfo.TaskConfig.TargetType == executor.TargetType_Http {
-		exec, err = executor.NewHttpExecutor(execInfo.TaskConfig)
-	} else if execInfo.TaskConfig.TargetType == executor.TargetType_Shell {
-		exec, err = executor.NewShellExecutor(execInfo.TaskConfig)
-	} else if execInfo.TaskConfig.TargetType == executor.TargetType_GoSo {
-		exec, err = executor.NewGoExecutor(execInfo.TaskConfig)
+	if taskInfo.TargetType == executor.TargetType_Http {
+		exec, err = executor.NewHttpExecutor(taskInfo)
+	} else if taskInfo.TargetType == executor.TargetType_Shell {
+		exec, err = executor.NewShellExecutor(taskInfo)
+	} else if taskInfo.TargetType == executor.TargetType_GoSo {
+		exec, err = executor.NewGoExecutor(taskInfo)
 	}
 	if err != nil {
 		return nil, err

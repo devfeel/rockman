@@ -2,6 +2,7 @@ package node
 
 import (
 	"errors"
+	"fmt"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
@@ -395,11 +396,12 @@ RegisterNode:
 				continue RegisterNode
 			} else {
 				retryCount = 0
+				logger.Node().DebugS(logTitle + "success.")
+				n.initExecutorsFromDB()
 			}
 			break
 		}
 	}
-	logger.Node().DebugS(logTitle + "success.")
 	return nil
 }
 
@@ -426,10 +428,6 @@ func (n *Node) becomeLeaderRole() {
 	logger.Node().Debug(logTitle + "become to leader role")
 	n.isLeader = true
 
-	// init executors from db
-	// must check init flag on registry
-	n.initExecutorsFromDB()
-
 	//TODO sync all executors
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
 
@@ -448,11 +446,16 @@ func (n *Node) removeLeaderRole() {
 func (n *Node) initExecutorsFromDB() {
 	logTitle := "Node initExecutorsFromDB "
 	if !n.IsLeader() {
-		logger.Node().Debug(logTitle + "can not run in not leader node.")
 		return
 	}
-
+	var successCount, failureCount int
 	doQuery := func() {
+		defer func() {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
+			}
+		}()
 		execInfos, err := service.NewExecutorService().QueryAllExecutors()
 		if err != nil {
 			logger.Node().Debug(logTitle + "NewExecutorService error:" + err.Error())
@@ -464,23 +467,27 @@ func (n *Node) initExecutorsFromDB() {
 		for _, exec := range execInfos {
 			submit := new(core.ExecutorInfo)
 			submit.TaskConfig = exec.TaskConfig()
-			if submit.TaskConfig.TargetConfig == nil {
-				logger.Node().Debug(logTitle + "init submit error: target config is nil")
+			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
+				logger.Node().Debug(logTitle + "init submit error: TaskConfig is nil or target config is nil")
+				failureCount += 1
 				continue
 			}
 			submit.DistributeType = exec.DistributeType
 			result := n.SubmitExecutor(submit)
 			if result.Error != nil {
-				logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
+				logger.Node().DebugS(logTitle+"SubmitExecutor error:", result.Error.Error())
+				failureCount += 1
 				//TODO log to db
 				continue
 			}
 
 			if !result.IsSuccess() {
-				logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
+				logger.Node().DebugS(logTitle + "SubmitExecutor failed, " + result.Message())
+				failureCount += 1
 				//TODO log to db
 			} else {
-				logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
+				logger.Node().DebugS(logTitle + "SubmitExecutor success")
+				successCount += 1
 				//TODO log to db
 			}
 		}
@@ -497,7 +504,7 @@ func (n *Node) initExecutorsFromDB() {
 			if err != nil {
 				logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
 			}
-			logger.Node().Debug(logTitle + "init finish.")
+			logger.Node().Debug(logTitle + "init finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
 		}
 	}
 }
