@@ -22,29 +22,29 @@ const (
 
 type (
 	Cluster struct {
-		ClusterId             string
-		Registry              *registry.Registry
-		LeaderKey             string
-		LeaderServer          string
-		leaderLastIndex       uint64
-		lastGetLeaderTime     time.Time
-		Nodes                 map[string]*core.NodeInfo
-		nodesLastIndex        uint64
-		nodesLocker           *sync.RWMutex
-		lastLoadNodesTime     time.Time
-		Executors             map[string]*core.ExecutorInfo
-		executorsLastIndex    uint64
-		executorsLocker       *sync.RWMutex
-		lastLoadExecutorsTime time.Time
-		rpcClients            map[string]*client.RpcClient
-		rpcClientLocker       *sync.RWMutex
-		Scheduler             *scheduler.Scheduler
-		config                *config.Profile
-		isSTW                 bool //stop the world flag
-		OnNodesChange         WatchChangeHandle
-		OnNodeOffline         NodeOfflineHandle
-		OnLeaderChange        WatchChangeHandle
-		OnLeaderChangeFailed  WatchFailedHandle
+		ClusterId              string
+		Registry               *registry.Registry
+		LeaderKey              string
+		LeaderServer           string
+		leaderLastIndex        uint64
+		lastGetLeaderTime      time.Time
+		Nodes                  map[string]*core.NodeInfo
+		nodesLastIndex         uint64
+		nodesLocker            *sync.RWMutex
+		lastLoadNodesTime      time.Time
+		ExecutorInfos          map[string]*core.ExecutorInfo
+		executorInfosLastIndex uint64
+		executorInfosLocker    *sync.RWMutex
+		lastLoadExecutorsTime  time.Time
+		rpcClients             map[string]*client.RpcClient
+		rpcClientLocker        *sync.RWMutex
+		Scheduler              *scheduler.Scheduler
+		config                 *config.Profile
+		isSTW                  bool //stop the world flag
+		OnNodesChange          WatchChangeHandle
+		OnNodeOffline          NodeOfflineHandle
+		OnLeaderChange         WatchChangeHandle
+		OnLeaderChangeFailed   WatchFailedHandle
 	}
 
 	WatchChangeHandle func()
@@ -60,8 +60,8 @@ func NewCluster(profile *config.Profile, registry *registry.Registry) *Cluster {
 	cluster.LeaderKey = getLeaderKey(profile.Cluster.ClusterId)
 	cluster.Nodes = make(map[string]*core.NodeInfo)
 	cluster.nodesLocker = new(sync.RWMutex)
-	cluster.Executors = make(map[string]*core.ExecutorInfo)
-	cluster.executorsLocker = new(sync.RWMutex)
+	cluster.ExecutorInfos = make(map[string]*core.ExecutorInfo)
+	cluster.executorInfosLocker = new(sync.RWMutex)
 	cluster.rpcClients = make(map[string]*client.RpcClient)
 	cluster.rpcClientLocker = new(sync.RWMutex)
 
@@ -165,9 +165,9 @@ func (c *Cluster) AddExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	if execInfo.Worker.Cluster != c.ClusterId {
 		return core.FailedResult(-1001, "not match cluster")
 	}
-	c.executorsLocker.Lock()
-	defer c.executorsLocker.Unlock()
-	c.Executors[execInfo.TaskConfig.TaskID] = execInfo
+	c.executorInfosLocker.Lock()
+	defer c.executorInfosLocker.Unlock()
+	c.ExecutorInfos[execInfo.TaskConfig.TaskID] = execInfo
 	return core.SuccessResult()
 }
 
@@ -181,9 +181,9 @@ func (c *Cluster) FindNode(endPoint string) (*core.NodeInfo, bool) {
 
 // FindExecutor find executor info by task id
 func (c *Cluster) FindExecutor(taskId string) (*core.ExecutorInfo, bool) {
-	c.executorsLocker.RLock()
-	defer c.executorsLocker.RUnlock()
-	exec, exists := c.Executors[taskId]
+	c.executorInfosLocker.RLock()
+	defer c.executorInfosLocker.RUnlock()
+	exec, exists := c.ExecutorInfos[taskId]
 	return exec, exists
 }
 

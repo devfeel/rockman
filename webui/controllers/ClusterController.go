@@ -29,7 +29,7 @@ func (c *ClusterController) ShowExecutors(ctx dotweb.Context) error {
 	if !isOk {
 		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
-	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.Executors)))
+	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.ExecutorInfos)))
 }
 
 func (c *ClusterController) ShowResources(ctx dotweb.Context) error {

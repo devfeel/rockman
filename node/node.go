@@ -2,12 +2,10 @@ package node
 
 import (
 	"errors"
-	"fmt"
 	"github.com/devfeel/rockman/cluster"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
-	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
@@ -20,18 +18,19 @@ const defaultLockerTTL = "10s"
 
 type (
 	Node struct {
-		NodeId       string
-		NodeName     string
-		isLeader     bool
-		Status       int
-		config       *config.Profile
-		nodeInfo     *core.NodeInfo
-		Cluster      *cluster.Cluster
-		Registry     *registry.Registry
-		Runtime      *runtime.Runtime
-		shutdownChan chan string
-		isSTW        bool //stop the world flag
-		logLogic     *service.LogService
+		NodeId                string
+		NodeName              string
+		isLeader              bool
+		Status                int
+		config                *config.Profile
+		nodeInfo              *core.NodeInfo
+		Cluster               *cluster.Cluster
+		Registry              *registry.Registry
+		Runtime               *runtime.Runtime
+		shutdownChan          chan string
+		isSTW                 bool //stop the world flag
+		logLogic              *service.LogService
+		executorFlagLastIndex uint64
 	}
 )
 
@@ -130,168 +129,6 @@ func (n *Node) ClusterId() string {
 	return n.Cluster.ClusterId
 }
 
-func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
-	logTitle := "Node SubmitExecutor [" + execInfo.TaskConfig.TaskID + "] "
-	if !n.IsLeader() {
-		logger.Node().Debug(logTitle + "failed, current node is not leader.")
-		return core.FailedResult(-1001, "current node is not leader")
-	}
-
-	if execInfo.Worker != nil {
-		if execInfo.Worker.Cluster != n.Cluster.ClusterId {
-			logger.Node().Debug(logTitle + "failed, not match cluster [" + execInfo.Worker.Cluster + ", " + n.Cluster.ClusterId + "]")
-			return core.FailedResult(-1002, "not match cluster ["+execInfo.Worker.Cluster+", "+n.Cluster.ClusterId+"]")
-		}
-
-		endPoint := execInfo.Worker.EndPoint()
-		node, exists := n.Cluster.FindNode(endPoint)
-		if !exists {
-			logger.Node().Debug(logTitle + "failed, can not find node[" + endPoint + "] in cluster")
-			return core.FailedResult(-1003, "can not find node["+endPoint+"] in cluster")
-		}
-
-		if node.NodeID != execInfo.Worker.NodeID {
-			logger.Node().Debug(logTitle + "failed, not match node id [" + execInfo.Worker.NodeID + ", " + node.NodeID + "]")
-			return core.FailedResult(-1004, "not match node id ["+execInfo.Worker.NodeID+", "+node.NodeID+"]")
-		}
-	}
-
-	var err error
-	// get low balance worker
-	if execInfo.Worker == nil {
-		execInfo.Worker, err = n.Cluster.GetLowBalanceWorker()
-		if err != nil {
-			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
-			//TODO log submit result to db log
-			return core.ErrorResult(err)
-		}
-	}
-
-	//submit executor to the specified worker node
-	rpcClient := n.Cluster.GetRpcClient(execInfo.Worker.EndPoint())
-	err, reply := rpcClient.CallRegisterExecutor(execInfo.TaskConfig)
-	submitLog := &model.TaskSubmitLog{
-		TaskID:       execInfo.TaskConfig.TaskID,
-		NodeID:       execInfo.Worker.NodeID,
-		NodeEndPoint: execInfo.Worker.EndPoint(),
-		IsSuccess:    err != nil && reply.IsSuccess(),
-	}
-
-	if err != nil {
-		logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] error:", err.Error())
-		submitLog.FailureType = "error"
-		submitLog.FailureCause = err.Error()
-		n.logLogic.WriteSubmitLog(submitLog)
-		return core.ErrorResult(err)
-	} else {
-		if !reply.IsSuccess() {
-			submitLog.FailureType = "failure"
-			submitLog.FailureCause = reply.FailureMessage()
-			logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
-		} else {
-			n.Cluster.AddExecutor(execInfo)
-			submitLog.IsSuccess = true
-			logger.Node().Debug(logTitle + "to [" + execInfo.Worker.EndPoint() + "] success.")
-		}
-		n.logLogic.WriteSubmitLog(submitLog)
-		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
-	}
-}
-
-func (n *Node) SubmitStopExecutor(taskId string) *core.Result {
-	logTitle := "Node SubmitStopExecutor [" + taskId + "] "
-	if !n.IsLeader() {
-		logger.Node().Debug(logTitle + "failed, current node is not leader.")
-		return core.FailedResult(-1001, "current node is not leader")
-	}
-
-	runExecInfo, exists := n.Cluster.FindExecutor(taskId)
-	if !exists {
-		logger.Node().Debug(logTitle + "failed, can not find executor is running cluster.")
-		return core.FailedResult(-1001, "can not find executor is running cluster")
-	}
-
-	if !runExecInfo.TaskConfig.IsRun {
-		return core.SuccessResult()
-	}
-
-	//submit executor to the specified worker node
-	rpcClient := n.Cluster.GetRpcClient(runExecInfo.Worker.EndPoint())
-	err, reply := rpcClient.CallStopExecutor(taskId)
-	//TODO log submit result to db log
-	if err != nil {
-		logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] error:", err.Error())
-		return core.ErrorResult(err)
-	} else {
-		if !reply.IsSuccess() {
-			logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
-		} else {
-			runExecInfo.TaskConfig.IsRun = false
-			logger.Node().Debug(logTitle + "to [" + runExecInfo.Worker.EndPoint() + "] success.")
-		}
-		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
-	}
-}
-
-func (n *Node) SubmitStartExecutor(taskId string) *core.Result {
-	logTitle := "Node SubmitStartExecutor [" + taskId + "] "
-	if !n.IsLeader() {
-		logger.Node().Debug(logTitle + "failed, current node is not leader.")
-		return core.FailedResult(-1001, "current node is not leader")
-	}
-
-	runExecInfo, exists := n.Cluster.FindExecutor(taskId)
-	if !exists {
-		logger.Node().Debug(logTitle + "failed, can not find executor is running cluster.")
-		return core.FailedResult(-1001, "can not find executor is running cluster")
-	}
-
-	if runExecInfo.TaskConfig.IsRun {
-		return core.SuccessResult()
-	}
-
-	//submit executor to the specified worker node
-	rpcClient := n.Cluster.GetRpcClient(runExecInfo.Worker.EndPoint())
-	err, reply := rpcClient.CallStartExecutor(runExecInfo.TaskConfig.TaskID)
-	//TODO log submit result to db log
-	if err != nil {
-		logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] error:", err.Error())
-		return core.ErrorResult(err)
-	} else {
-		if !reply.IsSuccess() {
-			logger.Node().DebugS(logTitle+"to ["+runExecInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
-		} else {
-			runExecInfo.TaskConfig.IsRun = true
-			logger.Node().Debug(logTitle + "to [" + runExecInfo.Worker.EndPoint() + "] success.")
-		}
-		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
-	}
-}
-
-// RegisterExecutor
-func (n *Node) RegisterExecutor(taskInfo *core.TaskConfig) *core.Result {
-	logTitle := "Node RegisterExecutor [" + taskInfo.TaskID + "] "
-	if !n.IsWorker() {
-		logger.Node().Debug(logTitle + "failed, current node is not worker.")
-		return core.FailedResult(-1001, "current node is not worker")
-	}
-	_, err := n.Runtime.CreateExecutor(taskInfo)
-	if err != nil {
-		logger.Node().Warn(logTitle + "CreateExecutor error:" + err.Error())
-		return core.FailedResult(-2001, err.Error())
-	} else {
-		// reg to registry server
-		execInfo := new(core.ExecutorInfo)
-		execInfo.TaskConfig = taskInfo
-		execInfo.Worker = n.NodeInfo()
-		_, err := n.Registry.Set(execInfo.GetExecutorKey(n.ClusterId()), execInfo.Json(), nil)
-		if err != nil {
-			logger.Node().Warn(logTitle + "sync to registry error:" + err.Error())
-		}
-		return core.SuccessResult()
-	}
-}
-
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
 	//TODO add some check
@@ -352,48 +189,6 @@ func (n *Node) startTheWorld() {
 	} else {
 		logger.Node().Debug(lt + "success.")
 	}
-}
-
-// electionLeader
-func (n *Node) electionLeader() {
-	logTitle := "Node election leader "
-	logger.Node().Debug(logTitle + "begin.")
-
-	doQuery := func() error {
-		err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint())
-		if err != nil {
-			logger.Node().DebugS(logTitle + "error: " + err.Error() + ", will retry 10 seconds after")
-			logger.Node().Error(err, logTitle+"error")
-			time.Sleep(time.Second * 10)
-			return err
-		} else {
-			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
-			n.becomeLeaderRole()
-			return nil
-		}
-	}
-
-	go func() {
-		var retryCount int
-		limit := n.config.Global.RetryLimit
-		for {
-			if n.isSTW {
-				return
-			}
-			err := doQuery()
-			if err != nil {
-				retryCount += 1
-				if retryCount > limit {
-					err := errors.New("retry count bigger than " + strconv.Itoa(limit) + ", now will stop node.")
-					logger.Node().DebugS(logTitle + "error:" + err.Error())
-					n.Shutdown()
-					return
-				}
-			} else {
-				retryCount = 0
-			}
-		}
-	}()
 }
 
 // registerNode register node to cluster
@@ -463,91 +258,6 @@ func (n *Node) createSession(nodeKey string) error {
 	return nil
 }
 
-func (n *Node) becomeLeaderRole() {
-	logTitle := "Node.becomeLeaderRole "
-	logger.Node().Debug(logTitle + "become to leader role")
-	n.isLeader = true
-
-	//TODO sync all executors
-	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
-
-}
-
-func (n *Node) removeLeaderRole() {
-	logTitle := "Node "
-	//TODO do something when become to not leader
-	logger.Node().Debug(logTitle + "remove leader role")
-	n.Cluster.OnNodeOffline = nil
-	n.isLeader = false
-}
-
-// initExecutorsFromDB init executors from db
-// must check init flag on registry
-func (n *Node) initExecutorsFromDB() {
-	logTitle := "Node initExecutorsFromDB "
-	if !n.IsLeader() {
-		return
-	}
-	var successCount, failureCount int
-	doQuery := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
-			}
-		}()
-		execInfos, err := service.NewExecutorService().QueryAllExecutors()
-		if err != nil {
-			logger.Node().Debug(logTitle + "NewExecutorService error:" + err.Error())
-			return
-		}
-		if execInfos == nil {
-			return
-		}
-		for _, exec := range execInfos {
-			submit := new(core.ExecutorInfo)
-			submit.TaskConfig = exec.TaskConfig()
-			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
-				logger.Node().Debug(logTitle + "init submit error: TaskConfig is nil or target config is nil")
-				failureCount += 1
-				continue
-			}
-			result := n.SubmitExecutor(submit)
-			if result.Error != nil {
-				logger.Node().DebugS(logTitle+"SubmitExecutor error:", result.Error.Error())
-				failureCount += 1
-				//TODO log to db
-				continue
-			}
-
-			if !result.IsSuccess() {
-				logger.Node().DebugS(logTitle + "SubmitExecutor failed, " + result.Message())
-				failureCount += 1
-				//TODO log to db
-			} else {
-				logger.Node().DebugS(logTitle + "SubmitExecutor success")
-				successCount += 1
-				//TODO log to db
-			}
-		}
-	}
-
-	logger.Node().Debug(logTitle + "init begin.")
-	flag, err := n.getInitFlag()
-	if err != nil {
-		logger.Node().Warn(logTitle + "get init flag error:" + err.Error())
-	} else {
-		if !flag {
-			doQuery()
-			err := n.setInitFlag()
-			if err != nil {
-				logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
-			}
-			logger.Node().Debug(logTitle + "init finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
-		}
-	}
-}
-
 // onLeaderChange do something when leader is changed
 func (n *Node) onLeaderChange() {
 	err := n.registerNode()
@@ -583,7 +293,7 @@ func (n *Node) onWorkerNodeOffline(nodeInfo *core.NodeInfo) {
 		return
 	}
 	var needReSubmits []*core.ExecutorInfo
-	for _, v := range n.Cluster.Executors {
+	for _, v := range n.Cluster.ExecutorInfos {
 		if v.Worker.NodeID == nodeInfo.NodeID {
 			needReSubmits = append(needReSubmits, v)
 		}
@@ -617,24 +327,4 @@ func (n *Node) onRegistryOnline() {
 func (n *Node) onRegistryOffline() {
 	logger.Node().DebugS("Node.onRegistryOffline registry offline, now stop the world.")
 	n.stopTheWorld()
-}
-
-func (n *Node) getInitFlag() (bool, error) {
-	kv, _, err := n.Registry.Get(getInitFlagKey(n.ClusterId()), nil)
-	if err == nil {
-		return false, err
-	}
-	if kv == nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (n *Node) setInitFlag() error {
-	_, err := n.Registry.Set(getInitFlagKey(n.ClusterId()), "true", nil)
-	return err
-}
-
-func getInitFlagKey(clusterId string) string {
-	return core.ClusterKeyPrefix + clusterId + "/flags/init"
 }

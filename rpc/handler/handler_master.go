@@ -46,6 +46,33 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *packet.RpcReply)
 	return nil
 }
 
+// QueryExecutorInfos return executor info in cluster by taskId
+func (h *RpcHandler) QueryExecutorInfos(taskId string, reply *packet.RpcReply) error {
+	logTitle := "RpcServer.QueryExecutorInfos [" + taskId + "] "
+	if !h.getNode().IsLeader() {
+		logger.Rpc().Warn(logTitle + "can not query executor info from not leader node")
+		*reply = packet.FailedReply(-1001, "can not query executor info from not leader node")
+		return nil
+	}
+	if taskId != "" {
+		execInfo, exists := h.getNode().Cluster.FindExecutor(taskId)
+		if !exists {
+			logger.Rpc().Debug(logTitle + "not exists this taskId")
+			*reply = packet.FailedReply(-2001, "not exists this taskId")
+			return nil
+		}
+		configs := make(map[string]*core.ExecutorInfo)
+		configs[taskId] = execInfo
+		*reply = packet.SuccessRpcReply(configs)
+	} else {
+		*reply = packet.SuccessRpcReply(h.getNode().Cluster.ExecutorInfos)
+	}
+
+	logger.Rpc().Debug(logTitle + "success")
+	return nil
+
+}
+
 // SubmitExecutor submit executor to leader node, then register to worker node
 // it will check cluster id
 func (h *RpcHandler) SubmitExecutor(execInfo *core.ExecutorInfo, reply *packet.RpcReply) error {
@@ -101,7 +128,7 @@ func (h *RpcHandler) SubmitStopExecutor(taskId string, reply *packet.RpcReply) e
 
 // SubmitStartExecutor
 func (h *RpcHandler) SubmitStartExecutor(taskId string, reply *packet.RpcReply) error {
-	logTitle := "RpcServer.SubmitStartExecutor: "
+	lt := "RpcServer.SubmitStartExecutor: "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn("can not submit to not leader node")
 		*reply = packet.FailedReply(-1001, "can not submit to not leader node")
@@ -111,30 +138,16 @@ func (h *RpcHandler) SubmitStartExecutor(taskId string, reply *packet.RpcReply) 
 	//async send executor to worker node
 	result := h.getNode().SubmitStartExecutor(taskId)
 	if result.Error != nil {
-		logger.Rpc().DebugS(logTitle+"error:", result.Error.Error())
+		logger.Rpc().DebugS(lt+"error:", result.Error.Error())
 		*reply = packet.FailedReply(-2001, result.Message())
 	} else {
 		if !result.IsSuccess() {
-			logger.Rpc().DebugS(logTitle + "failed, " + result.Message())
+			logger.Rpc().DebugS(lt + "failed, " + result.Message())
 			*reply = packet.FailedReply(-2002, result.Message())
 		} else {
-			logger.Rpc().DebugS(logTitle+"success", taskId)
+			logger.Rpc().DebugS(lt+"success", taskId)
 			*reply = packet.SuccessRpcReply(len(h.getNode().Runtime.Executors))
 		}
 	}
-	return nil
-}
-
-// QueryExecutors query executors from leader
-func (h *RpcHandler) QueryExecutors(pageInfo *core.PageInfo, reply *packet.RpcReply) error {
-	logTitle := "RpcServer.QueryExecutors "
-	if !h.getNode().IsLeader() {
-		logger.Rpc().Warn(logTitle + "can not query executors from not leader node")
-		*reply = packet.FailedReply(-1001, "can not query executors from not leader node")
-		return nil
-	}
-
-	logger.Rpc().DebugS(logTitle + "success")
-	*reply = packet.SuccessRpcReply(h.getNode().Cluster.Executors)
 	return nil
 }
