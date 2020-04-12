@@ -67,6 +67,9 @@
                 handler: function () {
                     this.colDefs = this.dataSource.ColDefs;
                     this.totalCount = this.dataSource.TotalCount;
+                    if (!this.dataSource.PageData) {
+                        this.dataSource.PageData = [];
+                    }
                 },
                 deep: true
             }

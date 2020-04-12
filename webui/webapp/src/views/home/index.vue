@@ -2,30 +2,52 @@
     <div>
       <div style>
         <div data-v-542f4644 class="ivu-row" style="padding:15px;background: white;">
-          <div
-            v-for="item in topColor"
-            :key="item.name"
-            class="ivu-col ivu-col-span-6"
-            style="padding-left: 8px; padding-right: 8px;"
-          >
-            <div data-v-542f4644 class="ivu-card" :style="{background:item.background}">
-              <div class="icon-left">
-                <Icon :type="item.icon" />
-              </div>
-              <div class="ivu-card-body">
-                <div data-v-542f4644 class="demo-color-name">{{item.name}}</div>
-                <div data-v-542f4644 class="demo-color-desc">{{item.desc}}</div>
+          <div class="headTitle">
+              <Form label-position="left" :label-width="200" :model="clusterInfo">
+                <Row>
+                  <Col span="5">
+                      <FormItem label="集群编码："><span v-text="clusterInfo.ClusterId"></span></FormItem>
+                  </Col>
+                  <Col span="5">
+                      <FormItem label="注册服务地址："><span v-text="clusterInfo.RegistryServerUrl"></span></FormItem>
+                  </Col>
+                  <Col span="5">
+                      <FormItem label="Leader服务器：">
+                          <span v-text="clusterInfo.LeaderServer"></span>
+                      </FormItem>
+                  </Col>
+                </Row>
+              </Form>
+          </div>
+            <div
+              v-for="item in topColor"
+              :key="item.name"
+              class="ivu-col ivu-col-span-6"
+              style="padding-left: 8px; padding-right: 8px;"
+            >
+              <div data-v-542f4644 class="ivu-card" :style="{background:item.background}">
+                <div class="icon-left">
+                  <Icon :type="item.icon" />
+                </div>
+                <div class="ivu-card-body">
+                  <div data-v-542f4644 class="demo-color-name">{{item.name}}</div>
+                  <div data-v-542f4644 class="demo-color-desc">{{item.desc}}</div>
+                </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
 </template>
 <script>
+import { getClusterInfo } from '@/api/cluster.js';
 export default {
     data() {
         return {
+            clusterInfo: {
+              RegistryServerUrl: '',
+              LeaderServer: ''
+            },
              topColor: [
                 {
                 name: 'Node数量',
@@ -53,7 +75,21 @@ export default {
                 }
             ]
         }
-    }
+    },
+    mounted() {
+      this.init();
+    },
+     methods: {
+        init() {
+          getClusterInfo().then(res => {
+            if (res.RetCode === 0) {
+                this.clusterInfo = res.Message;
+            } else {
+                this.$Message.error(res.RetMsg);
+            }
+          })
+        }
+     }
 }
 </script>
 <style scoped>
@@ -62,6 +98,10 @@ export default {
   width: 100%;
   height: 100%;
   /* padding: 20px; */
+}
+.headTitle {
+  padding-left: 50px;
+  font-size: 24px;
 }
 .home-app {
   display: inline-block;
