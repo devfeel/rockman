@@ -182,8 +182,8 @@ func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 		qc.PageSize = _const.DefaultPageSize
 	}
 
-	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecLogs(qc)
+	logService := service.NewLogService()
+	result, err := logService.QueryExecLogs(qc)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
@@ -192,7 +192,7 @@ func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 
 // QueryStateLogs
 func (c *ExecutorController) QueryStateLogs(ctx dotweb.Context) error {
-	qc := new(viewmodel.TaskStateLogQC)
+	qc := new(viewmodel.TaskExecLogQC)
 	//自动组装参数
 	err := ctx.Bind(qc)
 	if err != nil {
@@ -203,8 +203,8 @@ func (c *ExecutorController) QueryStateLogs(ctx dotweb.Context) error {
 		qc.PageSize = _const.DefaultPageSize
 	}
 
-	taskService := service.NewExecutorService()
-	result, err := taskService.QueryStateLogs(qc)
+	logService := service.NewLogService()
+	result, err := logService.QueryExecLogs(qc)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
