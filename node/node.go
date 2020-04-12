@@ -98,10 +98,11 @@ func (n *Node) Start() error {
 			return err
 		}
 		if n.IsLeader() {
-			n.prepareExecutorsFromDB()
+			n.syncAndSubmitExecutorsFromDB()
 		}
 		if !n.IsLeader() {
-			n.watchExecutorChangeFromLeader()
+			n.syncExecutorsFromLeader()
+			n.watchExecutorChange()
 		}
 	}
 
@@ -305,19 +306,7 @@ func (n *Node) onWorkerNodeOffline(nodeInfo *core.NodeInfo) {
 	}
 	go func() {
 		for _, exec := range needReSubmits {
-			result := n.SubmitExecutor(exec)
-			if result.Error != nil {
-				logger.Node().DebugS(logTitle+"HA SubmitExecutor error:", result.Error.Error())
-				//TODO log to db
-			} else {
-				if !result.IsSuccess() {
-					logger.Node().DebugS(logTitle + "HA SubmitExecutor failed, " + result.Message())
-					//TODO log to db
-				} else {
-					logger.Node().DebugS(logTitle + "HA SubmitExecutor success")
-					//TODO log to db
-				}
-			}
+			n.SubmitExecutor(exec)
 		}
 	}()
 }

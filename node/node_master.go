@@ -68,7 +68,6 @@ func (n *Node) submitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 		execInfo.Worker, err = n.Cluster.GetLowBalanceWorker()
 		if err != nil {
 			logger.Node().Error(err, logTitle+"GetLowBalanceWorker error")
-			//TODO log submit result to db log
 			return core.ErrorResult(err)
 		}
 	}
@@ -234,10 +233,10 @@ func (n *Node) removeLeaderRole() {
 	n.isLeader = false
 }
 
-// initExecutorsFromDB init executors from db
+// syncExecutorsFromDB sync executors from db, and submit them
 // must check init flag on registry
-func (n *Node) prepareExecutorsFromDB() {
-	logTitle := "Node initExecutorsFromDB "
+func (n *Node) syncAndSubmitExecutorsFromDB() {
+	logTitle := "Node syncExecutorsFromDB "
 	if !n.IsLeader() {
 		return
 	}
@@ -261,31 +260,25 @@ func (n *Node) prepareExecutorsFromDB() {
 			submit := new(core.ExecutorInfo)
 			submit.TaskConfig = exec.TaskConfig()
 			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
-				logger.Node().Debug(logTitle + "init submit error: TaskConfig is nil or target config is nil")
+				logger.Node().Debug(logTitle + "create submit[" + exec.TaskID + "] error: TaskConfig is nil or target config is nil")
 				failureCount += 1
 				continue
 			}
 			result := n.SubmitExecutor(submit)
 			if result.Error != nil {
-				logger.Node().DebugS(logTitle+"SubmitExecutor error:", result.Error.Error())
 				failureCount += 1
-				//TODO log to db
 				continue
 			}
 
 			if !result.IsSuccess() {
-				logger.Node().DebugS(logTitle + "SubmitExecutor failed, " + result.Message())
 				failureCount += 1
-				//TODO log to db
 			} else {
-				logger.Node().DebugS(logTitle + "SubmitExecutor success")
 				successCount += 1
-				//TODO log to db
 			}
 		}
 	}
 
-	logger.Node().Debug(logTitle + "init begin.")
+	logger.Node().Debug(logTitle + "begin.")
 	flag, err := n.getInitFlag()
 	if err != nil {
 		logger.Node().Warn(logTitle + "get init flag error:" + err.Error())
@@ -296,13 +289,44 @@ func (n *Node) prepareExecutorsFromDB() {
 			if err != nil {
 				logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
 			}
-			logger.Node().Debug(logTitle + "init finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
+			logger.Node().Debug(logTitle + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
 		}
 	}
 }
 
-func (n *Node) watchExecutorChangeFromLeader() {
-	lt := "Node.watchExecutorChangeFromLeader "
+// syncExecutorsFromLeader
+func (n *Node) syncExecutorsFromLeader() error {
+	lt := "Node.syncExecutorsFromLeader "
+	leader, err := n.Cluster.GetLeaderInfo()
+	if err != nil {
+		logger.Node().Error(err, lt+"get leader info error")
+		return err
+	}
+
+	rpcClient := n.Cluster.GetRpcClient(leader)
+	err, reply := rpcClient.CallQueryExecutorInfos("")
+	if err != nil {
+		logger.Node().Debug(lt + "Error: " + err.Error())
+		return err
+	}
+	if !reply.IsSuccess() {
+		logger.Node().Debug(lt + "failed: " + reply.FailureMessage())
+		return errors.New(lt + "failed: " + reply.FailureMessage())
+	}
+	_, meta, err := n.Registry.Get(getExecutorChangeFlagKey(n.ClusterId()), nil)
+	if err != nil {
+		logger.Node().Debug(lt + "failed, GetExecutorChangeFlag error: " + err.Error())
+		return err
+	}
+	n.executorFlagLastIndex = meta.LastIndex
+	n.Cluster.ExecutorInfos = reply.Message.(map[string]*core.ExecutorInfo)
+	logger.Node().Debug(lt + "success.")
+	return nil
+}
+
+// watchExecutorChangeFromLeader
+func (n *Node) watchExecutorChange() {
+	lt := "Node.watchExecutorChange "
 
 	doQuery := func() error {
 		defer func() {
@@ -321,24 +345,9 @@ func (n *Node) watchExecutorChangeFromLeader() {
 			return err
 		}
 		if meta.LastIndex != n.executorFlagLastIndex {
-			logger.Cluster().Debug("Cluster.watchLeaderChange: leader changed.")
-			leader, err := n.Cluster.GetLeaderInfo()
-			if err != nil {
-				logger.Node().Error(err, lt+"get leader info error")
-				return err
-			}
-			rpcClient := n.Cluster.GetRpcClient(leader)
-			err, reply := rpcClient.CallQueryExecutorInfos("")
-			if err != nil {
-				logger.Node().Debug(lt + "CallQueryExecutorInfos Error: " + err.Error())
-				return err
-			}
-			if !reply.IsSuccess() {
-				logger.Node().Debug(lt + "CallQueryExecutorInfos Failed: " + reply.FailureMessage())
-				return errors.New("CallQueryExecutorInfos Failed: " + reply.FailureMessage())
-			}
-			n.Cluster.ExecutorInfos = reply.Message.(map[string]*core.ExecutorInfo)
-			logger.Node().Debug(lt + "CallQueryExecutorInfos Success.")
+			n.executorFlagLastIndex = meta.LastIndex
+			logger.Cluster().Debug(lt + "leader changed.")
+			n.syncExecutorsFromLeader()
 		}
 		return nil
 	}
