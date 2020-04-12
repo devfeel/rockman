@@ -68,7 +68,7 @@ func NewCluster(profile *config.Profile, registry *registry.Registry) *Cluster {
 	cluster.Registry = registry
 
 	cluster.Scheduler = scheduler.NewScheduler()
-	logger.Node().Debug("Cluster init success.")
+	logger.Node().Debug("Cluster {" + cluster.ClusterId + "} init success.")
 	return cluster
 }
 

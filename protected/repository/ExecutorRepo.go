@@ -2,8 +2,6 @@ package repository
 
 import (
 	"errors"
-	"fmt"
-	"sync"
 
 	"github.com/devfeel/database"
 	"github.com/devfeel/rockman/config"
@@ -11,28 +9,8 @@ import (
 	"github.com/devfeel/rockman/protected/viewmodel"
 )
 
-var executorRepo *ExecutorRepo
-var executorLocker *sync.Mutex
-
-func init() {
-	executorLocker = new(sync.Mutex)
-}
-
 type ExecutorRepo struct {
 	BaseRepository
-}
-
-// GetRepository return ExecutorRepository which is init
-func GetExecutorRepo() *ExecutorRepo {
-	//check default repository is init
-	if executorRepo == nil {
-		executorLocker.Lock()
-		defer executorLocker.Unlock()
-		if executorRepo == nil {
-			executorRepo = NewExecutorRepo()
-		}
-	}
-	return executorRepo
 }
 
 // NewExecutorRepo return new ExecutorRepo
@@ -112,7 +90,6 @@ func (repo *ExecutorRepo) GetExecutorByTaskId(taskId string) (*model.ExecutorInf
 // IsExistExecutorByTaskId
 func (repo *ExecutorRepo) IsExistExecutorByTaskId(taskId string) (bool, error) {
 	count, err := repo.Count("SELECT count(1) FROM Task WHERE TaskID=?;", taskId)
-	fmt.Println(count)
 	return count > 0, err
 }
 
@@ -165,10 +142,11 @@ func (repo *ExecutorRepo) QueryAllExecutors() ([]*model.ExecutorInfo, error) {
 	return dest, err
 }
 
-// WriteExecLog
-func (repo *ExecutorRepo) WriteExecLog(log *model.TaskExecLog) (int64, error) {
-	sql := "INSERT INTO TaskExecLog(TaskID, NodeID, NodeEndPoint, IsSuccess, StartTime, EndTime, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	return repo.Insert(sql, log.TaskID, log.NodeID, log.NodeEndPoint, log.IsSuccess, log.StartTime, log.EndTime, log.FailureType, log.FailureCause, log.CreateTime)
+// QueryRunInfo
+func (repo *ExecutorRepo) QueryRunInfo(taskId string) (*model.ExecutorRunInfo, error) {
+	result := &model.ExecutorRunInfo{}
+	err := repo.FindOne(result, "SELECT * FROM ExecutorRunInfo WHERE TaskID=?;", taskId)
+	return result, err
 }
 
 // QueryExecLogs
@@ -228,10 +206,6 @@ func (repo *ExecutorRepo) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.P
 	} else {
 		err = repo.FindList(&dest, dataSql)
 	}
-	if err != nil {
-		return nil, err
-	}
-
 	var count int64
 	if len(params) != 0 {
 		count, err = repo.Count(countSql, params...)
@@ -247,8 +221,32 @@ func (repo *ExecutorRepo) QueryStateLogs(qc *viewmodel.TaskStateLogQC) (*model.P
 	return pageResult, err
 }
 
-// WriteNodeTraceLog
-func (repo *ExecutorRepo) WriteNodeTraceLog(log *model.NodeTraceLog) (int64, error) {
-	sql := "INSERT INTO NodeTraceLog(NodeID, NodeEndPoint, IsLeader, IsMaster, IsWorker, Event, IsSuccess, FailureType, FailureCause, CreateTime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	return repo.Insert(sql, log.NodeID, log.NodeEndPoint, log.IsLeader, log.IsMaster, log.IsWorker, log.Event, log.IsSuccess, log.FailureType, log.FailureCause, log.CreateTime)
+// InsertRunInfo
+func (repo *ExecutorRepo) InsertRunInfo(model *model.ExecutorRunInfo) error {
+	sql := "INSERT INTO ExecutorRunInfo (TaskID, NodeID, NodeEndPoint, LastUpdateTime, CreateTime)VALUES(?,?,?,?,?);"
+	n, err := repo.Insert(sql,
+		model.TaskID, model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.CreateTime)
+	if err != nil {
+		return err
+	}
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+
+	return nil
+}
+
+// UpdateRunInfo
+func (repo *ExecutorRepo) UpdateRunInfo(model *model.ExecutorRunInfo) error {
+	sql := "UPDATE ExecutorRunInfo SET NodeID = ?, NodeEndPoint = ?, LastUpdateTime= ?, CreateTime = ? WHERE TaskID = ?;;"
+	n, err := repo.Update(sql,
+		model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.CreateTime, model.TaskID)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+	return nil
 }

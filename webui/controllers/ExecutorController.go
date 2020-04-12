@@ -43,7 +43,6 @@ func (c *ExecutorController) SaveExecutor(ctx dotweb.Context) error {
 		if submit.TaskConfig.TargetConfig == nil {
 			return ctx.WriteJson(FailedResponse(-1101, "Submit.TaskConfig.TargetConfig is nil"))
 		}
-		submit.DistributeType = model.DistributeType
 		leader := getLeader(ctx)
 		if leader == "" {
 			return ctx.WriteJson(FailedResponse(-1102, "Leader is nil"))

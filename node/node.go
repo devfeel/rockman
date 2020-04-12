@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
@@ -30,6 +31,7 @@ type (
 		Runtime      *runtime.Runtime
 		shutdownChan chan string
 		isSTW        bool //stop the world flag
+		logLogic     *service.LogService
 	}
 )
 
@@ -46,6 +48,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		NodeName:     profile.Node.NodeName,
 		config:       profile,
 		shutdownChan: shutdown,
+		logLogic:     service.NewLogService(),
 	}
 
 	registry, err := registry.NewRegistry(profile.Cluster.RegistryServer)
@@ -63,7 +66,7 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 
 	node.Cluster = cluster
 	if node.config.Node.IsWorker {
-		node.Runtime = runtime.NewRuntime(node.NodeInfo(), registry, profile)
+		node.Runtime = runtime.NewRuntime(node.NodeInfo(), profile)
 	}
 
 	logger.Node().Debug("Node init success.")
@@ -167,17 +170,30 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	//submit executor to the specified worker node
 	rpcClient := n.Cluster.GetRpcClient(execInfo.Worker.EndPoint())
 	err, reply := rpcClient.CallRegisterExecutor(execInfo.TaskConfig)
-	//TODO log submit result to db log
+	submitLog := &model.TaskSubmitLog{
+		TaskID:       execInfo.TaskConfig.TaskID,
+		NodeID:       execInfo.Worker.NodeID,
+		NodeEndPoint: execInfo.Worker.EndPoint(),
+		IsSuccess:    err != nil && reply.IsSuccess(),
+	}
+
 	if err != nil {
 		logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] error:", err.Error())
+		submitLog.FailureType = "error"
+		submitLog.FailureCause = err.Error()
+		n.logLogic.WriteSubmitLog(submitLog)
 		return core.ErrorResult(err)
 	} else {
 		if !reply.IsSuccess() {
+			submitLog.FailureType = "failure"
+			submitLog.FailureCause = reply.FailureMessage()
 			logger.Node().DebugS(logTitle+"to ["+execInfo.Worker.EndPoint()+"] failed, result:", reply.RetCode)
 		} else {
 			n.Cluster.AddExecutor(execInfo)
+			submitLog.IsSuccess = true
 			logger.Node().Debug(logTitle + "to [" + execInfo.Worker.EndPoint() + "] success.")
 		}
+		n.logLogic.WriteSubmitLog(submitLog)
 		return core.NewResult(reply.RetCode, reply.RetMsg, nil)
 	}
 }
@@ -252,6 +268,30 @@ func (n *Node) SubmitStartExecutor(taskId string) *core.Result {
 	}
 }
 
+// RegisterExecutor
+func (n *Node) RegisterExecutor(taskInfo *core.TaskConfig) *core.Result {
+	logTitle := "Node RegisterExecutor [" + taskInfo.TaskID + "] "
+	if !n.IsWorker() {
+		logger.Node().Debug(logTitle + "failed, current node is not worker.")
+		return core.FailedResult(-1001, "current node is not worker")
+	}
+	_, err := n.Runtime.CreateExecutor(taskInfo)
+	if err != nil {
+		logger.Node().Warn(logTitle + "CreateExecutor error:" + err.Error())
+		return core.FailedResult(-2001, err.Error())
+	} else {
+		// reg to registry server
+		execInfo := new(core.ExecutorInfo)
+		execInfo.TaskConfig = taskInfo
+		execInfo.Worker = n.NodeInfo()
+		_, err := n.Registry.Set(execInfo.GetExecutorKey(n.ClusterId()), execInfo.Json(), nil)
+		if err != nil {
+			logger.Node().Warn(logTitle + "sync to registry error:" + err.Error())
+		}
+		return core.SuccessResult()
+	}
+}
+
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
 	//TODO add some check
@@ -302,7 +342,7 @@ func (n *Node) startTheWorld() {
 	}
 
 	if n.config.Node.IsWorker {
-		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.Registry, n.config)
+		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.config)
 	}
 
 	err := n.Start()
@@ -472,7 +512,6 @@ func (n *Node) initExecutorsFromDB() {
 				failureCount += 1
 				continue
 			}
-			submit.DistributeType = exec.DistributeType
 			result := n.SubmitExecutor(submit)
 			if result.Error != nil {
 				logger.Node().DebugS(logTitle+"SubmitExecutor error:", result.Error.Error())

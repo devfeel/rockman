@@ -10,24 +10,33 @@ import (
 	"github.com/devfeel/rockman/runtime/executor"
 )
 
-type ExecutorInfo struct {
-	ID                int64
-	TaskID            string
-	TaskType          string
-	IsRun             bool
-	DueTime           int64
-	Interval          int64
-	Express           string
-	TaskData          string
-	TargetType        string
-	TargetConfig      string
-	RealTargetConfig  interface{}
-	NodeID            string
-	DistributeType    int
-	IsSubmitToCluster bool
-	Remark            string
-	CreateTime        time.Time
-}
+type (
+	ExecutorInfo struct {
+		ID                int64
+		TaskID            string
+		TaskType          string
+		IsRun             bool
+		DueTime           int64
+		Interval          int64
+		Express           string
+		TaskData          string
+		TargetType        string
+		TargetConfig      string
+		RealTargetConfig  interface{}
+		NodeID            string
+		DistributeType    int
+		IsSubmitToCluster bool
+		Remark            string
+	}
+	ExecutorRunInfo struct {
+		LogID          int64
+		TaskID         string
+		NodeID         string
+		NodeEndPoint   string
+		LastUpdateTime time.Time
+		CreateTime     time.Time
+	}
+)
 
 func (e *ExecutorInfo) TaskConfig() *core.TaskConfig {
 	e.InitTargetConfig()
@@ -48,6 +57,7 @@ func (e *ExecutorInfo) TaskConfig() *core.TaskConfig {
 	conf.Interval = e.Interval
 	conf.Express = e.Express
 	conf.TaskData = e.TaskData
+	conf.DistributeType = e.DistributeType
 	conf.HAFlag = true
 	if e.TargetType == executor.TargetType_Http {
 		conf.TargetConfig = e.RealTargetConfig.(*executor.HttpConfig)

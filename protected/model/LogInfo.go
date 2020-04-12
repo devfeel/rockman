@@ -25,6 +25,17 @@ type TaskStateLog struct {
 	CreateTime   time.Time
 }
 
+type TaskSubmitLog struct {
+	LogID        int64
+	TaskID       string
+	NodeID       string
+	NodeEndPoint string
+	IsSuccess    bool
+	FailureType  string
+	FailureCause string
+	CreateTime   time.Time
+}
+
 type NodeTraceLog struct {
 	LogID        int64
 	NodeID       string
