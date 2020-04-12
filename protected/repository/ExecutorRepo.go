@@ -156,9 +156,9 @@ func (repo *ExecutorRepo) InsertRunInfo(model *model.ExecutorRunInfo) error {
 
 // UpdateRunInfo
 func (repo *ExecutorRepo) UpdateRunInfo(model *model.ExecutorRunInfo) error {
-	sql := "UPDATE ExecutorRunInfo SET NodeID = ?, NodeEndPoint = ?, LastUpdateTime= ?, CreateTime = ? WHERE TaskID = ?;;"
+	sql := "UPDATE ExecutorRunInfo SET NodeID = ?, NodeEndPoint = ?, LastUpdateTime= ? WHERE TaskID = ?;"
 	n, err := repo.Update(sql,
-		model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.CreateTime, model.TaskID)
+		model.NodeID, model.NodeEndPoint, model.LastUpdateTime, model.TaskID)
 	if err != nil {
 		return err
 	}

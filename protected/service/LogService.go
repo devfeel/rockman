@@ -50,7 +50,7 @@ func (service *LogService) WriteSubmitLog(log *model.TaskSubmitLog) error {
 	if log.IsSuccess {
 		runInfo := &model.ExecutorRunInfo{
 			TaskID:       log.TaskID,
-			NodeID:       log.TaskID,
+			NodeID:       log.NodeID,
 			NodeEndPoint: log.NodeEndPoint,
 		}
 		service.execService.SetExecutorRunInfo(runInfo)
