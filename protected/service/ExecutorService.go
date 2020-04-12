@@ -1,7 +1,9 @@
 package service
 
 import (
+	"database/sql"
 	"github.com/devfeel/rockman/core"
+	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository"
 	runtime "github.com/devfeel/rockman/runtime/executor"
@@ -75,11 +77,12 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 func (service *ExecutorService) SetExecutorRunInfo(model *model.ExecutorRunInfo) error {
 	service.updateLocker.Lock()
 	defer service.updateLocker.Unlock()
-	dbInfo, err := service.repo.QueryRunInfo(model.TaskID)
-	if err != nil {
+	_, err := service.repo.QueryRunInfo(model.TaskID)
+	if err != nil && err != sql.ErrNoRows {
+		logger.Service().Error(err, "SetExecutorRunInfo["+model.TaskID+"] error")
 		return err
 	}
-	if dbInfo == nil {
+	if err == sql.ErrNoRows {
 		model.LastUpdateTime = time.Now()
 		model.CreateTime = time.Now()
 		return service.repo.InsertRunInfo(model)
