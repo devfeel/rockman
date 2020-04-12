@@ -236,7 +236,7 @@ func (n *Node) removeLeaderRole() {
 
 // initExecutorsFromDB init executors from db
 // must check init flag on registry
-func (n *Node) initExecutorsFromDB() {
+func (n *Node) prepareExecutorsFromDB() {
 	logTitle := "Node initExecutorsFromDB "
 	if !n.IsLeader() {
 		return

@@ -97,6 +97,12 @@ func (n *Node) Start() error {
 		if err != nil {
 			return err
 		}
+		if n.IsLeader() {
+			n.prepareExecutorsFromDB()
+		}
+		if !n.IsLeader() {
+			n.watchExecutorChangeFromLeader()
+		}
 	}
 
 	if n.config.Node.IsWorker {
@@ -232,7 +238,6 @@ RegisterNode:
 			} else {
 				retryCount = 0
 				logger.Node().DebugS(logTitle + "success.")
-				n.initExecutorsFromDB()
 			}
 			break
 		}
