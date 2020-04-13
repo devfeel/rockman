@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/devfeel/dotweb"
-	"github.com/devfeel/rockman/node"
-	_const "github.com/devfeel/rockman/webui/const"
 	"html/template"
 )
 
@@ -21,25 +19,17 @@ func (c *ClusterController) ShowClusterInfo(ctx dotweb.Context) error {
 }
 
 func (c *ClusterController) ShowExecutors(ctx dotweb.Context) error {
-	item, isExists := ctx.AppItems().Get(_const.ItemKeyNode)
-	if !isExists {
+	node := getNode(ctx)
+	if node == nil {
 		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
-	}
-	node, isOk := item.(*node.Node)
-	if !isOk {
-		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
 	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.ExecutorInfos)))
 }
 
 func (c *ClusterController) ShowResources(ctx dotweb.Context) error {
-	item, isExists := ctx.AppItems().Get(_const.ItemKeyNode)
-	if !isExists {
+	node := getNode(ctx)
+	if node == nil {
 		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
-	}
-	node, isOk := item.(*node.Node)
-	if !isOk {
-		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
 	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.Scheduler.Resources())))
 }
