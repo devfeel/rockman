@@ -115,7 +115,7 @@
             </div>
         </Modal>
         <Modal  v-model="glueModel"  fullscreen :footer-hide="true">
-            <glue :data="taskForm" ></glue>
+            <glue :data="glueTaskForm" ></glue>
         </Modal>
     </div>
     </div>
@@ -249,7 +249,7 @@ export default {
                 TargetConfig: '',
                 Remark: ''
             },
-            code: '',
+            glueTaskForm: {},
             defaultOption: {
                 tabSize: 2,
                 styleActiveLine: true,
@@ -356,7 +356,7 @@ export default {
         onOpenGLUE(row) {
             getTaskOnce({ID: row.ID}).then(res => {
                 if (res.RetCode === 0) {
-                    this.taskForm = res.Message;
+                    this.glueTaskForm = res.Message;
                     this.glueModel = true;
                 } else {
                     this.$Message.error(res.RetMsg);
@@ -413,5 +413,10 @@ export default {
     position: absolute;
     height: calc(100%);
     /* height: calc(100% - 104px); */
+}
+.model-content{
+    padding-top: 5px;
+    padding-left: 10px;
+    padding-right: 50px;
 }
 </style>

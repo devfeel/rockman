@@ -6,7 +6,6 @@
         </div>
         <div class="glue-btn">
             <Button type="primary" @click="onSave()">保 存</Button>
-            <Button>取 消</Button>
         </div>
     </div>
     <div class="glue-conext">

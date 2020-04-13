@@ -1,6 +1,12 @@
 <template>
     <div >
-      <tableH icon="md-apps" text="日志列表">
+      <Tabs>
+        <TabPane label="Node日志" name="NodeTraceLog"></TabPane>
+        <TabPane label="任务提交日志" name="TaskSubmitLog"></TabPane>
+        <TabPane label="任务执行日志" name="TaskExecLog"></TabPane>
+        <TabPane label="任务状态日志" name="TaskStateLog"></TabPane>
+    </Tabs>
+      <!-- <tableH icon="md-apps" text="日志列表">
         <div slot="content"></div>
         <slot>
           <div style="text-align: right;float: right;">
@@ -12,9 +18,9 @@
             </div>
           </div>
         </slot>
-      </tableH>
-      <tableC  id="table" :loading="loading"  :columns="columns" :dataSource="dataSource" :queryParam="queryParam"
-        @onPageChange="onPageChange" ref="table"></tableC>
+      </tableH> -->
+      <!-- <tableC  id="table" :loading="loading"  :columns="columns" :dataSource="dataSource" :queryParam="queryParam"
+        @onPageChange="onPageChange" ref="table"></tableC> -->
     </div>
 </template>
 <script>
@@ -109,7 +115,7 @@ export default {
   },
   methods: {
     init() {
-      this.onPageChange(this.queryParam)
+      // this.onPageChange(this.queryParam)
     },
     onPageChange(param) {
       this.queryParam = param;

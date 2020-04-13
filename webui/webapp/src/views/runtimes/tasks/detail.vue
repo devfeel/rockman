@@ -2,7 +2,7 @@
     <div>
         <div :style="{background: '#fff',padding:'16px'}">
             <b>基本信息</b>
-            <Form label-position="left" :label-width="100" :model="taskForm">
+            <Form label-position="left" :label-width="150" :model="taskForm">
                     <Row>
                         <Col span="5">
                             <FormItem label="任务编码："><span v-text="taskForm.TaskID"></span></FormItem>
@@ -15,15 +15,15 @@
                     </Row>
                     <Row>
                         <Col span="5">
-                            <FormItem label="任务执行类型"><span v-text="taskForm.TaskType"></span></FormItem>
+                            <FormItem label="任务执行类型："><span v-text="taskForm.TaskType"></span></FormItem>
                         </Col>
                         <Col span="5">
-                            <FormItem label="cron表达式"><span v-text="taskForm.Express"></span></FormItem>
+                            <FormItem label="cron表达式："><span v-text="taskForm.Express"></span></FormItem>
                         </Col>
                     </Row>
                     <Row>
                         <Col span="5">
-                            <FormItem label="任务状态："><span v-text="taskForm.IsRun"></span></FormItem>
+                            <FormItem label="任务状态："><span v-if="taskForm.IsRun">执行中</span><span v-if="!taskForm.IsRun">已就绪</span></FormItem>
                         </Col>
                         <Col span="5">
 
@@ -31,14 +31,14 @@
                     </Row>
                     <Row>
                         <Col span="10">
-                            <FormItem label="备注"><span v-text="taskForm.Remark"></span></FormItem>
+                            <FormItem label="备注："><span v-text="taskForm.Remark"></span></FormItem>
                         </Col>
                     </Row>
             </Form>
         </div>
         <Card >
-            <Tabs @on-click="onTabClick">
-                <TabPane label="执行统计" >
+            <Tabs @on-click="onTabClick" v-model="tabName">
+                <TabPane label="执行统计" name="statistics">
                     <statistics :data="taskForm" :loadData="loadData"></statistics>
                 </TabPane>
                 <TabPane label="执行日志" name="execLogs">
@@ -62,6 +62,7 @@ export default {
     data() {
         return {
             taskForm: {},
+            tabName: 'statistics',
             loadData: false,
             loadExecLogData: false,
             loadStateLogData: false
@@ -87,6 +88,7 @@ export default {
                     }
                 })
             }
+            this.tabName = 'statistics';
         },
         onTabClick(name) {
             switch (name) {

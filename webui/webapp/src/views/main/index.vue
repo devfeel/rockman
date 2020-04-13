@@ -27,7 +27,6 @@
                 <Icon type="ios-arrow-down"></Icon>
             </a>
             <DropdownMenu slot="list" >
-              <DropdownItem >个人资料</DropdownItem>
               <DropdownItem name="loginOut">安全退出</DropdownItem>
             </DropdownMenu>
         </Dropdown>

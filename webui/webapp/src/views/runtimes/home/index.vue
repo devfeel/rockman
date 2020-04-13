@@ -3,7 +3,7 @@
     <Sider hide-trigger :style="{background: '#f5f7f9',padding: '24px 0px 0px 0px'}">
         <Menu active-name="1" theme="light" width="auto" :open-names="['1']">
             <MenuItem name="1" to="/static/runtimes/tasks"><Icon type="ios-keypad"></Icon>任务管理</MenuItem>
-            <MenuItem name="2" to="/static/runtimes/logs"><Icon type="ios-keypad"></Icon>运行日志管理</MenuItem>
+            <MenuItem name="2" to="/static/runtimes/logs"><Icon type="ios-keypad"></Icon>日志管理</MenuItem>
         </Menu>
     </Sider>
     <Layout :style="{padding: '0 0'}">

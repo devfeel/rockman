@@ -1,7 +1,7 @@
 <template>
     <div>
         <div style="height:258px;" :id="bar"></div>
-        <div style="height:258px;" :id="pie"></div>
+        <!-- <div style="height:258px;" :id="pie"></div> -->
     </div>
 </template>
 <script>
@@ -26,11 +26,11 @@ export default {
         let $bar = echarts.init(document.getElementById(this.bar));
         $bar.setOption(this.options.bar);
 
-        this.options.pie.legend.top = 50;
-        this.options.pie.legend.right = 80;
-        this.options.pie.legend.orient = 'vertical';
-        let $pie = echarts.init(document.getElementById(this.pie));
-        $pie.setOption(this.options.pie);
+        // this.options.pie.legend.top = 50;
+        // this.options.pie.legend.right = 80;
+        // this.options.pie.legend.orient = 'vertical';
+        // let $pie = echarts.init(document.getElementById(this.pie));
+        // $pie.setOption(this.options.pie);
     }
 }
 </script>

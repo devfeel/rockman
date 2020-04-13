@@ -3,21 +3,11 @@
       <div style>
         <div data-v-542f4644 class="ivu-row" style="padding:15px;background: white;">
           <div class="headTitle">
-              <Form label-position="left" :label-width="200" :model="clusterInfo">
-                <Row>
-                  <Col span="5">
-                      <FormItem label="集群编码："><span v-text="clusterInfo.ClusterId"></span></FormItem>
-                  </Col>
-                  <Col span="5">
-                      <FormItem label="注册服务地址："><span v-text="clusterInfo.RegistryServerUrl"></span></FormItem>
-                  </Col>
-                  <Col span="5">
-                      <FormItem label="Leader服务器：">
-                          <span v-text="clusterInfo.LeaderServer"></span>
-                      </FormItem>
-                  </Col>
-                </Row>
-              </Form>
+            <span >集群编码：</span><span v-text="clusterInfo.ClusterId"></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span>注册服务地址：</span><span v-text="clusterInfo.RegistryServerUrl"></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span>Leader服务器：</span><span v-text="clusterInfo.LeaderServer"></span>
           </div>
             <div
               v-for="item in topColor"
@@ -100,7 +90,10 @@ export default {
   /* padding: 20px; */
 }
 .headTitle {
-  padding-left: 50px;
+  text-align: center;
+  font-size: 24px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   font-size: 24px;
 }
 .home-app {
