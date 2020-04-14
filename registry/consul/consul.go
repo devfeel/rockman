@@ -90,13 +90,19 @@ func (c *ConsulClient) Get(key string, opt *consulapi.QueryOptions) (*consulapi.
 	return kvPair, meta, nil
 }
 
-func (c *ConsulClient) Set(key string, value string, opt *consulapi.QueryOptions) (*consulapi.WriteMeta, error) {
+func (c *ConsulClient) Delete(key string, opt *consulapi.WriteOptions) (*consulapi.WriteMeta, error) {
+	client := c.GetClient()
+	meta, err := client.KV().Delete(key, opt)
+	return meta, err
+}
+
+func (c *ConsulClient) Set(key string, value string, opt *consulapi.WriteOptions) (*consulapi.WriteMeta, error) {
 	client := c.GetClient()
 	kv := &consulapi.KVPair{
 		Key:   key,
 		Value: []byte(value),
 	}
-	meta, err := client.KV().Put(kv, nil)
+	meta, err := client.KV().Put(kv, opt)
 	return meta, err
 }
 

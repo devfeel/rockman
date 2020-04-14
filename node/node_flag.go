@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-func (n *Node) getInitFlag() (bool, error) {
-	kv, _, err := n.Registry.Get(getInitFlagKey(n.ClusterId()), nil)
+func (n *Node) getExecutorInitFlag() (bool, error) {
+	kv, _, err := n.Registry.Get(getExecutorInitFlagKey(n.ClusterId()), nil)
 	if err == nil {
 		return false, err
 	}
@@ -16,8 +16,13 @@ func (n *Node) getInitFlag() (bool, error) {
 	return true, nil
 }
 
-func (n *Node) setInitFlag() error {
-	_, err := n.Registry.Set(getInitFlagKey(n.ClusterId()), "true", nil)
+func (n *Node) deleteExecutorInitFlag() error {
+	_, err := n.Registry.Delete(getExecutorInitFlagKey(n.ClusterId()), nil)
+	return err
+}
+
+func (n *Node) setExecutorInitFlag() error {
+	_, err := n.Registry.Set(getExecutorInitFlagKey(n.ClusterId()), "true", nil)
 	return err
 }
 
@@ -26,8 +31,8 @@ func (n *Node) setExecutorChangeFlag() error {
 	return err
 }
 
-func getInitFlagKey(clusterId string) string {
-	return core.ClusterKeyPrefix + clusterId + "/flags/init"
+func getExecutorInitFlagKey(clusterId string) string {
+	return core.ClusterKeyPrefix + clusterId + "/flags/executor-init"
 }
 
 func getExecutorChangeFlagKey(clusterId string) string {

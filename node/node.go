@@ -238,6 +238,13 @@ RegisterNode:
 				continue RegisterNode
 			} else {
 				retryCount = 0
+				// if node is leader and register to self, mean cluster is init, remove old init flag
+				if leaderServer == n.NodeInfo().EndPoint() {
+					err := n.deleteExecutorInitFlag()
+					if err != nil {
+						logger.Node().Warn(logTitle + "delete executor-init flag error:" + err.Error())
+					}
+				}
 				logger.Node().DebugS(logTitle + "success.")
 			}
 			break

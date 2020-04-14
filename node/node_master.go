@@ -279,15 +279,15 @@ func (n *Node) syncAndSubmitExecutorsFromDB() {
 	}
 
 	logger.Node().Debug(logTitle + "begin.")
-	flag, err := n.getInitFlag()
+	flag, err := n.getExecutorInitFlag()
 	if err != nil {
-		logger.Node().Warn(logTitle + "get init flag error:" + err.Error())
+		logger.Node().Warn(logTitle + "get executor-init flag error:" + err.Error())
 	} else {
 		if !flag {
 			doQuery()
-			err := n.setInitFlag()
+			err := n.setExecutorInitFlag()
 			if err != nil {
-				logger.Node().Warn(logTitle + "set init flag error:" + err.Error())
+				logger.Node().Warn(logTitle + "set executor-init flag error:" + err.Error())
 			}
 			logger.Node().Debug(logTitle + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
 		}
