@@ -1,0 +1,107 @@
+/*页面通用css*/
+body {
+  font-size: 14px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.textPage {
+  li {
+    line-height: 28px;
+  }
+}
+
+.content-box {
+  position: absolute;
+  left: 250px;
+  right: 0;
+  top: 70px;
+  bottom: 0;
+  -webkit-transition: left .3s ease-in-out;
+  transition: left .3s ease-in-out;
+}
+
+.content-box.content-collapse {
+  left: 65px;
+}
+
+.content {
+  width: 100%;
+  height: calc(100% - 50px);
+  overflow-y: scroll;
+  box-sizing: border-box;
+}
+
+.container {
+  margin: 15px;
+  padding: 15px;
+  border-radius: 2px;
+  //box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .05);
+  min-height: calc(100% - 100px);
+}
+
+.crumbs {
+  position: relative;
+  z-index: 1;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  padding-left: 15px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .05);
+}
+
+.filter-box {
+  display: flex;
+}
+
+.pLabel {
+  margin-bottom: 10px;
+  padding-left: 13px;
+  font-size: 16px;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+.curp:hover {
+  @include hover();
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */
+{
+  opacity: 0;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .3s;
+}
+
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */
+{
+  opacity: 0;
+}
+
+/* fade-transform */
+.fade-transform-leave-active,
+.fade-transform-enter-active {
+  transition: all .2s;
+}
+
+.fade-transform-enter {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.fade-transform-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}

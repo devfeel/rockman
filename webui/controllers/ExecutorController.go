@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
 	_const "github.com/devfeel/rockman/webui/const"
+	"github.com/devfeel/rockman/webui/contract"
 )
 
 type ExecutorController struct {
@@ -124,18 +125,17 @@ func (c *ExecutorController) QueryById(ctx dotweb.Context) error {
 
 // ShowExecutors
 func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
-	nodeId := ctx.QueryString("node")
-	pageIndex := ctx.QueryInt64("pageindex")
-	pageSize := ctx.QueryInt64("pagesize")
-	pageReq := new(model.PageRequest)
-	pageReq.PageIndex = pageIndex
-	pageReq.PageSize = pageSize
-
-	if pageReq.PageSize <= 0 {
-		pageReq.PageSize = _const.DefaultPageSize
+	qr := new(contract.ExecutorQR)
+	err := ctx.Bind(qr)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1001, "parameter bind failed: "+err.Error()))
 	}
+	if qr.PageSize <= 0 {
+		qr.PageSize = _const.DefaultPageSize
+	}
+
 	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecutors(nodeId, pageReq)
+	result, err := taskService.QueryExecutors(qr.NodeID, &qr.PageRequest)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
@@ -144,19 +144,18 @@ func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
 
 // ShowExecLogs
 func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
-	taskId := ctx.QueryString("task")
-	pageIndex := ctx.QueryInt64("pageindex")
-	pageSize := ctx.QueryInt64("pagesize")
-	pageReq := new(model.PageRequest)
-	pageReq.PageIndex = pageIndex
-	pageReq.PageSize = pageSize
+	qr := new(contract.TaskExecLogQR)
+	err := ctx.Bind(qr)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1001, "parameter bind failed: "+err.Error()))
+	}
 
-	if pageReq.PageSize <= 0 {
-		pageReq.PageSize = _const.DefaultPageSize
+	if qr.PageSize <= 0 {
+		qr.PageSize = _const.DefaultPageSize
 	}
 
 	logService := service.NewLogService()
-	result, err := logService.QueryExecLogs(taskId, pageReq)
+	result, err := logService.QueryExecLogs(qr.TaskID, &qr.PageRequest)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
