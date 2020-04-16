@@ -11,7 +11,7 @@
     "build": "node build/build.js"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
     "element-ui": "^2.4.11",
     "view-design": "^4.0.0",
     "echarts": "^4.2.1",
@@ -76,8 +76,8 @@
     "vue-template-compiler": "^2.5.2",
     "vue-codemirror": "^4.0.6",
     "webpack": "^3.6.0",
-    "webpack-bundle-analyzer": "^2.9.0",
-    "webpack-dev-server": "^2.9.7",
+    "webpack-bundle-analyzer": "^3.3.2",
+    "webpack-dev-server": "^3.1.11",
     "webpack-merge": "^4.1.0"
   },
   "engines": {
