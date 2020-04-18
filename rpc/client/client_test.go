@@ -53,7 +53,7 @@ func TestRpcClient_CallQueryNodes(t *testing.T) {
 func TestRpcClient_CallRegisterHttpExecutor(t *testing.T) {
 	client := getRpcClient()
 	conf := &core.TaskConfig{}
-	conf.TaskID = "TestRpcClient-http-debug"
+	conf.TaskID = "http-debug"
 	conf.TaskType = "cron"
 	conf.TargetType = "http"
 	conf.IsRun = true

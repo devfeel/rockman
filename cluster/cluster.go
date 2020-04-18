@@ -304,12 +304,14 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 			continue
 		}
 		nodes[node.EndPoint()] = node
-		if _, exists := c.Nodes[node.EndPoint()]; !exists {
-			c.AddNodeInfo(node)
-		}
 	}
+
 	c.nodesLocker.Lock()
 	defer c.nodesLocker.Unlock()
+	for _, node := range nodes {
+		c.Nodes[node.EndPoint()] = node
+	}
+
 	for _, node := range c.Nodes {
 		if _, exists := nodes[node.EndPoint()]; !exists {
 			node.IsOnline = false

@@ -14,11 +14,3 @@ func (e *ExecutorInfo) Json() string {
 func (e *ExecutorInfo) LoadFromJson(json string) error {
 	return _json.Unmarshal(json, e)
 }
-
-func (e *ExecutorInfo) GetExecutorKey(clusterId string) string {
-	return GetExecutorKeyPrefix(clusterId) + e.TaskConfig.TaskID
-}
-
-func GetExecutorKeyPrefix(clusterId string) string {
-	return ClusterKeyPrefix + clusterId + "/executors/"
-}

@@ -9,6 +9,7 @@ type NodeInfo struct {
 	Port      string
 	OuterHost string
 	OuterPort string
+	Executors []string
 	IsMaster  bool
 	IsWorker  bool
 	IsOnline  bool

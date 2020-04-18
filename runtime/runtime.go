@@ -152,6 +152,14 @@ func (r *Runtime) QueryAllExecutorConfig() map[string]core.TaskConfig {
 	return confs
 }
 
+func (r *Runtime) GetTaskIDs() []string {
+	var ids []string
+	for _, exec := range r.Executors {
+		ids = append(ids, exec.GetTaskID())
+	}
+	return ids
+}
+
 func convertToDotTaskConfig(conf *core.TaskConfig) task.TaskConfig {
 	return task.TaskConfig{
 		TaskID:   conf.TaskID,
