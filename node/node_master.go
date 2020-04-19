@@ -356,7 +356,7 @@ func (n *Node) watchExecutorChange() {
 		}
 		if meta.LastIndex != n.executorFlagLastIndex {
 			n.executorFlagLastIndex = meta.LastIndex
-			logger.Cluster().Debug(lt + "leader changed.")
+			logger.Cluster().Debug(lt + "Executor changed.")
 			n.syncExecutorsFromLeader()
 		}
 		return nil

@@ -10,6 +10,7 @@ import (
 	"github.com/devfeel/rockman/node"
 	_const "github.com/devfeel/rockman/webui/const"
 	"github.com/devfeel/rockman/webui/controllers"
+	"strings"
 )
 
 type WebServer struct {
@@ -93,6 +94,20 @@ func (s *WebServer) initModule() {
 			// 	ctx.Request().Request.URL.Path = "/static" + path
 			// 	fmt.Println(ctx.Request().Request.URL.Path)
 			//}
+		},
+	})
+}
+
+func (s *WebServer) initModule() {
+	s.webApp.HttpServer.RegisterModule(&dotweb.HttpModule{
+		OnBeginRequest: func(ctx dotweb.Context) {
+			path := ctx.Request().URL.Path
+			if strings.HasPrefix(path, "/static/") &&
+				!strings.HasPrefix(path, "/static/static") &&
+				path != "/static" &&
+				!strings.HasPrefix(path, "/static/index.html") {
+				ctx.Request().Request.URL.Path = "/static" + path
+			}
 		},
 	})
 }
