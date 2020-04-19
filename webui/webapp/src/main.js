@@ -8,20 +8,15 @@ import ViewUI from 'view-design';
 // 引入字体图标库
 import 'view-design/dist/styles/iview.css';
 import './assets/iconfont/iconfont.css'
-import bus from 'vue-bus'
 import GLOBAL from './common/global.js'
 import store from './store/store.js'
 import * as Utils from './common/utils.js'
-import moment from 'moment'
-import 'moment/locale/zh-cn'
 
 Vue.use(ViewUI)
-Vue.use(bus)
 
 // 挂载到Vue实例上面
 Vue.prototype.GLOBAL = GLOBAL
 Vue.prototype.Utils = Utils
-Vue.prototype.$moment = moment
 
 if (process.env.NODE_ENV === 'development') {
   require('./api/mock');
@@ -40,7 +35,7 @@ router.beforeEach(({meta, path}, from, next) => {
   // true用户已登录， false用户未登录
   var isLogin = Boolean(store.state.user.token)
   if (auth && !isLogin && path !== '/login') {
-    // return next({ path: '/static/login' })
+     return next({ path: '/login' })
   }
   next()
 })

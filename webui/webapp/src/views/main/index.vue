@@ -75,7 +75,7 @@ export default {
       this.$store.commit('SET_INFO', null)
       window.sessionStorage.removeItem('UserInfo')
       window.sessionStorage.removeItem('selectMenu')
-      this.$router.push({ path: 'login' })
+      this.$router.push({ path: '/login' })
     }
   }
 }

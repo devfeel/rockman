@@ -3,8 +3,9 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/devfeel/dotweb"
 	"html/template"
+
+	"github.com/devfeel/dotweb"
 )
 
 type ClusterController struct {
@@ -15,7 +16,7 @@ func (c *ClusterController) ShowClusterInfo(ctx dotweb.Context) error {
 	if node == nil {
 		return ctx.WriteJson(NewResponse(-1001, "not exists node in app items", nil))
 	}
-	return ctx.WriteHtml(FormatJson(NewResponse(0, "", node.Cluster.ClusterInfo())))
+	return ctx.WriteJson(SuccessResponse(node.Cluster.ClusterInfo()))
 }
 
 func (c *ClusterController) ShowExecutors(ctx dotweb.Context) error {

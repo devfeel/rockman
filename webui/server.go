@@ -13,6 +13,7 @@ var (
 	executorController = new(controllers.ExecutorController)
 	nodeController     = new(controllers.NodeController)
 	clusterController  = new(controllers.ClusterController)
+	userController     = new(controllers.UserController)
 )
 
 type WebServer struct {
@@ -45,16 +46,29 @@ func (s *WebServer) ListenAndServe(listenAddr string) error {
 }
 
 func (s *WebServer) initRoute() {
-	g := s.webApp.HttpServer.Group("/task")
-	g.GET("/list", executorController.ShowExecutors)
-	g.GET("/logs", executorController.ShowExecLogs)
 
-	g = s.webApp.HttpServer.Group("/node")
-	g.GET("/list", nodeController.ShowNodes)
+	g := s.webApp.HttpServer.Group("/api/task")
+	g.POST("/list", executorController.ShowExecutors)
+	g.POST("/save", executorController.SaveExecutor)
+	g.POST("/update", executorController.UpdateExecutor)
+	g.GET("/get", executorController.QueryById)
+	g.GET("/delete", executorController.DeleteById)
+	g.POST("/execlogs", executorController.ShowExecLogs)
+	g.POST("/statelogs", executorController.ShowStateLog)
 
-	g = s.webApp.HttpServer.Group("/cluster")
+	g = s.webApp.HttpServer.Group("/api/node")
+	g.POST("/list", nodeController.ShowNodes)
+
+	g = s.webApp.HttpServer.Group("/api/cluster")
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
 	g.GET("/info", clusterController.ShowClusterInfo)
+
+	g = s.webApp.HttpServer.Group("/api/user")
+	g.GET("/login", userController.Login)
+
+	// g = s.webApp.HttpServer.Group("/*")
+
+	s.webApp.HttpServer.Router().ServerFile("/static/*filepath", "release/wwwroot/")
 
 }

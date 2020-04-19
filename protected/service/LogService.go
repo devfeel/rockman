@@ -1,9 +1,10 @@
 package service
 
 import (
+	"time"
+
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository"
-	"time"
 )
 
 type LogService struct {
@@ -30,6 +31,12 @@ func (service *LogService) WriteExecLog(log *model.TaskExecLog) error {
 // QueryExecLogs
 func (service *LogService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
 	result, err := service.repo.QueryExecLogs(taskId, pageReq)
+	return result, err
+}
+
+// QueryStateLog
+func (service *LogService) QueryStateLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryStateLog(taskId, pageReq)
 	return result, err
 }
 
