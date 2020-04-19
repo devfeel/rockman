@@ -26,7 +26,7 @@ const (
 	cmdCluster   = "cluster"
 	cmdEnableTls = "enabletls"
 
-	version = "2020.408"
+	version = "2020.419"
 )
 
 func main() {
