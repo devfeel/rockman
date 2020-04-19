@@ -25,7 +25,7 @@ func NewExecutorRepo() *ExecutorRepo {
 
 // InsertOnce
 func (repo *ExecutorRepo) InsertOnce(model *model.ExecutorInfo) error {
-	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,Interval,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
+	sql := "INSERT INTO Task (TaskID,TaskType,IsRun,DueTime,`Interval`,Express,TaskData,TargetType,TargetConfig,DistributeType,Remark)VALUES(?,?,?,?,?,?,?,?,?,?,?);"
 	n, err := repo.Insert(sql,
 		model.TaskID, model.TaskType, 0, model.DueTime, model.Interval,
 		model.Express, "", model.TargetType, model.TargetConfig,
@@ -43,7 +43,7 @@ func (repo *ExecutorRepo) InsertOnce(model *model.ExecutorInfo) error {
 
 // UpdateOnce
 func (repo *ExecutorRepo) UpdateOnce(model *model.ExecutorInfo) error {
-	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, Interval= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
+	sql := "UPDATE Task SET TaskID=?, TaskType = ?, DueTime = ?, `Interval`= ?, Express = ?, TargetType = ?, TargetConfig = ?, Remark = ? WHERE Id = ?;"
 	n, err := repo.Update(sql,
 		model.TaskID,
 		model.TaskType, model.DueTime, model.Interval, model.Express,
@@ -86,31 +86,16 @@ func (repo *ExecutorRepo) GetExecutorByTaskId(taskId string) (*model.ExecutorInf
 }
 
 // QueryExecutors
-func (repo *ExecutorRepo) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+func (repo *ExecutorRepo) QueryExecutors(pageReq *model.PageRequest) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM Task"
 	countSql := "SELECT count(1) FROM Task"
-	if nodeId != "" {
-		dataSql += " WHERE TaskID = ?"
-		countSql += " WHERE TaskID = ?"
-	}
 	dataSql += pageReq.GetPageSql()
-	var dest []*model.TaskExecLog
-	var err error
-	if nodeId != "" {
-		err = repo.FindList(&dest, dataSql, nodeId)
-	} else {
-		err = repo.FindList(&dest, dataSql)
-	}
+	var dest []*model.ExecutorInfo
+	err := repo.FindList(&dest, dataSql)
 	if err != nil {
 		return nil, err
 	}
-
-	var count int64
-	if nodeId != "" {
-		count, err = repo.Count(countSql, nodeId)
-	} else {
-		count, err = repo.Count(countSql)
-	}
+	count, err := repo.Count(countSql)
 	if err != nil {
 		return nil, err
 	}

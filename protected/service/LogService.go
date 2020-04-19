@@ -57,3 +57,9 @@ func (service *LogService) WriteSubmitLog(log *model.TaskSubmitLog) error {
 	}
 	return nil
 }
+
+// QueryStateLog
+func (service *LogService) QueryStateLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryStateLog(taskId, pageReq)
+	return result, err
+}

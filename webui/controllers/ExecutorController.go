@@ -135,7 +135,7 @@ func (c *ExecutorController) ShowExecutors(ctx dotweb.Context) error {
 	}
 
 	taskService := service.NewExecutorService()
-	result, err := taskService.QueryExecutors(qr.NodeID, &qr.PageRequest)
+	result, err := taskService.QueryExecutors(&qr.PageRequest)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}
@@ -156,6 +156,26 @@ func (c *ExecutorController) ShowExecLogs(ctx dotweb.Context) error {
 
 	logService := service.NewLogService()
 	result, err := logService.QueryExecLogs(qr.TaskID, &qr.PageRequest)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
+	}
+	return ctx.WriteJson(SuccessResponse(result))
+}
+
+// ShowStateLog
+func (c *ExecutorController) ShowStateLog(ctx dotweb.Context) error {
+	qr := new(contract.TaskStateLogQR)
+	err := ctx.Bind(qr)
+	if err != nil {
+		return ctx.WriteJson(FailedResponse(-1001, "parameter bind failed: "+err.Error()))
+	}
+
+	if qr.PageSize <= 0 {
+		qr.PageSize = _const.DefaultPageSize
+	}
+
+	logService := service.NewLogService()
+	result, err := logService.QueryStateLog(qr.TaskID, &qr.PageRequest)
 	if err != nil {
 		return ctx.WriteJson(FailedResponse(-2001, "Query error: "+err.Error()))
 	}

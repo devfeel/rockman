@@ -111,8 +111,8 @@ func (service *ExecutorService) QueryExecutorByTaskId(taskId string) (*model.Exe
 }
 
 // QueryExecutors
-func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.repo.QueryExecutors(nodeId, pageReq)
+func (service *ExecutorService) QueryExecutors(pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryExecutors(pageReq)
 	return result, err
 }
 
