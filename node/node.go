@@ -98,7 +98,7 @@ func (n *Node) Start() error {
 			return err
 		}
 		if n.IsLeader() {
-			n.syncAndSubmitExecutorsFromDB()
+			n.loadExecutorsFromDB()
 		}
 		if !n.IsLeader() {
 			n.syncExecutorsFromLeader()
@@ -138,8 +138,8 @@ func (n *Node) ClusterId() string {
 
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
-	//TODO add some check
-	logger.Node().Debug(logTitle + "start.")
+	logger.Node().Debug(logTitle + "doing.")
+	n.stopTheWorld()
 	n.shutdownChan <- "ok"
 }
 
@@ -157,6 +157,9 @@ func (n *Node) NodeInfo() *core.NodeInfo {
 		IsMaster:  n.config.Node.IsMaster,
 		IsWorker:  n.config.Node.IsWorker,
 		IsOnline:  true,
+	}
+	if n.Runtime != nil {
+		n.nodeInfo.Executors = n.Runtime.GetTaskIDs()
 	}
 	return n.nodeInfo
 }
@@ -328,4 +331,22 @@ func (n *Node) onRegistryOnline() {
 func (n *Node) onRegistryOffline() {
 	logger.Node().DebugS("Node.onRegistryOffline registry offline, now stop the world.")
 	n.stopTheWorld()
+}
+
+func (n *Node) refreshNodeInfo() *core.NodeInfo {
+	n.nodeInfo = &core.NodeInfo{
+		NodeID:    n.NodeId,
+		Cluster:   n.config.Cluster.ClusterId,
+		OuterHost: n.config.Rpc.OuterHost,
+		OuterPort: n.config.Rpc.OuterPort,
+		Host:      n.config.Rpc.RpcHost,
+		Port:      n.config.Rpc.RpcPort,
+		IsMaster:  n.config.Node.IsMaster,
+		IsWorker:  n.config.Node.IsWorker,
+		IsOnline:  true,
+	}
+	if n.IsWorker() {
+		n.nodeInfo.Executors = n.Runtime.GetTaskIDs()
+	}
+	return n.nodeInfo
 }

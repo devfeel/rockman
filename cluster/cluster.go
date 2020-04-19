@@ -110,6 +110,9 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	if err != nil {
 		return err
 	}
+	// if become leader, refresh online nodes in cluster
+	c.loadOnlineNodes()
+	c.syncExecutorsFromWorkers()
 	return nil
 }
 
@@ -290,7 +293,7 @@ func (c *Cluster) loadOnlineNodes() error {
 }
 
 // refreshOnlineNodes
-func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
+func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
 	nodes := make(map[string]*core.NodeInfo)
 	for _, s := range nodeKVs {
 		if s.Session == "" {
@@ -304,12 +307,14 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 			continue
 		}
 		nodes[node.EndPoint()] = node
-		if _, exists := c.Nodes[node.EndPoint()]; !exists {
-			c.AddNodeInfo(node)
-		}
 	}
+
 	c.nodesLocker.Lock()
 	defer c.nodesLocker.Unlock()
+	for _, node := range nodes {
+		c.Nodes[node.EndPoint()] = node
+	}
+
 	for _, node := range c.Nodes {
 		if _, exists := nodes[node.EndPoint()]; !exists {
 			node.IsOnline = false
@@ -321,6 +326,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) {
 		}
 	}
 	c.lastLoadNodesTime = time.Now()
+	return len(nodes)
 }
 
 // watchOnlineNodes watch online nodes change
@@ -441,7 +447,7 @@ func (c *Cluster) cycleQueryWorkerResource() {
 		queryNodes := 0
 		failedNodes := 0
 		for _, n := range c.Nodes {
-			if !n.IsOnline && !n.IsWorker {
+			if !n.IsOnline || !n.IsWorker {
 				continue
 			}
 			queryNodes += 1
@@ -476,6 +482,48 @@ func (c *Cluster) cycleQueryWorkerResource() {
 			doQuery()
 		}
 	}()
+}
+
+// syncExecutorsFromWorkers sync executors from all worker node
+func (c *Cluster) syncExecutorsFromWorkers() error {
+	lt := "Cluster.syncExecutorsFromWorkers "
+	doQuery := func(remote string) error {
+		client := c.GetRpcClient(remote)
+		if client == nil {
+			return core.ErrorRpcClientCreate
+		}
+		err, reply := client.CallQueryExecutors("")
+		if err != nil {
+			return err
+		}
+		if !reply.IsSuccess() {
+			return errors.New(reply.FailureMessage())
+		}
+		execInfos := reply.Message.(map[string]interface{})
+		for _, execInfo := range execInfos {
+			c.AddExecutor(execInfo.(*core.ExecutorInfo))
+		}
+		return nil
+	}
+
+	logger.Node().Debug(lt + "begin.")
+	c.nodesLocker.RLock()
+	defer c.nodesLocker.RUnlock()
+	doSync := 0
+	for _, nodeInfo := range c.Nodes {
+		if !nodeInfo.IsWorker {
+			continue
+		}
+		doSync += 1
+		err := doQuery(nodeInfo.EndPoint())
+		if err != nil {
+			logger.Node().Debug(lt + "query[" + nodeInfo.EndPoint() + "] error: " + err.Error())
+		} else {
+			logger.Node().Debug(lt + "query[" + nodeInfo.EndPoint() + "] success.")
+		}
+	}
+	logger.Node().Debug(lt + "finish. Sync[" + strconv.Itoa(doSync) + "]")
+	return nil
 }
 
 func getLeaderKey(clusterId string) string {

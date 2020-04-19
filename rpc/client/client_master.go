@@ -6,28 +6,14 @@ import (
 	"github.com/devfeel/rockman/rpc/packet"
 )
 
-func (c *RpcClient) CallQueryExecutorInfos(taskId string) (error, *packet.RpcReply) {
+func (c *RpcClient) CallQueryClusterExecutors(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
 	var reply packet.RpcReply
-	err = client.Call("Rpc.QueryExecutorInfos", taskId, &reply)
-	if err != nil {
-		return err, nil
-	}
-	return nil, &reply
-}
-
-func (c *RpcClient) CallNotifyExecutorChange(taskId string) (error, *packet.RpcReply) {
-	client, err := c.getConnClient()
-	if err != nil {
-		logger.Default().Error(err, "getConnClient error")
-		return err, nil
-	}
-	var reply packet.RpcReply
-	err = client.Call("Rpc.NotifyExecutorChange", taskId, &reply)
+	err = client.Call("Rpc.QueryClusterExecutors", taskId, &reply)
 	if err != nil {
 		return err, nil
 	}

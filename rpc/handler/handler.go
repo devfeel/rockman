@@ -55,16 +55,23 @@ func (h *RpcHandler) QueryExecutors(taskId string, reply *packet.RpcReply) error
 		exec, isOk := configs[taskId]
 		if !isOk {
 			*reply = packet.FailedReply(-2001, "not exists this taskId")
+			return nil
 		} else {
 			logger.Rpc().Debug(logTitle + "success")
 			configs = make(map[string]core.TaskConfig)
 			configs[taskId] = exec
-			*reply = packet.SuccessRpcReply(configs)
 		}
 	} else {
 		logger.Rpc().Debug(logTitle + "success, config count = " + strconv.Itoa(len(configs)))
-		*reply = packet.SuccessRpcReply(configs)
 	}
+	execInfos := make(map[string]*core.ExecutorInfo)
+	for k, v := range configs {
+		execInfos[k] = &core.ExecutorInfo{
+			TaskConfig: &v,
+			Worker:     h.getNode().NodeInfo(),
+		}
+	}
+	*reply = packet.SuccessRpcReply(execInfos)
 	return nil
 }
 

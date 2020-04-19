@@ -46,9 +46,9 @@ func (h *RpcHandler) QueryNodes(pageInfo *core.PageInfo, reply *packet.RpcReply)
 	return nil
 }
 
-// QueryExecutorInfos return executor info in cluster by taskId
-func (h *RpcHandler) QueryExecutorInfos(taskId string, reply *packet.RpcReply) error {
-	logTitle := "RpcServer.QueryExecutorInfos [" + taskId + "] "
+// QueryClusterExecutorInfos return executor info in cluster by taskId
+func (h *RpcHandler) QueryClusterExecutors(taskId string, reply *packet.RpcReply) error {
+	logTitle := "RpcServer.QueryClusterExecutors [" + taskId + "] "
 	if !h.getNode().IsLeader() {
 		logger.Rpc().Warn(logTitle + "can not query executor info from not leader node")
 		*reply = packet.FailedReply(-1001, "can not query executor info from not leader node")

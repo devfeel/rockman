@@ -1,8 +1,8 @@
 package validate
 
 import (
+	"errors"
 	"github.com/devfeel/rockman/webui/contract"
-	"github.com/pkg/errors"
 )
 
 func IsNilString(val string, errCode int, errMsg string) (*contract.Response, error) {
