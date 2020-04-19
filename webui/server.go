@@ -64,4 +64,6 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/api/user")
 	g.GET("/login", userController.Login)
 
+	s.webApp.HttpServer.ServerFile("/static/*", "./webapp/")
+
 }
