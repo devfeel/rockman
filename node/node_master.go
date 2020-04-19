@@ -315,8 +315,11 @@ func (n *Node) syncExecutorsFromLeader() error {
 		logger.Node().Debug(lt + "failed, GetExecutorChangeFlag error: " + err.Error())
 		return err
 	}
+	execInfos := reply.Message.(map[string]interface{})
+	for _, execInfo := range execInfos {
+		n.Cluster.AddExecutor(execInfo.(*core.ExecutorInfo))
+	}
 	n.executorFlagLastIndex = meta.LastIndex
-	n.Cluster.ExecutorInfos = reply.Message.(map[string]*core.ExecutorInfo)
 	logger.Node().Debug(lt + "success.")
 	return nil
 }
