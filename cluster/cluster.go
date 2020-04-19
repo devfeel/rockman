@@ -161,6 +161,7 @@ func (c *Cluster) AddNodeInfo(nodeInfo *core.NodeInfo) *core.Result {
 	defer c.nodesLocker.Unlock()
 	c.Scheduler.SetResource(resource)
 	c.Nodes[key] = nodeInfo
+	logger.Cluster().DebugF("Cluster add node [%v] [%v] [Master: %v] [Wroker: %v]", nodeInfo.NodeID, nodeInfo.EndPoint(), nodeInfo.IsMaster, nodeInfo.IsWorker)
 	return core.SuccessResult()
 }
 

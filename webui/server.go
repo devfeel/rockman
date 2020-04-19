@@ -7,6 +7,7 @@ import (
 	"github.com/devfeel/rockman/node"
 	_const "github.com/devfeel/rockman/webui/const"
 	"github.com/devfeel/rockman/webui/controllers"
+	"strings"
 )
 
 type WebServer struct {
@@ -24,6 +25,7 @@ func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s.webApp.Items.Set(_const.ItemKeyNode, node)
 
 	s.initRoute()
+	s.initModule()
 	logger.Default().Debug("WebUI init success.")
 	return s
 }
@@ -66,4 +68,15 @@ func (s *WebServer) initRoute() {
 
 	s.webApp.HttpServer.ServerFile("/static/*", "./webapp/")
 
+}
+
+func (s *WebServer) initModule() {
+	s.webApp.HttpServer.RegisterModule(&dotweb.HttpModule{
+		OnBeginRequest: func(ctx dotweb.Context) {
+			path := ctx.Request().URL.Path
+			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
+				ctx.Request().Request.URL.Path = "/static" + path
+			}
+		},
+	})
 }
