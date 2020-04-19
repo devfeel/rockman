@@ -49,7 +49,7 @@ export default {
     return {
       token: '',
       activeData: '1'
-    };
+    }
   },
   mounted() {
       var nameVal = window.sessionStorage.getItem('selectMenu');
