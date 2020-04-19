@@ -1,7 +1,7 @@
 import {get, post} from '../axios/http.js'
 import GLOBAL from '../common/global.js'
 
-export const getTaskList = (data) => post(`${GLOBAL.HOME}/task/list`, data)
+export const getTaskList = (data) => get(`${GLOBAL.HOME}/task/list`, data)
 
 export const getExecLogList = (data) => post(`${GLOBAL.HOME}/task/execlogs`, data)
 

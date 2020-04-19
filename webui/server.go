@@ -46,7 +46,7 @@ func (s *WebServer) initRoute() {
 	userController := new(controllers.UserController)
 
 	g := s.webApp.HttpServer.Group("/api/task")
-	g.POST("/list", executorController.ShowExecutors)
+	g.GET("/list", executorController.ShowExecutors)
 	g.POST("/save", executorController.SaveExecutor)
 	g.POST("/update", executorController.UpdateExecutor)
 	g.GET("/get", executorController.QueryById)
