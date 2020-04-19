@@ -1,7 +1,6 @@
 package webui
 
 import (
-	"fmt"
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/middleware/cors"
 	"github.com/devfeel/rockman/logger"
@@ -75,8 +74,6 @@ func (s *WebServer) initModule() {
 	s.webApp.HttpServer.RegisterModule(&dotweb.HttpModule{
 		OnBeginRequest: func(ctx dotweb.Context) {
 			path := ctx.Request().URL.Path
-
-			fmt.Println(path)
 			if strings.HasPrefix(path, "/static/") &&
 				!strings.HasPrefix(path, "/static/static") &&
 				path != "/static" &&
