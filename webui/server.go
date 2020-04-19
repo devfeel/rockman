@@ -1,7 +1,6 @@
 package webui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/devfeel/dotweb"
@@ -76,23 +75,13 @@ func (s *WebServer) initModule() {
 	s.webApp.HttpServer.RegisterModule(&dotweb.HttpModule{
 		OnBeginRequest: func(ctx dotweb.Context) {
 			path := ctx.Request().URL.Path
-			fmt.Println(path)
-			if path == "/static/index.html" {
+			if path == "/static/index.html" || path == "/static/" {
 				return
 			}
 
-			if path == "/static/" {
-				return
-			}
-
-			if strings.HasPrefix(path, "/static/") {
+			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
 				ctx.Request().Request.URL.Path = "/static" + path
 			}
-
-			// if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") && path != "/static" && !strings.HasPrefix(path, "/static/index.html") {
-			// 	ctx.Request().Request.URL.Path = "/static" + path
-			// 	fmt.Println(ctx.Request().Request.URL.Path)
-			//}
 		},
 	})
 }

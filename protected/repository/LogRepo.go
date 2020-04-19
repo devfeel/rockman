@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
 )
