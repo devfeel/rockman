@@ -193,7 +193,6 @@ func (c *Cluster) FindExecutor(taskId string) (*core.ExecutorInfo, bool) {
 
 // GetRpcClient get rpc client with endpoint
 func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
-	//TODO check endpoint is in cluster
 	defer c.rpcClientLocker.Unlock()
 	c.rpcClientLocker.Lock()
 	var rpcClient *client.RpcClient
@@ -203,6 +202,13 @@ func (c *Cluster) GetRpcClient(endPoint string) *client.RpcClient {
 		c.rpcClients[endPoint] = rpcClient
 	}
 	return rpcClient
+}
+
+// RemoveRpcClient remove rpc client with endpoint
+func (c *Cluster) RemoveRpcClient(endPoint string) {
+	defer c.rpcClientLocker.Unlock()
+	c.rpcClientLocker.Lock()
+	delete(c.rpcClients, endPoint)
 }
 
 // GetLeaderRpcClient get leader rpc client
@@ -311,11 +317,12 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
 	}
 
 	c.nodesLocker.Lock()
-	defer c.nodesLocker.Unlock()
 	for _, node := range nodes {
 		c.Nodes[node.EndPoint()] = node
 	}
+	c.nodesLocker.Unlock()
 
+	// check all node's state
 	for _, node := range c.Nodes {
 		if _, exists := nodes[node.EndPoint()]; !exists {
 			node.IsOnline = false
@@ -326,6 +333,18 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
 			node.IsOnline = true
 		}
 	}
+
+	// check rpc clients
+	for endPoint := range c.rpcClients {
+		if node, exists := c.Nodes[endPoint]; !exists {
+			c.RemoveRpcClient(endPoint)
+		} else {
+			if !node.IsOnline {
+				c.RemoveRpcClient(endPoint)
+			}
+		}
+	}
+
 	c.lastLoadNodesTime = time.Now()
 	return len(nodes)
 }

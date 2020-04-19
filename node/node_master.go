@@ -337,7 +337,7 @@ func (n *Node) syncExecutorsFromLeader() error {
 // watchExecutorChangeFromLeader
 func (n *Node) watchExecutorChange() {
 	lt := "Node.watchExecutorChange "
-
+	logger.Node().Debug(lt + "running...")
 	doQuery := func() error {
 		defer func() {
 			if err := recover(); err != nil {
@@ -361,7 +361,9 @@ func (n *Node) watchExecutorChange() {
 		}
 		return nil
 	}
-	for {
-		doQuery()
-	}
+	go func() {
+		for {
+			doQuery()
+		}
+	}()
 }
