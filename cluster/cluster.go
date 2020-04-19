@@ -447,7 +447,7 @@ func (c *Cluster) cycleQueryWorkerResource() {
 		queryNodes := 0
 		failedNodes := 0
 		for _, n := range c.Nodes {
-			if !n.IsOnline && !n.IsWorker {
+			if !n.IsOnline || !n.IsWorker {
 				continue
 			}
 			queryNodes += 1
