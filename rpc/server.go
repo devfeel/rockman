@@ -3,11 +3,11 @@ package rpc
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/rpc/handler"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net"
 	"net/rpc"
