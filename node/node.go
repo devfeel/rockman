@@ -98,7 +98,7 @@ func (n *Node) Start() error {
 			return err
 		}
 		if n.IsLeader() {
-			n.syncAndSubmitExecutorsFromDB()
+			n.loadExecutorsFromDB()
 		}
 		if !n.IsLeader() {
 			n.syncExecutorsFromLeader()

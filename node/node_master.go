@@ -219,24 +219,21 @@ func (n *Node) becomeLeaderRole() {
 	logTitle := "Node.becomeLeaderRole "
 	logger.Node().Debug(logTitle + "become to leader role")
 	n.isLeader = true
-
-	//TODO sync all executors
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
 
 }
 
 func (n *Node) removeLeaderRole() {
 	logTitle := "Node "
-	//TODO do something when become to not leader
 	logger.Node().Debug(logTitle + "remove leader role")
 	n.Cluster.OnNodeOffline = nil
 	n.isLeader = false
 }
 
-// syncExecutorsFromDB sync executors from db, and submit them
+// loadExecutorsFromDB load executors from db, and submit them
 // must check init flag on registry
-func (n *Node) syncAndSubmitExecutorsFromDB() {
-	logTitle := "Node syncExecutorsFromDB "
+func (n *Node) loadExecutorsFromDB() {
+	logTitle := "Node loadExecutorsFromDB "
 	if !n.IsLeader() {
 		return
 	}
@@ -304,7 +301,7 @@ func (n *Node) syncExecutorsFromLeader() error {
 	}
 
 	rpcClient := n.Cluster.GetRpcClient(leader)
-	err, reply := rpcClient.CallQueryExecutorInfos("")
+	err, reply := rpcClient.CallQueryClusterExecutors("")
 	if err != nil {
 		logger.Node().Debug(lt + "Error: " + err.Error())
 		return err

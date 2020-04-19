@@ -85,14 +85,14 @@ func (c *RpcClient) CallQueryResource() (error, *packet.RpcReply) {
 	return nil, &reply
 }
 
-func (c *RpcClient) CallQueryExecutors() (error, *packet.RpcReply) {
+func (c *RpcClient) CallQueryExecutors(taskId string) (error, *packet.RpcReply) {
 	client, err := c.getConnClient()
 	if err != nil {
 		logger.Default().Error(err, "getConnClient error")
 		return err, nil
 	}
 	var reply packet.RpcReply
-	err = client.Call("Rpc.CallQueryExecutors", nil, &reply)
+	err = client.Call("Rpc.QueryExecutors", taskId, &reply)
 	if err != nil {
 		return err, nil
 	}
@@ -149,20 +149,6 @@ func (c *RpcClient) CallRemoveExecutor(taskId string) (error, *packet.RpcReply) 
 	}
 	var reply packet.RpcReply
 	err = client.Call("Rpc.RemoveExecutor", taskId, &reply)
-	if err != nil {
-		return err, nil
-	}
-	return nil, &reply
-}
-
-func (c *RpcClient) CallQueryExecutorConfig(taskId string) (error, *packet.RpcReply) {
-	client, err := c.getConnClient()
-	if err != nil {
-		logger.Default().Error(err, "getConnClient error")
-		return err, nil
-	}
-	var reply packet.RpcReply
-	err = client.Call("Rpc.QueryExecutorConfig", taskId, &reply)
 	if err != nil {
 		return err, nil
 	}
