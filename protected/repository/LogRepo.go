@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
 )
@@ -38,6 +39,41 @@ func (repo *LogRepo) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*
 	}
 	dataSql += pageReq.GetPageSql()
 	var dest []*model.TaskExecLog
+	var err error
+	if taskId != "" {
+		err = repo.FindList(&dest, dataSql, taskId)
+	} else {
+		err = repo.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if taskId != "" {
+		count, err = repo.Count(countSql, taskId)
+	} else {
+		count, err = repo.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
+}
+
+// QueryStateLog
+func (repo *LogRepo) QueryStateLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM TaskStateLog"
+	countSql := "SELECT count(1) FROM TaskStateLog"
+	if taskId != "" {
+		dataSql += " WHERE TaskID = ?"
+		countSql += " WHERE TaskID = ?"
+	}
+	dataSql += pageReq.GetPageSql()
+	var dest []*model.TaskStateLog
 	var err error
 	if taskId != "" {
 		err = repo.FindList(&dest, dataSql, taskId)

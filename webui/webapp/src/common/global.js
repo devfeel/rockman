@@ -7,8 +7,9 @@ const HOST = process.env.HOST;
 
 const URL_CONFIG = {
   'dev': {
-    home: 'http://localhost:8080'
+    // home: 'http://localhost:8080'
     // home: 'http://172.1.1.0/dev'
+    home: '/api'
   },
   'test': {
     home: 'http://172.1.1.0/test'

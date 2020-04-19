@@ -2,14 +2,15 @@ package service
 
 import (
 	"database/sql"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/repository"
 	runtime "github.com/devfeel/rockman/runtime/executor"
-	"strings"
-	"sync"
-	"time"
 )
 
 type ExecutorService struct {
@@ -111,8 +112,8 @@ func (service *ExecutorService) QueryExecutorByTaskId(taskId string) (*model.Exe
 }
 
 // QueryExecutors
-func (service *ExecutorService) QueryExecutors(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.repo.QueryExecutors(nodeId, pageReq)
+func (service *ExecutorService) QueryExecutors(pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryExecutors(pageReq)
 	return result, err
 }
 

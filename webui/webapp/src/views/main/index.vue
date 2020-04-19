@@ -49,7 +49,7 @@ export default {
     return {
       token: '',
       activeData: '1'
-    };
+    }
   },
   mounted() {
       var nameVal = window.sessionStorage.getItem('selectMenu');
@@ -75,7 +75,7 @@ export default {
       this.$store.commit('SET_INFO', null)
       window.sessionStorage.removeItem('UserInfo')
       window.sessionStorage.removeItem('selectMenu')
-      this.$router.push({ path: 'login' })
+      this.$router.push({ path: '/login' })
     }
   }
 }

@@ -15,12 +15,12 @@ export default new Router({
       component: resolve => require(['../views/main/index.vue'], resolve),
       children: [
         {
-          path: '/static/home',
+          path: '/home',
           name: 'home',
           component: resolve => require(['../views/home/index.vue'], resolve)
         },
         {
-          path: '/static/settings',
+          path: '/settings',
           component: resolve => require(['../views/settings/home/index.vue'], resolve),
           children: [
             {
@@ -41,7 +41,7 @@ export default new Router({
           ]
         },
         {
-          path: '/static/runtimes',
+          path: '/runtimes',
           component: resolve => require(['../views/runtimes/home/index.vue'], resolve),
           children: [
             {
@@ -69,12 +69,12 @@ export default new Router({
       ]
     },
     {
-      path: '/static/login',
+      path: '/login',
       name: 'login',
       component: resolve => require(['../views/login.vue'], resolve)
     },
     {
-      path: '/static/login1',
+      path: '/login1',
       name: 'login1',
       component: resolve => require(['../views/login_1.vue'], resolve)
     }

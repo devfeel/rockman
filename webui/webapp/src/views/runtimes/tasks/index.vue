@@ -302,7 +302,7 @@ export default {
             //     this.taskForm[key] = '';
             // }
             // this.setFormClass(false);
-            this.taskForm.ID = 0;
+            this.taskForm.TaskID = 0;
             this.taskForm.TaskID = '';
             this.taskForm.TargetType = '';
             this.taskForm.TaskType = '';
