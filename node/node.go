@@ -138,8 +138,8 @@ func (n *Node) ClusterId() string {
 
 func (n *Node) Shutdown() {
 	logTitle := "Node Shutdown "
-	//TODO add some check
-	logger.Node().Debug(logTitle + "start.")
+	logger.Node().Debug(logTitle + "doing.")
+	n.stopTheWorld()
 	n.shutdownChan <- "ok"
 }
 

@@ -95,10 +95,8 @@ func main() {
 	useTime := time.Now().Sub(startTime)
 	logger.Default().Debug("Node start success in " + fmt.Sprint(int64(useTime/time.Second)) + "s, service running...")
 
-	for {
-		<-shutdownChan
-		logger.Default().Debug("Node Shutdown.")
-	}
+	<-shutdownChan
+	logger.Default().Debug("Node Shutdown.")
 	logger.Default().Debug("Node Close.")
 }
 
