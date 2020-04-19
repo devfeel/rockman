@@ -7,20 +7,20 @@ export default new Router({
   mode: 'history',
   routes: [
     {
-      path: '/',
+      path: '/static',
       redirect: { name: 'login' }
     },
     {
-      path: '/index',
+      path: '/static/index',
       component: resolve => require(['../views/main/index.vue'], resolve),
       children: [
         {
-          path: '/home',
+          path: '/static/home',
           name: 'home',
           component: resolve => require(['../views/home/index.vue'], resolve)
         },
         {
-          path: '/settings',
+          path: '/static/settings',
           component: resolve => require(['../views/settings/home/index.vue'], resolve),
           children: [
             {
@@ -41,7 +41,7 @@ export default new Router({
           ]
         },
         {
-          path: '/runtimes',
+          path: '/static/runtimes',
           component: resolve => require(['../views/runtimes/home/index.vue'], resolve),
           children: [
             {
@@ -69,14 +69,9 @@ export default new Router({
       ]
     },
     {
-      path: '/login',
+      path: '/static/login',
       name: 'login',
       component: resolve => require(['../views/login.vue'], resolve)
-    },
-    {
-      path: '/login1',
-      name: 'login1',
-      component: resolve => require(['../views/login_1.vue'], resolve)
     }
   ]
 })

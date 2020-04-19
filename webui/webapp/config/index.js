@@ -60,10 +60,10 @@ module.exports = {
 
   build: {
     // Template for index.html
-    index: path.resolve(__dirname, '../../../release/wwwroot/index.html'),
+    index: path.resolve(__dirname, '../../../webapp/index.html'),
 
     // Paths
-    assetsRoot: path.resolve(__dirname, '../../../release/wwwroot'),
+    assetsRoot: path.resolve(__dirname, '../../../webapp'),
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {

@@ -1,6 +1,9 @@
 package webui
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/middleware/cors"
 	"github.com/devfeel/rockman/logger"
@@ -24,6 +27,7 @@ func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s.webApp.Items.Set(_const.ItemKeyNode, node)
 
 	s.initRoute()
+	s.initModule()
 	logger.Default().Debug("WebUI init success.")
 	return s
 }
@@ -64,6 +68,31 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/api/user")
 	g.GET("/login", userController.Login)
 
-	s.webApp.HttpServer.ServerFile("/static/*", "./webapp/")
+	s.webApp.HttpServer.ServerFile("/static/*filepath", "webapp/")
 
+}
+
+func (s *WebServer) initModule() {
+	s.webApp.HttpServer.RegisterModule(&dotweb.HttpModule{
+		OnBeginRequest: func(ctx dotweb.Context) {
+			path := ctx.Request().URL.Path
+			fmt.Println(path)
+			if path == "/static/index.html" {
+				return
+			}
+
+			if path == "/static/" {
+				return
+			}
+
+			if strings.HasPrefix(path, "/static/") {
+				ctx.Request().Request.URL.Path = "/static" + path
+			}
+
+			// if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") && path != "/static" && !strings.HasPrefix(path, "/static/index.html") {
+			// 	ctx.Request().Request.URL.Path = "/static" + path
+			// 	fmt.Println(ctx.Request().Request.URL.Path)
+			//}
+		},
+	})
 }

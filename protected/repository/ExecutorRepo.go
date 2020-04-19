@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/devfeel/database"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
@@ -89,7 +90,7 @@ func (repo *ExecutorRepo) GetExecutorByTaskId(taskId string) (*model.ExecutorInf
 func (repo *ExecutorRepo) QueryExecutors(pageReq *model.PageRequest) (*model.PageResult, error) {
 	dataSql := "SELECT * FROM Task"
 	countSql := "SELECT count(1) FROM Task"
-	dataSql += pageReq.GetPageSql()
+	dataSql += " ORDER BY CreateTime DESC " + pageReq.GetPageSql()
 	var dest []*model.ExecutorInfo
 	err := repo.FindList(&dest, dataSql)
 	if err != nil {

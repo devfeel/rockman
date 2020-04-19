@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/protected/model"
 )
@@ -36,7 +37,7 @@ func (repo *LogRepo) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*
 		dataSql += " WHERE TaskID = ?"
 		countSql += " WHERE TaskID = ?"
 	}
-	dataSql += pageReq.GetPageSql()
+	dataSql += " ORDER BY CreateTime DESC " + pageReq.GetPageSql()
 	var dest []*model.TaskExecLog
 	var err error
 	if taskId != "" {
@@ -83,7 +84,7 @@ func (repo *LogRepo) QueryStateLog(taskId string, pageReq *model.PageRequest) (*
 		dataSql += " WHERE TaskID = ?"
 		countSql += " WHERE TaskID = ?"
 	}
-	dataSql += pageReq.GetPageSql()
+	dataSql += " ORDER BY CreateTime DESC " + pageReq.GetPageSql()
 	var dest []*model.TaskStateLog
 	var err error
 	if taskId != "" {
