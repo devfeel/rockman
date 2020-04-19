@@ -10,6 +10,7 @@ import (
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
 	"github.com/devfeel/rockman/scheduler"
+	_json "github.com/devfeel/rockman/util/json"
 	"github.com/hashicorp/consul/api"
 	"strconv"
 	"sync"
@@ -499,9 +500,17 @@ func (c *Cluster) syncExecutorsFromWorkers() error {
 		if !reply.IsSuccess() {
 			return errors.New(reply.FailureMessage())
 		}
-		execInfos := reply.Message.(map[string]interface{})
+		jsonData, err := mapper.MapToJson(reply.Message.(map[string]interface{}))
+		if err != nil {
+			return err
+		}
+		execInfos := make(map[string]*core.ExecutorInfo)
+		err = _json.Unmarshal(string(jsonData), &execInfos)
+		if err != nil {
+			return err
+		}
 		for _, execInfo := range execInfos {
-			c.AddExecutor(execInfo.(*core.ExecutorInfo))
+			c.AddExecutor(execInfo)
 		}
 		return nil
 	}

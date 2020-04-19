@@ -3,10 +3,12 @@ package node
 import (
 	"errors"
 	"fmt"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
+	_json "github.com/devfeel/rockman/util/json"
 	"github.com/hashicorp/consul/api"
 	"strconv"
 	"time"
@@ -315,10 +317,18 @@ func (n *Node) syncExecutorsFromLeader() error {
 		logger.Node().Debug(lt + "failed, GetExecutorChangeFlag error: " + err.Error())
 		return err
 	}
-	execInfos := reply.Message.(map[string]interface{})
-	for _, execInfo := range execInfos {
-		n.Cluster.AddExecutor(execInfo.(*core.ExecutorInfo))
+	jsonData, err := mapper.MapToJson(reply.Message.(map[string]interface{}))
+	if err != nil {
+		logger.Node().Debug(lt + "failed, map data json Marshal error: " + err.Error())
+		return err
 	}
+	execInfos := make(map[string]*core.ExecutorInfo)
+	err = _json.Unmarshal(string(jsonData), &execInfos)
+	if err != nil {
+		logger.Node().Debug(lt + "failed, data json Unmarshal error: " + err.Error())
+		return err
+	}
+	n.Cluster.ExecutorInfos = execInfos
 	n.executorFlagLastIndex = meta.LastIndex
 	logger.Node().Debug(lt + "success.")
 	return nil

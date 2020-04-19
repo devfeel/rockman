@@ -1,15 +1,18 @@
 package client
 
 import (
+	"fmt"
+	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/runtime/executor"
+	_json "github.com/devfeel/rockman/util/json"
 	"testing"
 )
 
 const (
-	//serverUrl = "116.62.16.66:2398"
+	serverUrl = "116.62.16.66:2398"
 	//serverUrl = "118.31.32.168:2398"
-	serverUrl = "127.0.0.1:2398"
+	//serverUrl = "127.0.0.1:2398"
 )
 
 func TestRpcClient_CallEcho(t *testing.T) {
@@ -339,11 +342,34 @@ func TestRpcClient_CallRemoveExecutor(t *testing.T) {
 func TestRpcClient_CallQueryExecutors(t *testing.T) {
 	client := getRpcClient()
 
-	err, result := client.CallQueryExecutorConfig("")
+	err, result := client.CallQueryExecutors("")
 	if err != nil {
 		t.Error(err)
 	} else {
 		t.Log("success:", result)
+	}
+}
+
+func TestRpcClient_CallQueryClusterExecutors(t *testing.T) {
+	client := getRpcClient()
+
+	err, reply := client.CallQueryClusterExecutors("")
+	if err != nil {
+		t.Error(err)
+	} else {
+		json, err := mapper.MapToJson(reply.Message.(map[string]interface{}))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		execInfos := make(map[string]*core.ExecutorInfo)
+		err = _json.Unmarshal(string(json), &execInfos)
+		if err != nil {
+			t.Error(err)
+		} else {
+			fmt.Println(execInfos)
+		}
+		t.Log("success:", reply)
 	}
 }
 
