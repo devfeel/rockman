@@ -16,3 +16,13 @@ type TaskStateLogQR struct {
 	model.PageRequest
 	TaskID string
 }
+
+type TaskSubmitLogQR struct {
+	model.PageRequest
+	TaskID string
+}
+
+type NodeTraceLogQR struct {
+	model.PageRequest
+	NodeID string
+}

@@ -24,7 +24,7 @@
   import { dealDate } from '@/common/utils.js';
   import tableC from '@/components/table/table.vue';
   import tableH from '@/components/table/table-header.vue';
-  import { getExecLogList } from '@/api/task.js';
+  import { getTaskExecList } from '@/api/logs.js';
   export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -98,23 +98,16 @@
             }
           }
         ],
-        model: false,
-        loading: false,
-        closable: false,
-        footerHide: false
+        loading: false
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
       // this.init();
     },
     watch: {
-      data(newVal, oldVal) {
-
-      },
       loadData(newVal, oldVal) {
         if (newVal) {
           this.init();
@@ -130,7 +123,7 @@
         if (!param.params) param.params = {};
         this.loading = true;
         this.queryParam.TaskID = '';
-        getExecLogList(param).then(res => {
+        getTaskExecList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

@@ -27,12 +27,6 @@ func (service *LogService) WriteExecLog(log *model.TaskExecLog) error {
 	return err
 }
 
-// QueryExecLogs
-func (service *LogService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
-	result, err := service.repo.QueryExecLogs(taskId, pageReq)
-	return result, err
-}
-
 // WriteNodeTraceLog
 func (service *LogService) WriteNodeTraceLog(log *model.NodeTraceLog) error {
 	log.CreateTime = time.Now()
@@ -58,8 +52,26 @@ func (service *LogService) WriteSubmitLog(log *model.TaskSubmitLog) error {
 	return nil
 }
 
+// QueryExecLogs
+func (service *LogService) QueryExecLogs(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryExecLogs(taskId, pageReq)
+	return result, err
+}
+
 // QueryStateLog
 func (service *LogService) QueryStateLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
 	result, err := service.repo.QueryStateLog(taskId, pageReq)
+	return result, err
+}
+
+// QueryTaskSubmitLog
+func (service *LogService) QueryTaskSubmitLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryTaskSubmitLog(taskId, pageReq)
+	return result, err
+}
+
+// QueryNodeTraceLog
+func (service *LogService) QueryNodeTraceLog(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryNodeTraceLog(nodeId, pageReq)
 	return result, err
 }

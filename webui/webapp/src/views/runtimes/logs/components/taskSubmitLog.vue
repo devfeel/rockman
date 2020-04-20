@@ -23,7 +23,7 @@
   import { dealDate } from '@/common/utils.js';
   import tableC from '@/components/table/table.vue';
   import tableH from '@/components/table/table-header.vue';
-  import { getStateLogList } from '@/api/task.js';
+  import { getTaskSubmitList } from '@/api/logs.js';
   export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -40,27 +40,14 @@
             title: '服务器信息',
             key: 'NodeEndPoint'
           }, {
-            title: '状态',
-            key: 'State'
+            title: '是否成功',
+            key: 'IsSuccess'
           }, {
-            title: '日志信息',
-            key: 'Message',
-            render: (h, params) => {
-              return h('div', [
-                h('span', {
-                  style: {
-                    display: 'inline-block',
-                    width: '100%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  },
-                  domProps: {
-                    title: params.row.Message
-                  }
-                }, params.row.Message)
-              ]);
-            }
+            title: '失败类型',
+            key: 'FailureType'
+          }, {
+            title: '失败原因',
+            key: 'FailureCause'
           }, {
             title: '创建时间',
             key: 'CreateTime',
@@ -71,23 +58,16 @@
             }
           }
         ],
-        model: false,
-        loading: false,
-        closable: false,
-        footerHide: false
+        loading: false
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
       // this.init();
     },
     watch: {
-      data(newVal, oldVal) {
-
-      },
       loadData(newVal, oldVal) {
         if (newVal) {
           this.init();
@@ -103,7 +83,7 @@
         if (!param.params) param.params = {};
         this.loading = true;
         this.queryParam.TaskID = '';
-        getStateLogList(param).then(res => {
+        getTaskSubmitList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

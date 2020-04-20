@@ -3,7 +3,6 @@
 // see http://vuejs-templates.github.io/webpack for documentation.
 
 const path = require('path')
-const domainPrefix = `/api`;
 
 module.exports = {
   dev: {
@@ -12,11 +11,11 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      [domainPrefix]: {
+      '/api': {
         target: 'http://localhost:8080', // 目标接口域名
         changeOrigin: true, // 是否跨域
         pathRewrite: {
-          [`^${domainPrefix}`]: '/api' // 重写接口
+          '^/api': '/api' // 重写接口
         }
       }
     },
@@ -60,21 +59,6 @@ module.exports = {
     assetsRoot: path.resolve(__dirname, '../../../webapp'),
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
-    proxyTable: {
-      '/static/js': {
-        target: 'http://localhost:8080', // 目标接口域名
-        pathRewrite: {
-          '^/static/js': '/static/static/js' // 重写接口
-        }
-      },
-      [domainPrefix]: {
-        target: 'http://localhost:8080', // 目标接口域名
-        changeOrigin: true, // 是否跨域
-        pathRewrite: {
-          [`^${domainPrefix}`]: '/api' // 重写接口
-        }
-      }
-    },
     /**
      * Source Maps
      */
