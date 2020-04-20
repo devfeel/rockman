@@ -1,113 +1,35 @@
 <template>
     <div >
-      <Tabs>
-        <TabPane label="Node日志" name="NodeTraceLog"></TabPane>
-        <TabPane label="任务提交日志" name="TaskSubmitLog"></TabPane>
-        <TabPane label="任务执行日志" name="TaskExecLog"></TabPane>
-        <TabPane label="任务状态日志" name="TaskStateLog"></TabPane>
-    </Tabs>
-      <!-- <tableH icon="md-apps" text="日志列表">
-        <div slot="content"></div>
-        <slot>
-          <div style="text-align: right;float: right;">
-            <div class="search">
-
-            </div>
-            <div class="btn">
-              <i-button type="info" icon="md-refresh" @click="onRefresh(false)">刷新</i-button>
-            </div>
-          </div>
-        </slot>
-      </tableH> -->
-      <!-- <tableC  id="table" :loading="loading"  :columns="columns" :dataSource="dataSource" :queryParam="queryParam"
-        @onPageChange="onPageChange" ref="table"></tableC> -->
+      <Tabs @on-click="onTabClick" v-model="tabName">
+        <TabPane label="Node日志" name="NodeTraceLog">
+          <nodeTraceLog :loadData="loadNodeTraceLogData"></nodeTraceLog>
+        </TabPane>
+        <TabPane label="任务提交日志" name="TaskSubmitLog">
+          <taskSubmitLog :loadData="loadTaskSubmitLogData"></taskSubmitLog>
+        </TabPane>
+        <TabPane label="任务执行日志" name="TaskExecLog">
+          <taskExecLog :loadData="loadTaskExecLogData"></taskExecLog>
+        </TabPane>
+        <TabPane label="任务状态日志" name="TaskStateLog">
+          <taskStateLog :loadData="loadTaskStateLogData"></taskStateLog>
+        </TabPane>
+      </Tabs>
     </div>
 </template>
 <script>
-import Minix from '@/common/tableminix.js';
-import { dealDate } from '@/common/utils.js';
-import tableC from '@/components/table/table.vue';
-import tableH from '@/components/table/table-header.vue';
-import { getLogList } from '@/api/logs.js';
+  import nodeTraceLog from './components/nodeTraceLog.vue';
+  import taskExecLog from './components/taskExecLog.vue';
+  import taskStateLog from './components/taskStateLog.vue';
+  import taskSubmitLog from './components/taskSubmitLog.vue';
 export default {
-  components: { tableC, tableH },
-  mixins: [Minix],
+  components: { nodeTraceLog, taskExecLog, taskStateLog, taskSubmitLog },
   data() {
     return {
-      columns: [
-        {
-          title: '任务Id',
-          key: 'TaskId'
-        }, {
-          title: 'NodeId',
-          key: 'NodeId'
-        }, {
-          title: '服务器',
-          key: 'NodeEndPoint'
-        }, {
-          title: '是否执行成功',
-          key: 'IsSuccess'
-        }, {
-          title: '执行开始时间',
-          key: 'StartTime',
-          render: (h, params) => {
-                      return h('div',
-                          dealDate(params.row.StartTime)
-                      )
-                  }
-        }, {
-          title: '执行结束时间',
-          key: 'EndTime',
-          render: (h, params) => {
-                      return h('div',
-                          dealDate(params.row.EndTime)
-                      )
-                  }
-        }, {
-          title: '执行失败类型',
-          key: 'FailureType'
-        }, {
-          title: '执行失败原因',
-          key: 'FailureCause'
-        }, {
-          title: '创建时间',
-          key: 'CreateTime',
-          render: (h, params) => {
-                      return h('div',
-                          dealDate(params.row.CreateTime)
-                      )
-                  }
-        }, {
-          title: '操作',
-          key: 'action',
-          align: 'center',
-          render: (h, params) => {
-            return h('div', [
-              h('Button', {
-                props: {
-                  type: 'warning',
-                  size: 'small'
-
-                },
-                style: {
-                  marginRight: '5px'
-                },
-                on: {
-                  click: () => {
-
-                  }
-                }
-
-              }, '查看')
-            ]);
-          }
-        }
-      ],
-      model: false,
-      loading: false,
-      closable: false,
-      footerHide: false
-
+      tabName: 'NodeTraceLog',
+      loadNodeTraceLogData: false,
+      loadTaskSubmitLogData: false,
+      loadTaskExecLogData: false,
+      loadTaskStateLogData: false
     }
   },
   mounted() {
@@ -117,29 +39,33 @@ export default {
     init() {
       // this.onPageChange(this.queryParam)
     },
-    onPageChange(param) {
-      this.queryParam = param;
-      if (!param.params) param.params = {};
-      this.loading = true;
-      // this.queryParam.NodeId = '0be88880b0d945d3b4d55d75d4da0213'
-      getLogList(param).then(res => {
-        if (res.code === 200) {
-          this.dataSource = res.data;
-        }
-        this.loading = false;
-      })
-    },
-    onRefresh() {
-      this.init();
+    onTabClick(name) {
+      switch (name) {
+        case 'NodeTraceLog':
+          this.loadNodeTraceLogData = true;
+          break;
+        case 'TaskSubmitLog':
+          this.loadTaskSubmitLogData = true;
+          break;
+        case 'TaskExecLog':
+          this.loadTaskExecLogData = true;
+          break;
+        case 'TaskStateLog':
+          this.loadTaskStateLogData = true;
+          break;
+        default:
+          this.loadNodeTraceLogData = false;
+          this.loadTaskSubmitLogData = false;
+          this.loadTaskExecLogData = false;
+          this.loadTaskStateLogData = false;
+      }
     }
   }
-
 }
 </script>
 <style lang="less" scoped>
 .search {
 }
-
 .btn {
   color: #999;
   height: 40px;
