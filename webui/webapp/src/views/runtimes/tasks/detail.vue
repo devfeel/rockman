@@ -41,6 +41,9 @@
                 <TabPane label="执行统计" name="statistics">
                     <statistics :data="taskForm" :loadData="loadData"></statistics>
                 </TabPane>
+                <TabPane label="提交日志" name="submitLog">
+                  <submitLog :data="taskForm" :loadData="loadSubmitLogData"></submitLog>
+                </TabPane>
                 <TabPane label="执行日志" name="execLogs">
                     <logs :data="taskForm" :loadData="loadExecLogData"></logs>
                 </TabPane>
@@ -55,15 +58,17 @@
 import logs from './components/logs.vue';
 import stateLogs from './components/stateLogs.vue';
 import statistics from './components/statistics.vue';
+import submitLog from './components/submitLogs';
 import { getUrlParam } from '@/common/utils.js';
 import { getTaskOnce } from '@/api/task.js';
 export default {
-    components: { logs, statistics, stateLogs },
+    components: { logs, statistics, stateLogs, submitLog },
     data() {
         return {
             taskForm: {},
             tabName: 'statistics',
             loadData: false,
+            loadSubmitLogData: false,
             loadExecLogData: false,
             loadStateLogData: false
         }
@@ -98,9 +103,13 @@ export default {
                 case 'stateLogs':
                     this.loadStateLogData = true;
                     break;
+                 case 'submitLog':
+                    this.loadSubmitLogData = true;
+                   break;
                 default:
                     this.loadExecLogData = false;
                     this.loadStateLogData = false;
+                    this.loadSubmitLogData = false;
             }
         }
     }

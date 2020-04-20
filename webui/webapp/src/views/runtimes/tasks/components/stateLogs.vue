@@ -71,10 +71,7 @@ export default {
                   }
         }
       ],
-      model: false,
-      loading: false,
-      closable: false,
-      footerHide: false
+      loading: false
     }
   },
   props: {

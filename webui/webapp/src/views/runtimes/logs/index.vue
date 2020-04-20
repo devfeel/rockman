@@ -1,17 +1,17 @@
 <template>
     <div >
-      <Tabs>
+      <Tabs @on-click="onTabClick" v-model="tabName">
         <TabPane label="Node日志" name="NodeTraceLog">
-          <nodeTraceLog></nodeTraceLog>
+          <nodeTraceLog :loadData="loadNodeTraceLogData"></nodeTraceLog>
         </TabPane>
         <TabPane label="任务提交日志" name="TaskSubmitLog">
-          <taskSubmitLog></taskSubmitLog>
+          <taskSubmitLog :loadData="loadTaskSubmitLogData"></taskSubmitLog>
         </TabPane>
         <TabPane label="任务执行日志" name="TaskExecLog">
-          <taskExecLog></taskExecLog>
+          <taskExecLog :loadData="loadTaskExecLogData"></taskExecLog>
         </TabPane>
         <TabPane label="任务状态日志" name="TaskStateLog">
-          <taskStateLog></taskStateLog>
+          <taskStateLog :loadData="loadTaskStateLogData"></taskStateLog>
         </TabPane>
       </Tabs>
     </div>
@@ -25,6 +25,11 @@ export default {
   components: { nodeTraceLog, taskExecLog, taskStateLog, taskSubmitLog },
   data() {
     return {
+      tabName: 'NodeTraceLog',
+      loadNodeTraceLogData: false,
+      loadTaskSubmitLogData: false,
+      loadTaskExecLogData: false,
+      loadTaskStateLogData: false
     }
   },
   mounted() {
@@ -33,6 +38,27 @@ export default {
   methods: {
     init() {
       // this.onPageChange(this.queryParam)
+    },
+    onTabClick(name) {
+      switch (name) {
+        case 'NodeTraceLog':
+          this.loadNodeTraceLogData = true;
+          break;
+        case 'TaskSubmitLog':
+          this.loadTaskSubmitLogData = true;
+          break;
+        case 'TaskExecLog':
+          this.loadTaskExecLogData = true;
+          break;
+        case 'TaskStateLog':
+          this.loadTaskStateLogData = true;
+          break;
+        default:
+          this.loadNodeTraceLogData = false;
+          this.loadTaskSubmitLogData = false;
+          this.loadTaskExecLogData = false;
+          this.loadTaskStateLogData = false;
+      }
     }
   }
 
