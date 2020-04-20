@@ -53,8 +53,8 @@ func (s *WebServer) initRoute() {
 	g.POST("/save", executorController.SaveExecutor)
 	g.POST("/update", executorController.UpdateExecutor)
 	g.GET("/get", executorController.QueryById)
-	g.POST("/execlogs", executorController.ShowExecLogs)
-	g.POST("/statelogs", executorController.ShowStateLog)
+	g.GET("/execlogs", executorController.ShowExecLogs)
+	g.GET("/statelogs", executorController.ShowStateLog)
 
 	g = s.webApp.HttpServer.Group("/api/node")
 	g.GET("/list", nodeController.ShowNodes)
@@ -67,7 +67,7 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/api/user")
 	g.GET("/login", userController.Login)
 
-	s.webApp.HttpServer.ServerFile("/static/*filepath", "webapp/")
+	s.webApp.HttpServer.ServerFile("/static/*", "webapp/")
 
 }
 

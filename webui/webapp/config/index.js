@@ -12,12 +12,6 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      '/static/js': {
-        target: 'http://localhost:8080', // 目标接口域名
-        pathRewrite: {
-          '^/static/js': '/static/static/js' // 重写接口
-        }
-      },
       [domainPrefix]: {
         target: 'http://localhost:8080', // 目标接口域名
         changeOrigin: true, // 是否跨域
