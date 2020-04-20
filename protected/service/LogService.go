@@ -63,3 +63,15 @@ func (service *LogService) QueryStateLog(taskId string, pageReq *model.PageReque
 	result, err := service.repo.QueryStateLog(taskId, pageReq)
 	return result, err
 }
+
+// QueryTaskSubmitLog
+func (service *LogService) QueryTaskSubmitLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryTaskSubmitLog(taskId, pageReq)
+	return result, err
+}
+
+// QueryNodeTraceLog
+func (service *LogService) QueryNodeTraceLog(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	result, err := service.repo.QueryNodeTraceLog(nodeId, pageReq)
+	return result, err
+}

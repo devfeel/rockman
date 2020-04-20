@@ -109,3 +109,73 @@ func (repo *LogRepo) QueryStateLog(taskId string, pageReq *model.PageRequest) (*
 	pageResult.PageData = dest
 	return pageResult, err
 }
+
+// QueryTaskSubmitLog
+func (repo *LogRepo) QueryTaskSubmitLog(taskId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM TaskSubmitLog"
+	countSql := "SELECT count(1) FROM TaskSubmitLog"
+	if taskId != "" {
+		dataSql += " WHERE TaskID = ?"
+		countSql += " WHERE TaskID = ?"
+	}
+	dataSql += " ORDER BY CreateTime DESC " + pageReq.GetPageSql()
+	var dest []*model.TaskSubmitLog
+	var err error
+	if taskId != "" {
+		err = repo.FindList(&dest, dataSql, taskId)
+	} else {
+		err = repo.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if taskId != "" {
+		count, err = repo.Count(countSql, taskId)
+	} else {
+		count, err = repo.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
+}
+
+// QueryNodeTraceLog
+func (repo *LogRepo) QueryNodeTraceLog(nodeId string, pageReq *model.PageRequest) (*model.PageResult, error) {
+	dataSql := "SELECT * FROM NodeTraceLog"
+	countSql := "SELECT count(1) FROM NodeTraceLog"
+	if nodeId != "" {
+		dataSql += " WHERE NodeID = ?"
+		countSql += " WHERE NodeID = ?"
+	}
+	dataSql += " ORDER BY CreateTime DESC " + pageReq.GetPageSql()
+	var dest []*model.NodeTraceLog
+	var err error
+	if nodeId != "" {
+		err = repo.FindList(&dest, dataSql, nodeId)
+	} else {
+		err = repo.FindList(&dest, dataSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if nodeId != "" {
+		count, err = repo.Count(countSql, nodeId)
+	} else {
+		count, err = repo.Count(countSql)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pageResult := new(model.PageResult)
+	pageResult.TotalCount = count
+	pageResult.PageData = dest
+	return pageResult, err
+}

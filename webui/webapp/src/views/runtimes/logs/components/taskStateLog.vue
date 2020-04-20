@@ -23,7 +23,7 @@
   import { dealDate } from '@/common/utils.js';
   import tableC from '@/components/table/table.vue';
   import tableH from '@/components/table/table-header.vue';
-  import { getTaskSubmitList } from '@/api/logs.js';
+  import { getTaskStateList } from '@/api/logs.js';
   export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -40,21 +40,27 @@
             title: '服务器信息',
             key: 'NodeEndPoint'
           }, {
-            title: '是否执行成功',
-            key: 'IsSuccess',
+            title: '状态',
+            key: 'State'
+          }, {
+            title: '日志信息',
+            key: 'Message',
             render: (h, params) => {
-              const row = params.row;
-              if (row.IsSuccess) {
-                return h('Span', '成功');
-              }
-              return h('Span', '失败');
+              return h('div', [
+                h('span', {
+                  style: {
+                    display: 'inline-block',
+                    width: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  },
+                  domProps: {
+                    title: params.row.Message
+                  }
+                }, params.row.Message)
+              ]);
             }
-          }, {
-            title: '失败类型',
-            key: 'FailureType'
-          }, {
-            title: '失败原因',
-            key: 'FailureCause'
           }, {
             title: '创建时间',
             key: 'CreateTime',
@@ -69,7 +75,6 @@
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
@@ -88,9 +93,10 @@
       },
       onPageChange(param) {
         this.queryParam = param;
+        if (!param.params) param.params = {};
         this.loading = true;
-        this.queryParam.TaskID = this.data.TaskID;
-        getTaskSubmitList(param).then(res => {
+        this.queryParam.TaskID = '';
+        getTaskStateList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

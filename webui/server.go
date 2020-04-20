@@ -47,6 +47,7 @@ func (s *WebServer) initRoute() {
 	nodeController := new(controllers.NodeController)
 	clusterController := new(controllers.ClusterController)
 	userController := new(controllers.UserController)
+	logController := controllers.NewLogController()
 
 	g := s.webApp.HttpServer.Group("/api/task")
 	g.GET("/list", executorController.ShowExecutors)
@@ -59,6 +60,12 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/api/node")
 	g.GET("/list", nodeController.ShowNodes)
 
+	g = s.webApp.HttpServer.Group("/api/log")
+	g.GET("/trace", logController.ShowNodeTraceLog)
+	g.GET("/exec", logController.ShowTaskExecLogs)
+	g.GET("/state", logController.ShowTaskStateLog)
+	g.GET("/submit", logController.ShowTaskSubmitLog)
+
 	g = s.webApp.HttpServer.Group("/api/cluster")
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
@@ -67,7 +74,7 @@ func (s *WebServer) initRoute() {
 	g = s.webApp.HttpServer.Group("/api/user")
 	g.GET("/login", userController.Login)
 
-	s.webApp.HttpServer.ServerFile("/static/*filepath", "webapp/")
+	s.webApp.HttpServer.ServerFile("/static/*", "webapp/")
 
 }
 

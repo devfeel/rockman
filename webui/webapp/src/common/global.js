@@ -15,7 +15,7 @@ const URL_CONFIG = {
     home: 'http://172.1.1.0/test'
   },
   'prod': {
-    home: 'http://localhost:8080'
+    home: 'http://localhost:8080/api'
   }
 }
 let {home} = URL_CONFIG[HOST]

@@ -6,6 +6,7 @@
         <slot>
           <div style="text-align: right;float: right;">
             <div class="search">
+
             </div>
             <div class="btn">
               <i-button type="info" icon="md-refresh" @click="onRefresh(false)">刷新</i-button>
@@ -23,7 +24,7 @@
   import { dealDate } from '@/common/utils.js';
   import tableC from '@/components/table/table.vue';
   import tableH from '@/components/table/table-header.vue';
-  import { getTaskSubmitList } from '@/api/logs.js';
+  import { getTaskExecList } from '@/api/logs.js';
   export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -35,10 +36,42 @@
             key: 'TaskID'
           }, {
             title: 'Node编码',
-            key: 'NodeID'
+            key: 'NodeID',
+            render: (h, params) => {
+              return h('div', [
+                h('span', {
+                  style: {
+                    display: 'inline-block',
+                    width: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  },
+                  domProps: {
+                    title: params.row.NodeID
+                  }
+                }, params.row.NodeID)
+              ]);
+            }
           }, {
             title: '服务器信息',
             key: 'NodeEndPoint'
+          }, {
+            title: '执行开始时间',
+            key: 'StartTime',
+            render: (h, params) => {
+              return h('div',
+                dealDate(params.row.StartTime)
+              )
+            }
+          }, {
+            title: '执行结束时间',
+            key: 'EndTime',
+            render: (h, params) => {
+              return h('div',
+                dealDate(params.row.EndTime)
+              )
+            }
           }, {
             title: '是否执行成功',
             key: 'IsSuccess',
@@ -50,10 +83,10 @@
               return h('Span', '失败');
             }
           }, {
-            title: '失败类型',
+            title: '执行失败类型',
             key: 'FailureType'
           }, {
-            title: '失败原因',
+            title: '执行失败原因',
             key: 'FailureCause'
           }, {
             title: '创建时间',
@@ -69,7 +102,6 @@
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
@@ -88,9 +120,10 @@
       },
       onPageChange(param) {
         this.queryParam = param;
+        if (!param.params) param.params = {};
         this.loading = true;
-        this.queryParam.TaskID = this.data.TaskID;
-        getTaskSubmitList(param).then(res => {
+        this.queryParam.TaskID = '';
+        getTaskExecList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

@@ -23,7 +23,7 @@
   import { dealDate } from '@/common/utils.js';
   import tableC from '@/components/table/table.vue';
   import tableH from '@/components/table/table-header.vue';
-  import { getTaskSubmitList } from '@/api/logs.js';
+  import { getNodeTraceList } from '@/api/logs.js';
   export default {
     components: { tableC, tableH },
     mixins: [Minix],
@@ -31,24 +31,26 @@
       return {
         columns: [
           {
-            title: '任务编码',
-            key: 'TaskID'
-          }, {
             title: 'Node编码',
             key: 'NodeID'
           }, {
             title: '服务器信息',
             key: 'NodeEndPoint'
           }, {
-            title: '是否执行成功',
-            key: 'IsSuccess',
-            render: (h, params) => {
-              const row = params.row;
-              if (row.IsSuccess) {
-                return h('Span', '成功');
-              }
-              return h('Span', '失败');
-            }
+            title: '是否Leader',
+            key: 'IsLeader'
+          }, {
+            title: '是否Master',
+            key: 'IsMaster'
+          }, {
+            title: '是否Worker',
+            key: 'IsWorker'
+          }, {
+            title: 'Event',
+            key: 'Event'
+          }, {
+            title: '是否成功',
+            key: 'IsSuccess'
           }, {
             title: '失败类型',
             key: 'FailureType'
@@ -69,7 +71,6 @@
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
@@ -88,9 +89,10 @@
       },
       onPageChange(param) {
         this.queryParam = param;
+        if (!param.params) param.params = {};
         this.loading = true;
-        this.queryParam.TaskID = this.data.TaskID;
-        getTaskSubmitList(param).then(res => {
+        this.queryParam.NodeID = '';
+        getNodeTraceList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

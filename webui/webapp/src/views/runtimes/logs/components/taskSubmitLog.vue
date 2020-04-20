@@ -40,15 +40,8 @@
             title: '服务器信息',
             key: 'NodeEndPoint'
           }, {
-            title: '是否执行成功',
-            key: 'IsSuccess',
-            render: (h, params) => {
-              const row = params.row;
-              if (row.IsSuccess) {
-                return h('Span', '成功');
-              }
-              return h('Span', '失败');
-            }
+            title: '是否成功',
+            key: 'IsSuccess'
           }, {
             title: '失败类型',
             key: 'FailureType'
@@ -69,7 +62,6 @@
       }
     },
     props: {
-      data: {},
       loadData: false
     },
     mounted() {
@@ -88,8 +80,9 @@
       },
       onPageChange(param) {
         this.queryParam = param;
+        if (!param.params) param.params = {};
         this.loading = true;
-        this.queryParam.TaskID = this.data.TaskID;
+        this.queryParam.TaskID = '';
         getTaskSubmitList(param).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
