@@ -11,7 +11,7 @@
           </MenuItem>
           <MenuItem name="2" :to='{name:"settings"}'>
           <!-- <Icon type="ios-keypad"></Icon> -->
-          配置中心
+          节点中心
           </MenuItem>
           <MenuItem name="3" :to='{name:"runtimes"}'>
           <!-- <Icon type="ios-analytics"></Icon> -->
