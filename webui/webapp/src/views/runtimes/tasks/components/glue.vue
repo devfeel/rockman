@@ -4,7 +4,7 @@
         <div class="glue-title">
             WebIDE<span>{{defaultOption.mode}}脚本编辑</span>
         </div>
-        <div class="glue-btn">
+        <div  class="glue-btn">
             <Button type="primary" @click="onSave()">保 存</Button>
         </div>
     </div>
@@ -99,7 +99,7 @@ export default {
 .glue-btn{
     float:right;
     text-align: right;
-    padding-right: 50px;
+    padding-right: 68px;
 }
 .glue-conext{
     clear: both;

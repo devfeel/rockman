@@ -114,7 +114,8 @@
                 <Button type="primary" @click="onSave('formValidate')">确定</Button>
             </div>
         </Modal>
-        <Modal  v-model="glueModel"  fullscreen :footer-hide="true">
+        <Modal  v-model="glueModel"  fullscreen :footer-hide="true" >
+            <div slot="close" class="model-close"><Button type="primary" @click="onSave()">关 闭</Button></div>
             <glue :data="glueTaskForm" ></glue>
         </Modal>
     </div>
@@ -418,5 +419,8 @@ export default {
     padding-top: 5px;
     padding-left: 10px;
     padding-right: 50px;
+}
+.model-close{
+    margin-top: 2px;;
 }
 </style>
