@@ -10,26 +10,29 @@
           <el-radio-button label="任务消息" fill="#409EFF"></el-radio-button>
         </el-radio-group>
       </div>
-      <div class="message-info-content" style="overflow:auto">
-        <el-timeline :reverse="reverse"
-        v-infinite-scroll="load"
-        infinite-scroll-disabled="disabled">
-          <el-timeline-item
-            v-for="(timeLine, index) in timeLineData"
-            :key="index"
-            :timestamp="timeLine.time" icon='el-icon-more' type='primary' placement='top'>
-            <el-card>
-              <el-tag type='warning'>{{timeLine.node}}</el-tag> {{timeLine.message}}
-            </el-card>
-          </el-timeline-item>
-        </el-timeline>
-        <div class="message-info-more" v-if="loading"><el-link :underline="false" @click="load">更多</el-link></div>
-        <div class="message-info-more" v-if="timeLineData.length>10">没有更多了</div>
+      <div class="message-info-content">
+        <el-scrollbar style="height:100%">
+          <el-timeline :reverse="reverse"
+          v-infinite-scroll="load"
+          infinite-scroll-disabled="disabled">
+            <el-timeline-item
+              v-for="(timeLine, index) in timeLineData"
+              :key="index"
+              :timestamp="timeLine.time" icon='el-icon-more' type='primary' placement='top'>
+              <el-card>
+                <el-tag type='warning'>{{timeLine.node}}</el-tag> {{timeLine.message}}
+              </el-card>
+            </el-timeline-item>
+          </el-timeline>
+          <div class="message-info-more" v-if="loading"><el-link :underline="false" @click="load">更多</el-link></div>
+          <div class="message-info-more" v-if="timeLineData.length>10">没有更多了</div>
+        </el-scrollbar>
       </div>
     </el-card>
   </div>
 </template>
 <script>
+import { getClusterInfo } from '@/api/cluster.js';
 export default {
   data() {
     return {
@@ -39,11 +42,17 @@ export default {
       loading: false
     };
   },
-  mounted() {
+  activated() {
     this.onInit();
   },
   methods: {
     onInit() {
+      getClusterInfo().then(res => {
+        if (res.RetCode === 0) {
+        } else {
+          this.$Message.warning(res.RetMsg);
+        }
+      })
       this.timeLineData.push({
         time: '2020-04-23 16:25:10',
         node: '10.139.160.174:40001',
@@ -88,29 +97,35 @@ export default {
   /* margin-top: 40px; */
   /* background: #EDF0F5; */
   height: calc(100%);
+  overflow-y:scroll;
 }
 .cluster-info{
-  margin: 10px;
+  margin: 10px 20px;
   background: white;
   height: 200px;
 }
 .message-info{
-  position: absolute;
-  left: 0;
-  right: 0;
-  padding: 0 0px;
-  margin: 10px 10px;
+  // position: absolute;
+  // left: 0;
+  // right: 0;
+  // padding: 0 0px;
+  margin: 10px 20px;
   background: white;
-  height: calc(100%);
+  //height: calc(100%-30px);
 }
 .message-info-btn{
   margin-bottom:10px;
   height: 45px;
 }
 .message-info-content{
-  margin-bottom:10px;
-  height: calc(100%);
+  padding: 10px;
+  // height: 200px;
+  //height: calc(100%-40px);
 }
+.el-scrollbar {
+  height: 100%;
+}
+.el-scrollbar__wrap { overflow: scroll; width: 110%; height: 120%; }
 .message-info-more{
   text-align: center;
 }
