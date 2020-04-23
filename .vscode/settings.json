@@ -1,0 +1,7 @@
+{
+    "vetur.format.defaultFormatterOptions": {
+    
+    },
+    "vetur.format.defaultFormatter.html": "prettier",
+    "eslint.format.enable": true,
+}

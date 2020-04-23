@@ -9,7 +9,7 @@
           <!-- <Icon type="ios-navigate"></Icon> -->
           监控
           </MenuItem>
-          <MenuItem name="2" :to='{name:"settings"}'>
+          <MenuItem name="2" :to='{name:"node"}'>
           <!-- <Icon type="ios-keypad"></Icon> -->
           节点中心
           </MenuItem>

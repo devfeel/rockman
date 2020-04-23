@@ -1,4 +1,4 @@
-import {get, post} from '../axios/http.js'
+import {get, post} from '../common/http.js'
 import GLOBAL from '../common/global.js'
 
 export const getNodeList = (data) => get(`${GLOBAL.HOME}/node/list`, data)

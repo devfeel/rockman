@@ -2,9 +2,10 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 import App from './App'
-// import 'element-ui/lib/theme-chalk/index.css'
+import 'element-ui/lib/theme-chalk/index.css'
 import router from './router'
 import ViewUI from 'view-design';
+import ElementUI from 'element-ui'
 // 引入字体图标库
 import 'view-design/dist/styles/iview.css';
 import './assets/iconfont/iconfont.css'
@@ -12,6 +13,7 @@ import GLOBAL from './common/global.js'
 import store from './store/store.js'
 import * as Utils from './common/utils.js'
 
+Vue.use(ElementUI);
 Vue.use(ViewUI)
 
 // 挂载到Vue实例上面
@@ -31,12 +33,12 @@ if (window.sessionStorage.getItem('Token')) {
 }
 
 router.beforeEach(({meta, path}, from, next) => {
-  var {auth = true} = meta
+  // var {auth = true} = meta
   // true用户已登录， false用户未登录
-  var isLogin = Boolean(store.state.user.token)
-  if (auth && !isLogin && path !== '/static/login') {
-     return next({ path: '/static/login' })
-  }
+  // var isLogin = Boolean(store.state.user.token)
+  // if (auth && !isLogin && path !== '/static/login') {
+  //    return next({ path: '/static/login' })
+  // }
   // router.push({ path: '/static/home' });
   next()
 })
