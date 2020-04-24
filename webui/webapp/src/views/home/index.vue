@@ -1,7 +1,19 @@
 <template>
   <div class="content">
     <el-card class="cluster-info">
-
+      <el-row class="cluster-info-row">
+        <el-col :span="12"><span class="cluster-info-title">Cluster：</span><span class="cluster-info-title-v">{{clusterInfo.ClusterId}}</span></el-col>
+      </el-row>
+      <el-row class="cluster-info-row">
+        <el-col :span="7" class="cluster-info-col"><span class="cluster-info-title">LeaderKey：</span><span class="cluster-info-title-v">{{clusterInfo.LeaderKey}}</span></el-col>
+        <el-col :span="7" class="cluster-info-col cluster-info-col-pl20"><span class="cluster-info-title">LeaderServer：</span><span class="cluster-info-title-v">{{clusterInfo.LeaderServer}}</span></el-col>
+        <el-col :span="6" class="cluster-info-col-pl20"><span class="cluster-info-title">RegistryServerUrl：</span><span class="cluster-info-title-v">{{clusterInfo.RegistryServerUrl}}</span></el-col>
+      </el-row>
+      <el-row class="cluster-info-row">
+        <el-col :span="7" class="cluster-info-col"><span class="cluster-info-title">节点数：</span><span class="cluster-info-title-v">{{clusterInfo.NodeNum}}</span></el-col>
+        <el-col :span="7" class="cluster-info-col cluster-info-col-pl20"><span class="cluster-info-title">运行任务数：</span><span class="cluster-info-title-v">{{clusterInfo.NodeNum}}</span></el-col>
+        <el-col :span="6" class="cluster-info-col-pl20"><span class="cluster-info-title">停止任务数：</span><span class="cluster-info-title-v">{{clusterInfo.NodeNum}}</span></el-col>
+      </el-row>
     </el-card>
     <el-card class="message-info">
       <div class="message-info-btn">
@@ -20,7 +32,7 @@
               :key="index"
               :timestamp="timeLine.time" icon='el-icon-more' type='primary' placement='top'>
               <el-card>
-                <el-tag type='warning'>{{timeLine.node}}</el-tag> {{timeLine.message}}
+                <el-tag type='warning'>{{timeLine.node}}</el-tag> <span class="message-info-content-m">{{timeLine.message}}</span>
               </el-card>
             </el-timeline-item>
           </el-timeline>
@@ -39,7 +51,8 @@ export default {
       radioValue: '节点消息',
       reverse: false,
       timeLineData: [],
-      loading: false
+      loading: false,
+      clusterInfo: {}
     };
   },
   activated() {
@@ -49,6 +62,7 @@ export default {
     onInit() {
       getClusterInfo().then(res => {
         if (res.RetCode === 0) {
+          this.clusterInfo = res.Message;
         } else {
           this.$Message.warning(res.RetMsg);
         }
@@ -90,6 +104,7 @@ export default {
 .content {
   background-color:rgb(243, 243, 243);
   position: absolute;
+  top:64px;
   left: 0;
   right: 0;
   padding: 0 0px;
@@ -102,14 +117,28 @@ export default {
 .cluster-info{
   margin: 10px 20px;
   background: white;
-  height: 200px;
+  height: 120px;
+  font-size: 16px;
+}
+.cluster-info-title{
+  color: #606266;
+}
+.cluster-info-title-v{
+  color: #606266;
+}
+.cluster-info-col{
+  height: 28px;
+  border-right: 1px solid rgb(204, 204, 204);
+}
+.cluster-info-col-pl20{
+  padding-left: 20px;
 }
 .message-info{
   // position: absolute;
   // left: 0;
   // right: 0;
   // padding: 0 0px;
-  margin: 10px 20px;
+  margin: 5px 20px;
   background: white;
   //height: calc(100%-30px);
 }
@@ -122,11 +151,17 @@ export default {
   // height: 200px;
   //height: calc(100%-40px);
 }
+.message-info-content-m{
+  color: #909399;
+}
 .el-scrollbar {
   height: 100%;
 }
 .el-scrollbar__wrap { overflow: scroll; width: 110%; height: 120%; }
 .message-info-more{
   text-align: center;
+}
+.el-card__header{
+
 }
 </style>

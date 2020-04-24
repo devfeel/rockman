@@ -88,7 +88,7 @@ func DefaultProfile() *Profile {
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime", EnableShellScript: false}
-	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "dev-rock3", WatchLeaderRetryLimit: 10, QueryResourceInterval: 60}
+	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "dev-rock5", WatchLeaderRetryLimit: 10, QueryResourceInterval: 60}
 
 	CurrentProfile = p
 	return p

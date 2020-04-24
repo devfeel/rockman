@@ -23,6 +23,11 @@ export default new Router({
           path: '/static/node',
           name: 'node',
           component: resolve => require(['../views/node/index.vue'], resolve)
+        },
+        {
+          path: '/static/task',
+          name: 'node',
+          component: resolve => require(['../views/task/index.vue'], resolve)
         }
       ]
     },
