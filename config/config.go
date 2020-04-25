@@ -38,10 +38,11 @@ type (
 	}
 
 	NodeSection struct {
-		NodeId   string
-		NodeName string
-		IsMaster bool
-		IsWorker bool
+		NodeId                      string
+		NodeName                    string
+		IsMaster                    bool
+		IsWorker                    bool
+		LeaderCheckExecutorInterval int //the interval time for CheckExecutor from db, unit for second
 	}
 
 	RpcSection struct {
@@ -83,7 +84,7 @@ func GetProfile() *Profile {
 func DefaultProfile() *Profile {
 	p := new(Profile)
 	p.Global = &GlobalSection{RetryLimit: 5, DataBaseConnectString: "rock:rock@tcp(118.31.32.168:3306)/rockman?charset=utf8&allowOldPasswords=1&loc=Asia%2FShanghai&parseTime=true"}
-	p.Node = &NodeSection{NodeId: "a1e97685392845f7b5bbd18f38a10461", IsMaster: true, IsWorker: true}
+	p.Node = &NodeSection{NodeId: "a1e97685392845f7b5bbd18f38a10461", IsMaster: true, IsWorker: true, LeaderCheckExecutorInterval: 60}
 	p.Rpc = &RpcSection{RpcHost: "", RpcPort: "2398", EnableTls: false, ServerCertFile: "tls/server.crt", ServerKeyFile: "tls/server.key", ClientCertFile: "tls/client.crt", ClientKeyFile: "tls/client.key"}
 	p.WebUI = &WebUISection{HttpHost: "", HttpPort: "8080"}
 	p.Logger = &LoggerSection{LogPath: "./logs"}

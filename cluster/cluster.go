@@ -288,20 +288,22 @@ func (c *Cluster) ClusterInfo() *core.ClusterInfo {
 // loadOnlineNodes load all online nodes from Registry
 func (c *Cluster) loadOnlineNodes() error {
 	logTitle := "Cluster.loadOnlineNodes "
+	logger.Cluster().Debug(logTitle + "begin.")
 	nodeKVs, meta, err := c.Registry.ListKV(core.GetNodeKeyPrefix(c.ClusterId), nil)
 	if err != nil {
 		logger.Cluster().Debug(logTitle + "error: " + err.Error())
 		return errors.New(logTitle + "error: " + err.Error())
-	} else {
-		logger.Cluster().Debug(logTitle + "success.")
 	}
 	c.nodesLastIndex = meta.LastIndex
 	c.refreshOnlineNodes(nodeKVs)
+	logger.Cluster().Debug(logTitle + "finish.")
 	return nil
 }
 
 // refreshOnlineNodes
 func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
+	lt := "Cluster.refreshOnlineNodes "
+	logger.Cluster().Debug(lt + "begin.")
 	nodes := make(map[string]*core.NodeInfo)
 	for _, s := range nodeKVs {
 		if s.Session == "" {
@@ -317,11 +319,9 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
 		nodes[node.EndPoint()] = node
 	}
 
-	c.nodesLocker.Lock()
 	for _, node := range nodes {
-		c.Nodes[node.EndPoint()] = node
+		c.AddNodeInfo(node)
 	}
-	c.nodesLocker.Unlock()
 
 	// check all node's state
 	for _, node := range c.Nodes {
@@ -347,6 +347,7 @@ func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
 	}
 
 	c.lastLoadNodesTime = time.Now()
+	logger.Cluster().Debug(lt + "finish.")
 	return len(nodes)
 }
 
@@ -508,6 +509,8 @@ func (c *Cluster) cycleQueryWorkerResource() {
 // syncExecutorsFromWorkers sync executors from all worker node
 func (c *Cluster) syncExecutorsFromWorkers() error {
 	lt := "Cluster.syncExecutorsFromWorkers "
+	executorInfos := make(map[string]*core.ExecutorInfo)
+
 	doQuery := func(remote string) error {
 		client := c.GetRpcClient(remote)
 		if client == nil {
@@ -530,7 +533,7 @@ func (c *Cluster) syncExecutorsFromWorkers() error {
 			return err
 		}
 		for _, execInfo := range execInfos {
-			c.AddExecutor(execInfo)
+			executorInfos[execInfo.TaskConfig.TaskID] = execInfo
 		}
 		return nil
 	}
@@ -551,7 +554,11 @@ func (c *Cluster) syncExecutorsFromWorkers() error {
 			logger.Node().Debug(lt + "query[" + nodeInfo.EndPoint() + "] success.")
 		}
 	}
-	logger.Node().Debug(lt + "finish. Sync[" + strconv.Itoa(doSync) + "]")
+
+	c.executorInfosLocker.Lock()
+	c.ExecutorInfos = executorInfos
+	c.executorInfosLocker.Unlock()
+	logger.Node().Debug(lt + "finish, reset Cluster.ExecutorInfos. Sync[" + strconv.Itoa(doSync) + "]")
 	return nil
 }
 

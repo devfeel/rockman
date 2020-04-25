@@ -18,19 +18,20 @@ const defaultLockerTTL = "10s"
 
 type (
 	Node struct {
-		NodeId                string
-		NodeName              string
-		isLeader              bool
-		Status                int
-		config                *config.Profile
-		nodeInfo              *core.NodeInfo
-		Cluster               *cluster.Cluster
-		Registry              *registry.Registry
-		Runtime               *runtime.Runtime
-		shutdownChan          chan string
-		isSTW                 bool //stop the world flag
-		logLogic              *service.LogService
-		executorFlagLastIndex uint64
+		NodeId                  string
+		NodeName                string
+		isLeader                bool
+		Status                  int
+		config                  *config.Profile
+		nodeInfo                *core.NodeInfo
+		Cluster                 *cluster.Cluster
+		Registry                *registry.Registry
+		Runtime                 *runtime.Runtime
+		shutdownChan            chan string
+		isSTW                   bool //stop the world flag
+		logLogic                *service.LogService
+		isRunCycleLoadExecutors bool
+		executorFlagLastIndex   uint64
 	}
 )
 
@@ -98,11 +99,7 @@ func (n *Node) Start() error {
 			return err
 		}
 		if n.IsLeader() {
-			n.loadExecutorsFromDB()
-		}
-		if !n.IsLeader() {
-			n.syncExecutorsFromLeader()
-			n.watchExecutorChange()
+			n.cycleLoadExecutorsFromDB()
 		}
 	}
 
@@ -243,7 +240,6 @@ RegisterNode:
 				retryCount = 0
 				// if node is leader and register to self, mean cluster is init, remove old init flag
 				if leaderServer == n.NodeInfo().EndPoint() {
-					err := n.deleteExecutorInitFlag()
 					if err != nil {
 						logger.Node().Warn(logTitle + "delete executor-init flag error:" + err.Error())
 					}

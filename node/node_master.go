@@ -3,13 +3,10 @@ package node
 import (
 	"errors"
 	"fmt"
-	"github.com/devfeel/mapper"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/protected/model"
 	"github.com/devfeel/rockman/protected/service"
-	_json "github.com/devfeel/rockman/util/json"
-	"github.com/hashicorp/consul/api"
 	"strconv"
 	"time"
 )
@@ -222,6 +219,7 @@ func (n *Node) becomeLeaderRole() {
 	logger.Node().Debug(logTitle + "become to leader role")
 	n.isLeader = true
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
+	n.cycleLoadExecutorsFromDB()
 
 }
 
@@ -234,11 +232,16 @@ func (n *Node) removeLeaderRole() {
 
 // loadExecutorsFromDB load executors from db, and submit them
 // must check init flag on registry
-func (n *Node) loadExecutorsFromDB() {
-	logTitle := "Node loadExecutorsFromDB "
+func (n *Node) cycleLoadExecutorsFromDB() {
+	logTitle := "Node cycleLoadExecutorsFromDB "
 	if !n.IsLeader() {
 		return
 	}
+	if n.isRunCycleLoadExecutors {
+		return
+	}
+	n.isRunCycleLoadExecutors = true
+
 	var successCount, failureCount int
 	doQuery := func() {
 		defer func() {
@@ -256,6 +259,9 @@ func (n *Node) loadExecutorsFromDB() {
 			return
 		}
 		for _, exec := range execInfos {
+			if _, exists := n.Cluster.FindExecutor(exec.TaskID); exists {
+				continue
+			}
 			submit := new(core.ExecutorInfo)
 			submit.TaskConfig = exec.TaskConfig()
 			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
@@ -277,93 +283,12 @@ func (n *Node) loadExecutorsFromDB() {
 		}
 	}
 
-	logger.Node().Debug(logTitle + "begin.")
-	flag, err := n.getExecutorInitFlag()
-	if err != nil {
-		logger.Node().Warn(logTitle + "get executor-init flag error:" + err.Error())
-	} else {
-		if !flag {
-			doQuery()
-			err := n.setExecutorInitFlag()
-			if err != nil {
-				logger.Node().Warn(logTitle + "set executor-init flag error:" + err.Error())
-			}
-			logger.Node().Debug(logTitle + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
-		}
-	}
-}
-
-// syncExecutorsFromLeader
-func (n *Node) syncExecutorsFromLeader() error {
-	lt := "Node.syncExecutorsFromLeader "
-	leader, err := n.Cluster.GetLeaderInfo()
-	if err != nil {
-		logger.Node().Error(err, lt+"get leader info error")
-		return err
-	}
-
-	rpcClient := n.Cluster.GetRpcClient(leader)
-	err, reply := rpcClient.CallQueryClusterExecutors("")
-	if err != nil {
-		logger.Node().Debug(lt + "Error: " + err.Error())
-		return err
-	}
-	if !reply.IsSuccess() {
-		logger.Node().Debug(lt + "failed: " + reply.FailureMessage())
-		return errors.New(lt + "failed: " + reply.FailureMessage())
-	}
-	_, meta, err := n.Registry.Get(getExecutorChangeFlagKey(n.ClusterId()), nil)
-	if err != nil {
-		logger.Node().Debug(lt + "failed, GetExecutorChangeFlag error: " + err.Error())
-		return err
-	}
-	jsonData, err := mapper.MapToJson(reply.Message.(map[string]interface{}))
-	if err != nil {
-		logger.Node().Debug(lt + "failed, map data json Marshal error: " + err.Error())
-		return err
-	}
-	execInfos := make(map[string]*core.ExecutorInfo)
-	err = _json.Unmarshal(string(jsonData), &execInfos)
-	if err != nil {
-		logger.Node().Debug(lt + "failed, data json Unmarshal error: " + err.Error())
-		return err
-	}
-	n.Cluster.ExecutorInfos = execInfos
-	n.executorFlagLastIndex = meta.LastIndex
-	logger.Node().Debug(lt + "success.")
-	return nil
-}
-
-// watchExecutorChangeFromLeader
-func (n *Node) watchExecutorChange() {
-	lt := "Node.watchExecutorChange "
-	logger.Node().Debug(lt + "running...")
-	doQuery := func() error {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, lt+"throw unhandled error:"+errInfo.Error())
-			}
-		}()
-
-		opt := &api.QueryOptions{
-			WaitIndex: n.executorFlagLastIndex,
-			WaitTime:  time.Minute * 10,
-		}
-		_, meta, err := n.Registry.Get(getExecutorChangeFlagKey(n.ClusterId()), opt)
-		if err != nil {
-			return err
-		}
-		if meta.LastIndex != n.executorFlagLastIndex {
-			n.executorFlagLastIndex = meta.LastIndex
-			logger.Cluster().Debug(lt + "Executor changed.")
-			n.syncExecutorsFromLeader()
-		}
-		return nil
-	}
 	go func() {
 		for {
+			logger.Node().Debug(logTitle + "begin.")
 			doQuery()
+			logger.Node().Debug(logTitle + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
+			time.Sleep(time.Minute * time.Duration(n.Config().Node.LeaderCheckExecutorInterval))
 		}
 	}()
 }
