@@ -25,12 +25,12 @@ export default {
     login() {
       login({ token: this.token }).then((data) => {
         if (data.Code === 200) {
-          this.$Message.info('登陆成功,正在跳转!');
+          this.$message.info('登陆成功,正在跳转!');
           this.$store.commit('SET_TOKEN', this.token)
           window.sessionStorage.setItem('Token', this.token)
           this.$router.push({path: 'home'})
         } else {
-          this.$Message.warning(data.Msg);
+          this.$message.warning(data.Msg);
         }
       });
     }

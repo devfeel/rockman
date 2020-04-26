@@ -7,26 +7,26 @@
           <div class="item">
             <div class="f-text">
               <label>
-                <Icon type="ios-people" :size="20" />用户名：
+                <i class="el-icon-user"/>用户名：
               </label>
             </div>
             <div class="f-input">
-              <input type="text" v-model="UserName"  placeholder="输入用户" clearable/>
+              <el-input type="text" v-model="UserName"  placeholder="输入用户" clearable/>
             </div>
           </div>
           <div class="item">
             <div class="f-text">
               <label>
-                <Icon type="ios-lock"  :size="20" />密&nbsp;&nbsp;&nbsp;码：
+                <i class="el-icon-lock" />密&nbsp;&nbsp;&nbsp;码：
               </label>
             </div>
             <div class="f-input">
-              <input type="password" v-model="UserPwd"  placeholder="输入密码" clearable/>
+              <el-input type="password" v-model="UserPwd"  placeholder="输入密码" clearable/>
             </div>
           </div>
         </div>
         <div style="loging-btn">
-          <Button size="large" type="info" @click="login" long>登陆</Button>
+          <el-button size="large" type="primary" plain @click="login" >登陆</el-button>
         </div>
         <div class="action">
           <!-- <a @click="()=>{}">注册</a>
@@ -54,14 +54,14 @@ export default {
     login() {
       login({ UserName: this.UserName, UserPwd: this.UserPwd }).then((res) => {
         if (res.RetCode === 0) {
-          this.$Message.info('登陆成功,正在跳转!');
+          this.$message.info('登陆成功,正在跳转!');
           this.$store.commit('SET_TOKEN', res.Message.Token)
           this.$store.commit('SET_INFO', res.Message)
           window.sessionStorage.setItem('Token', res.Message.Token)
           window.sessionStorage.setItem('UserInfo', JSON.stringify(res.Message))
           this.$router.push({path: 'home'})
         } else {
-          this.$Message.warning(res.RetMsg);
+          this.$message.warning(res.RetMsg);
         }
       });
     }

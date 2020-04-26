@@ -5,7 +5,9 @@
             WebIDE<span>{{defaultOption.mode}}脚本编辑</span>
         </div>
         <div class="glue-btn">
-            <Button type="primary" @click="onSave()">保 存</Button>
+            <el-button type="primary" @click="onSave()">保 存</el-button>
+            <el-button type="warning" @click="onClose()" style="margin-left:25px;">取消
+          </el-button>
         </div>
     </div>
     <div class="glue-conext">
@@ -47,27 +49,28 @@ export default {
       data: {}
     },
     mounted() {
-        // this.init();
-    },
-    watch: {
-            data(newVal, oldVal) {
-                // 执行数据更新查询
-                this.init();
-            }
+        this.init();
     },
     methods: {
         init() {
-            this.shellConfigForm = JSON.parse(this.data.TargetConfig);
+            if (this.data && this.data.TargetConfig) {
+                this.shellConfigForm = JSON.parse(this.data.TargetConfig);
+            }
         },
         onSave() {
-             this.data.TargetConfig = JSON.stringify(this.shellConfigForm);
+            this.data.TargetConfig = JSON.stringify(this.shellConfigForm);
             taskUpdate(this.data).then(res => {
                 if (res.RetCode === 0) {
-                    this.$Message.success('保存成功');
+                    this.$message.success('保存成功');
+                    this.$emit('close', {});
                 } else {
-                    this.$Message.error(res.RetMsg);
+                    this.$message.error(res.RetMsg);
+                    this.$emit('close', {});
                 }
             })
+        },
+        onClose() {
+            this.$emit('close', {});
         }
     }
 }
@@ -75,6 +78,12 @@ export default {
 <style lang="less">
 .ivu-modal-body{
     padding: 0px;
+}
+.el-dialog__header{
+    padding:0 0;
+}
+.el-dialog__body{
+    padding: 0 0;
 }
 .glue-header{
     padding: 10px;
@@ -95,7 +104,6 @@ export default {
     padding-left: 20px;
     font-size: 14px;
 }
-
 .glue-btn{
     float:right;
     text-align: right;
@@ -108,7 +116,6 @@ export default {
     border: 1px solid #eee;
     height: auto;
 }
-
 .CodeMirror-scroll {
     min-height: 500px;
     height: auto;

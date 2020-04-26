@@ -1,4 +1,4 @@
-import { get } from '../axios/http.js';
+import { get } from '../common/http.js';
 import GLOBAL from '../common/global.js';
 
 export const getNodeTraceList = data => get(`${GLOBAL.HOME}/log/trace`, data);

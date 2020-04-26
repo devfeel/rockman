@@ -1,47 +1,34 @@
 <template>
-  <Layout>
-    <Header class="main-header">
-      <div class="layout-logo"><img src="~@/assets/rockman3@2x.png" style="height:55px;width:55px;"></div>
-      <div class="layout-header-text"></div>
+  <el-container>
+    <el-header  class="main-header">
+      <!-- <div class="layout-logo"></div> -->
+      <div class="layout-header-text"><el-link :underline="false" class="layout-header-text">Rockman</el-link></div>
       <div class="layout-nav">
-        <Menu mode="horizontal" theme="dark" :active-name="activeData" class="main-header-menu" @on-select="selectMenu">
-          <MenuItem name="1" :to='{name:"home"}'>
-          <!-- <Icon type="ios-navigate"></Icon> -->
-          监控
-          </MenuItem>
-          <MenuItem name="2" :to='{name:"settings"}'>
-          <!-- <Icon type="ios-keypad"></Icon> -->
-          配置中心
-          </MenuItem>
-          <MenuItem name="3" :to='{name:"runtimes"}'>
-          <!-- <Icon type="ios-analytics"></Icon> -->
-          运行管理
-          </MenuItem>
-        </Menu>
+        <el-menu :default-active="activeData" mode="horizontal" router @select="selectMenu">
+          <el-menu-item  index="/static/home" >首页</el-menu-item>
+          <el-menu-item  index="/static/node" >节点中心</el-menu-item>
+          <el-menu-item  index="/static/task" >运行管理</el-menu-item>
+        </el-menu>
       </div>
       <div class="layout-header-user">
-        <!-- <a v-on:click="loginOut">安全退出</a> -->
-        <Dropdown @on-click="onDropDownItemClick">
-            <a href="javascript:void(0)">
-                管理员
-                <Icon type="ios-arrow-down"></Icon>
-            </a>
-            <DropdownMenu slot="list" >
-              <DropdownItem name="loginOut">安全退出</DropdownItem>
-            </DropdownMenu>
-        </Dropdown>
+        <el-dropdown @command="onDropDownItemClick">
+        <span class="el-dropdown-link">
+          管理员<i class="el-icon-arrow-down el-icon--right"></i>
+        </span>
+        <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item command="loginOut">退出登录</el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
       </div>
-    </Header>
-    <Layout>
-      <Layout>
-        <Content class="main-content">
-          <keep-alive>
+    </el-header>
+    <el-main >
+      <div class="main-content">
+        <keep-alive>
             <router-view />
-          </keep-alive>
-        </Content>
-      </Layout>
-    </Layout>
-  </Layout>
+        </keep-alive>
+      </div>
+    </el-main>
+  </el-container>
 </template>
 <script>
 export default {
@@ -60,9 +47,9 @@ export default {
       }
   },
   methods: {
-    onDropDownItemClick(name) {
+    onDropDownItemClick(command) {
       console.log(this.$store.state)
-      if (name === 'loginOut') {
+      if (command === 'loginOut') {
         this.loginOut()
       }
     },
@@ -70,6 +57,7 @@ export default {
       window.sessionStorage.setItem('selectMenu', name)
     },
     loginOut() {
+      debugger;
       this.$store.commit('SET_TOKEN', null)
       window.sessionStorage.removeItem('Token')
       this.$store.commit('SET_INFO', null)
@@ -86,19 +74,20 @@ export default {
 }
 .main-header,
 .main-header-menu,
-.ivu-menu-item {
-  height: 64px;
+.el-menu-item {
+  height: 65px;
+
 }
-.ivu-menu-item {
- width: 130px;
- text-align: center;
+.el-menu-item{
+  width: 130px;
+  text-align: center;
 }
 
 .ivu-layout-header {
   /* background-color:#E7E8EC; */
 }
 .main-content {
-  position: absolute;
+
   left: 0;
   right: 0;
   padding: 0 0px;
@@ -122,24 +111,25 @@ export default {
   top: 2px;
 }
 .layout-header-text {
-  width: 200px;
-  height: 30px;
-  position: relative;
+  width: 80px;
+  height: 64px;
+  padding-left: 10px;
   border-radius: 3px;
-  color: #fff;
-  font-size: 18px;
+  color:rgb(24, 144, 255);
+  font-size: 24px;
   float: left;
+  font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
 }
 .layout-header-user {
   width: 150px;
   height: 30px;
   border-radius: 3px;
-  color: #fff;
+  /* color: #fff; */
   font-size: 18px;
   float: right;
 }
 .layout-header-user a {
-  color: #fff;
+  /* color: #fff; */
   font-size: 14px;
 }
 
