@@ -64,7 +64,7 @@ export default {
         if (res.RetCode === 0) {
           this.clusterInfo = res.Message;
         } else {
-          this.$Message.warning(res.RetMsg);
+          this.$message.warning(res.RetMsg);
         }
       })
       this.timeLineData.push({

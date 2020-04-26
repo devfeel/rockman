@@ -36,7 +36,7 @@ export default {
           }
           // this.tableData = res.Message;
         } else {
-          this.$Message.warning(res.RetMsg);
+          this.$message.warning(res.RetMsg);
         }
       })
     }

@@ -54,14 +54,14 @@ export default {
     login() {
       login({ UserName: this.UserName, UserPwd: this.UserPwd }).then((res) => {
         if (res.RetCode === 0) {
-          this.$Message.info('登陆成功,正在跳转!');
+          this.$message.info('登陆成功,正在跳转!');
           this.$store.commit('SET_TOKEN', res.Message.Token)
           this.$store.commit('SET_INFO', res.Message)
           window.sessionStorage.setItem('Token', res.Message.Token)
           window.sessionStorage.setItem('UserInfo', JSON.stringify(res.Message))
           this.$router.push({path: 'home'})
         } else {
-          this.$Message.warning(res.RetMsg);
+          this.$message.warning(res.RetMsg);
         }
       });
     }

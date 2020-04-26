@@ -4,17 +4,13 @@ import Vue from 'vue'
 import App from './App'
 import 'element-ui/lib/theme-chalk/index.css'
 import router from './router'
-import ViewUI from 'view-design';
 import ElementUI from 'element-ui'
-// 引入字体图标库
-import 'view-design/dist/styles/iview.css';
 import './assets/iconfont/iconfont.css'
 import GLOBAL from './common/global.js'
 import store from './store/store.js'
 import * as Utils from './common/utils.js'
 
 Vue.use(ElementUI);
-Vue.use(ViewUI)
 
 // 挂载到Vue实例上面
 Vue.prototype.GLOBAL = GLOBAL

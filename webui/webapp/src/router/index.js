@@ -26,8 +26,18 @@ export default new Router({
         },
         {
           path: '/static/task',
-          name: 'node',
+          name: 'task',
           component: resolve => require(['../views/task/index.vue'], resolve)
+        },
+        {
+          path: '/static/task/detail',
+          name: 'detail',
+          component: resolve => require(['../views/task/detail.vue'], resolve)
+        },
+        {
+          path: '/static/task/logdetail',
+          name: 'logdetail',
+          component: resolve => require(['../views/task/logdetail.vue'], resolve)
         }
       ]
     },

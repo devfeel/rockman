@@ -19,6 +19,14 @@ export const dealDate = (date, formatter = 'YYYY-MM-DD HH:mm:ss') => {
     return ''
   }
 }
+export const formatDate = (row, column) => {
+  // 获取单元格数据
+  let data = row[column.property]
+  if (this.$MyComm.isEmpty(data)) {
+      return ''
+  }
+  return dealDate(data)
+}
 
 // 获取地址栏参数
 export const getUrlParam = (paraName) => {

@@ -11,17 +11,14 @@
         </el-menu>
       </div>
       <div class="layout-header-user">
-        <el-dropdown @on-click="onDropDownItemClick">
-              <a href="javascript:void(0)">
-                  管理员
-                  <Icon type="ios-arrow-down"></Icon>
-              </a>
-              <el-dropdown-menu slot="list" >
-                <el-dropdown-item name="loginOut">安全退出</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-        <!-- <a v-on:click="loginOut">安全退出</a> -->
-
+        <el-dropdown @command="onDropDownItemClick">
+        <span class="el-dropdown-link">
+          管理员<i class="el-icon-arrow-down el-icon--right"></i>
+        </span>
+        <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item command="loginOut">退出登录</el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
       </div>
     </el-header>
     <el-main >
@@ -50,9 +47,9 @@ export default {
       }
   },
   methods: {
-    onDropDownItemClick(name) {
+    onDropDownItemClick(command) {
       console.log(this.$store.state)
-      if (name === 'loginOut') {
+      if (command === 'loginOut') {
         this.loginOut()
       }
     },
@@ -60,6 +57,7 @@ export default {
       window.sessionStorage.setItem('selectMenu', name)
     },
     loginOut() {
+      debugger;
       this.$store.commit('SET_TOKEN', null)
       window.sessionStorage.removeItem('Token')
       this.$store.commit('SET_INFO', null)
