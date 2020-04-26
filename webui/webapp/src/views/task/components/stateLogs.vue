@@ -1,18 +1,12 @@
 <template>
   <div>
     <div class="tb">
-        <el-table :data="dataSource.PageData" border fit  v-loading="loading" style="width: 100%">
+        <el-table :data="dataSource.PageData" border fit v-loading="loading" style="width: 100%">
             <el-table-column prop="TaskID" label="任务编码" :show-overflow-tooltip="true"></el-table-column>
             <el-table-column prop="NodeID" label="节点编码" :show-overflow-tooltip="true"></el-table-column>
             <el-table-column prop="NodeEndPoint" label="服务器信息" :show-overflow-tooltip="true"></el-table-column>
-            <el-table-column prop="IsSuccess" label="执行状态" width="180" :show-overflow-tooltip="true">
-                <template slot-scope="scope">
-                    <span v-if="scope.row.IsSuccess">成功</span>
-                    <span v-if="!scope.row.IsSuccess">失败</span>
-                </template>
-            </el-table-column>
-            <el-table-column prop="FailureType" label="失败类型" :show-overflow-tooltip="true"></el-table-column>
-            <el-table-column prop="FailureCause" label="失败原因" :show-overflow-tooltip="true"></el-table-column>
+            <el-table-column prop="State" label="状态" width="180" :show-overflow-tooltip="true"></el-table-column>
+            <el-table-column prop="Message" label="日志信息" :show-overflow-tooltip="true"></el-table-column>
             <el-table-column prop="CreateTime" :formatter="formatDate" label="创建时间" :show-overflow-tooltip="true"></el-table-column>
         </el-table>
         <div class="page">
@@ -30,13 +24,14 @@
   </div>
 </template>
 <script>
-  import Minix from '@/common/tableminix.js';
+  import tableminix from '@/common/tableminix.js';
   import { dealDate } from '@/common/utils.js';
-  import { getTaskSubmitList } from '@/api/logs.js';
+  import { getTaskStateList } from '@/api/logs.js';
   export default {
-    mixins: [Minix],
+    mixins: [tableminix],
     data() {
       return {
+
         loading: false
       }
     },
@@ -54,14 +49,13 @@
     },
     methods: {
       init() {
-        this.dataSource = {};
         this.onPageChange(this.queryParam)
       },
       onPageChange(param) {
         this.queryParam = param;
         this.loading = true;
         this.queryParam.TaskID = this.TaskID;
-        getTaskSubmitList(this.queryParam).then(res => {
+        getTaskStateList(this.queryParam).then(res => {
           if (res.RetCode === 0) {
             this.dataSource = res.Message;
           }

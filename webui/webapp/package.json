@@ -13,7 +13,6 @@
   "dependencies": {
     "axios": "^0.18.0",
     "element-ui": "^2.4.11",
-    "view-design": "^4.0.0",
     "echarts": "^4.2.1",
     "mockjs": "^1.0.1-beta3",
     "moment": "^2.24.0",

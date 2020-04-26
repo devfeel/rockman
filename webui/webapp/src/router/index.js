@@ -8,7 +8,7 @@ export default new Router({
   routes: [
     {
       path: '/static',
-      redirect: { name: 'login' }
+      redirect: { name: 'home' }
     },
     {
       path: '/static/index',

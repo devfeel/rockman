@@ -35,16 +35,17 @@ export default {
   data() {
     return {
       token: '',
-      activeData: '1'
+      activeData: '/static/home'
     }
   },
   mounted() {
-      var nameVal = window.sessionStorage.getItem('selectMenu');
-      if (nameVal) {
-        this.activeData = nameVal;
-      } else {
-        this.activeData = '1';
-      }
+      // var nameVal = window.sessionStorage.getItem('selectMenu');
+      // if (nameVal) {
+      //   this.activeData = nameVal;
+      // } else {
+      //   this.activeData = '/static/home';
+      // }
+      this.activeData = '/static/home';
   },
   methods: {
     onDropDownItemClick(command) {
@@ -57,7 +58,6 @@ export default {
       window.sessionStorage.setItem('selectMenu', name)
     },
     loginOut() {
-      debugger;
       this.$store.commit('SET_TOKEN', null)
       window.sessionStorage.removeItem('Token')
       this.$store.commit('SET_INFO', null)

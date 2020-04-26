@@ -14,6 +14,8 @@
 </script>
 <style lang="less">
 body {
+  margin: 0px 0px;
+  padding: 0px 0px;
   font-size: 14px;
   width: 100%;
   height: 100%;

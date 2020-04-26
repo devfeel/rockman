@@ -7,7 +7,7 @@
           <div class="item">
             <div class="f-text">
               <label>
-                <Icon type="ios-people" :size="20" />用户名：
+                <i class="el-icon-user-solid" :size="20" />用户名：
               </label>
             </div>
             <div class="f-input">
@@ -17,7 +17,7 @@
           <div class="item">
             <div class="f-text">
               <label>
-                <Icon type="ios-lock"  :size="20" />密&nbsp;&nbsp;&nbsp;码：
+                <i class="el-icon-lock" />密&nbsp;&nbsp;&nbsp;码：
               </label>
             </div>
             <div class="f-input">
@@ -26,7 +26,7 @@
           </div>
         </div>
         <div style="loging-btn">
-          <Button size="large" type="info" @click="login" long>登陆</Button>
+          <el-button type="primary" @click="login" plain>登&nbsp;&nbsp;&nbsp;陆</el-button>
         </div>
         <div class="action">
           <!-- <a @click="()=>{}">注册</a>

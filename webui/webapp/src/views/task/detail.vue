@@ -5,7 +5,7 @@
             </el-page-header>
     </div>
     <div class="form">
-        <el-form ref="form" :model="dataForm" label-width="160px" size="mini" :rules="rules">
+        <el-form ref="form" :model="dataForm" label-width="160px" size="mini" :rules="rules"  v-if="show">
             <el-form-item label="任务编码" prop="TaskID">
                 <el-input v-model="dataForm.TaskID" placeholder="任务编码" maxlength="30"></el-input>
             </el-form-item>
@@ -14,6 +14,12 @@
                     <el-option key="http" label="http" value="http"></el-option>
                     <el-option key="shell" label="shell" value="shell"></el-option>
                     <el-option key="goso" label="goso" value="goso"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="任务执行类型：" prop="TaskType">
+                <el-select v-model="dataForm.TaskType" placeholder="请选择">
+                    <el-option key="cron" label="cron" value="cron"></el-option>
+                    <el-option key="loop" label="loop" value="loop"></el-option>
                 </el-select>
             </el-form-item>
             <el-form-item label="cron表达式" prop="TaskID">
@@ -69,7 +75,9 @@ import { taskSave, taskUpdate, getTaskOnce } from '@/api/task.js';
 export default {
   data() {
     return {
+      show: true,
       dataForm: {
+          ID: 0,
           TargetConfig: '',
           HttpTaskInfoForm: {},
           ShellConfigForm: {},
@@ -100,7 +108,9 @@ export default {
   },
   methods: {
     onInit() {
-        this.onResetForm('form');
+        this.show = true;
+        // this.onResetForm('form');
+
         if (this.$route.query.id) {
             getTaskOnce({ID: this.$route.query.id}).then(res => {
                 if (res.RetCode === 0) {
@@ -121,7 +131,8 @@ export default {
         }
     },
     goBack() {
-        this.$router.push({path: '/static/task'})
+        this.show = false;
+        this.$router.push({path: '/static/task'});
     },
     onSubmitForm(formName) {
         this.$refs[formName].validate((valid) => {
@@ -135,6 +146,7 @@ export default {
             if (this.dataForm.TargetType === 'goso') {
                 this.dataForm.TargetConfig = JSON.stringify(this.dataForm.GoSoConfigForm);
             }
+            debugger;
             if (this.dataForm.ID === 0) {
                 taskSave(this.dataForm).then(res => {
                     if (res.RetCode === 0) {
