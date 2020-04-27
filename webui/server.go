@@ -89,6 +89,15 @@ func (s *WebServer) initModule() {
 			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
 				ctx.Request().Request.URL.Path = "/static" + path
 			}
+			if strings.Contains(path, "/js/") || strings.Contains(path, "/css/") || strings.Contains(path, "/img/") || strings.Contains(path, "/fonts/") {
+				return
+			}
+			if strings.HasPrefix(path, "/api/") {
+				return
+			}
+			ctx.Request().Request.URL.Path = "/static/index.html"
+		},
+		OnEndRequest: func(ctx dotweb.Context) {
 		},
 	})
 }
