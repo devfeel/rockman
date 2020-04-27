@@ -1,8 +1,9 @@
 package webui
 
 import (
-	"github.com/devfeel/rockman/webui/middleware"
 	"strings"
+
+	"github.com/devfeel/rockman/webui/middleware"
 
 	"github.com/devfeel/dotweb"
 	"github.com/devfeel/middleware/cors"
@@ -90,12 +91,12 @@ func (s *WebServer) initModule() {
 
 			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
 				ctx.Request().Request.URL.Path = "/static" + path
-				if strings.Contains(path,"/js/")||strings.Contains(path,"/css/")||strings.Contains(path,"/img/")||strings.Contains(path,"/fonts/"){
+				if strings.Contains(path, "/js/") || strings.Contains(path, "/css/") || strings.Contains(path, "/img/") || strings.Contains(path, "/fonts/") || strings.HasSuffix(path, "/static/static") || strings.HasSuffix(path, "/static/static/") {
 					return
 				}
 			}
 
-			if strings.HasPrefix(path,"/api/") {
+			if strings.HasPrefix(path, "/api/") {
 				return
 			}
 			ctx.Request().Request.URL.Path = "/static/index.html"
