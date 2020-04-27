@@ -23,7 +23,7 @@ export default {
     }
   },
   activated() {
-    this.onInit();
+    // this.onInit();
   },
   methods: {
     onInit() {

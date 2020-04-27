@@ -146,7 +146,6 @@ export default {
             if (this.dataForm.TargetType === 'goso') {
                 this.dataForm.TargetConfig = JSON.stringify(this.dataForm.GoSoConfigForm);
             }
-            debugger;
             if (this.dataForm.ID === 0) {
                 taskSave(this.dataForm).then(res => {
                     if (res.RetCode === 0) {

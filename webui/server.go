@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"github.com/devfeel/rockman/webui/middleware"
 	"strings"
 
 	"github.com/devfeel/dotweb"
@@ -23,6 +24,7 @@ func NewWebServer(logPath string, node *node.Node) *WebServer {
 	s.webApp.SetEnabledLog(true)
 	s.webApp.UseRequestLog()
 	s.webApp.Use(cors.Middleware(cors.NewConfig().UseDefault()))
+	s.webApp.Use(middleware.Middleware())
 	s.webApp.Items.Set(_const.ItemKeyNode, node)
 
 	s.initRoute()
@@ -88,7 +90,17 @@ func (s *WebServer) initModule() {
 
 			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
 				ctx.Request().Request.URL.Path = "/static" + path
+				if strings.Contains(path,"/js/")||strings.Contains(path,"/css/")||strings.Contains(path,"/img/")||strings.Contains(path,"/fonts/"){
+					return
+				}
 			}
+
+			if strings.HasPrefix(path,"/api/") {
+				return
+			}
+			ctx.Request().Request.URL.Path = "/static/index.html"
+		},
+		OnEndRequest: func(ctx dotweb.Context) {
 		},
 	})
 }
