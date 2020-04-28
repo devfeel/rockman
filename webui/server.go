@@ -88,10 +88,16 @@ func (s *WebServer) initModule() {
 
 			if strings.HasPrefix(path, "/static/") && !strings.HasPrefix(path, "/static/static") {
 				ctx.Request().Request.URL.Path = "/static" + path
+				if strings.Contains(path, "/js/") ||
+					strings.Contains(path, "/css/") ||
+					strings.Contains(path, "/img/") ||
+					strings.Contains(path, "/fonts/") ||
+					strings.HasSuffix(path, "/static/static") ||
+					strings.HasSuffix(path, "/static/static/") {
+					return
+				}
 			}
-			if strings.Contains(path, "/js/") || strings.Contains(path, "/css/") || strings.Contains(path, "/img/") || strings.Contains(path, "/fonts/") {
-				return
-			}
+
 			if strings.HasPrefix(path, "/api/") {
 				return
 			}
