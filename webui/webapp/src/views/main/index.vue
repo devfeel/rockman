@@ -39,13 +39,12 @@ export default {
     }
   },
   mounted() {
-      // var nameVal = window.sessionStorage.getItem('selectMenu');
-      // if (nameVal) {
-      //   this.activeData = nameVal;
-      // } else {
-      //   this.activeData = '/static/home';
-      // }
-      this.activeData = '/static/home';
+      var nameVal = window.sessionStorage.getItem('selectMenu');
+      if (nameVal) {
+        this.activeData = nameVal;
+      } else {
+        this.activeData = '/static/home';
+      }
   },
   methods: {
     onDropDownItemClick(command) {
@@ -121,6 +120,7 @@ export default {
   font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
 }
 .layout-header-user {
+  margin-top: 20px;
   width: 150px;
   height: 30px;
   border-radius: 3px;

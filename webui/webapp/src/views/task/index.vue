@@ -22,7 +22,7 @@
       <el-table-column prop="action" label="操作" width="180">
         <template slot-scope="scope">
           <el-button @click="onGLUEClick(scope.row)" v-if="isGLUE(scope.row)" type="text" size="small">GLUE</el-button>
-          <el-button type="text" size="small">删除</el-button>
+          <el-button @click="onRowDelete(scope.row)" type="text" size="small">删除</el-button>
           <el-button @click="onLogsClick(scope.row)" type="text" size="small">日志</el-button>
         </template>
       </el-table-column>
@@ -46,7 +46,7 @@
 </template>
 <script>
 import Minix from '@/common/tableminix.js';
-import { getTaskOnce, getTaskList } from '@/api/task.js';
+import { getTaskOnce, getTaskList, taskDelete } from '@/api/task.js';
 import glue from './components/glue.vue';
 export default {
   components: { glue },
@@ -109,6 +109,22 @@ export default {
     },
     onAdd() {
       this.$router.push({path: '/static/task/detail'})
+    },
+    onRowDelete(row) {
+            this.$confirm('是否确认删除任务?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                }).then(() => {
+                    taskDelete({ID: row.ID}).then(res => {
+                        if (res.RetCode === 0) {
+                            this.$message.success('删除成功!');
+                            this.onInit();
+                        } else {
+                            this.$Message.error(res.RetMsg);
+                        }
+                    })
+                });
     },
     isGLUE(row) {
       if (row.TargetType === 'shell') {
