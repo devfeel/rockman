@@ -35,7 +35,7 @@ export default {
   data() {
     return {
       token: '',
-      activeData: '1'
+      activeData: '/static/home'
     }
   },
   mounted() {
@@ -43,7 +43,7 @@ export default {
       if (nameVal) {
         this.activeData = nameVal;
       } else {
-        this.activeData = '1';
+        this.activeData = '/static/home';
       }
   },
   methods: {
@@ -57,7 +57,6 @@ export default {
       window.sessionStorage.setItem('selectMenu', name)
     },
     loginOut() {
-      debugger;
       this.$store.commit('SET_TOKEN', null)
       window.sessionStorage.removeItem('Token')
       this.$store.commit('SET_INFO', null)
@@ -75,7 +74,7 @@ export default {
 .main-header,
 .main-header-menu,
 .el-menu-item {
-  height: 65px;
+  height: 64px;
 
 }
 .el-menu-item{
@@ -121,6 +120,7 @@ export default {
   font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
 }
 .layout-header-user {
+  margin-top: 20px;
   width: 150px;
   height: 30px;
   border-radius: 3px;

@@ -2,16 +2,16 @@
   <div class="tm-bg">
     <div class="login-contianer">
       <div class="login-form">
-        <label>Rockman</label>
+        <label><el-link :underline="false" class="login-form-header-text">Rockman</el-link></label>
         <div class="form-user">
           <div class="item">
             <div class="f-text">
               <label>
-                <i class="el-icon-user"/>用户名：
+                <i class="el-icon-user-solid" :size="20" />用户名：
               </label>
             </div>
             <div class="f-input">
-              <el-input type="text" v-model="UserName"  placeholder="输入用户" clearable/>
+              <input type="text" v-model="UserName"  placeholder="输入用户" clearable/>
             </div>
           </div>
           <div class="item">
@@ -21,12 +21,12 @@
               </label>
             </div>
             <div class="f-input">
-              <el-input type="password" v-model="UserPwd"  placeholder="输入密码" clearable/>
+              <input type="password" v-model="UserPwd"  placeholder="输入密码" clearable/>
             </div>
           </div>
         </div>
-        <div style="loging-btn">
-          <el-button size="large" type="primary" plain @click="login" >登陆</el-button>
+        <div class="loging-btn">
+          <el-button type="primary" @click="login" plain>登&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;陆</el-button>
         </div>
         <div class="action">
           <!-- <a @click="()=>{}">注册</a>
@@ -80,7 +80,16 @@ export default {
   display: none;
   cursor: pointer;
 }
+.login-form-header-text {
+  width: 80px;
+  height: 64px;
+  // padding-left: 10px;
+  border-radius: 3px;
+  color:rgb(24, 144, 255);
+  font-size: 24px;
 
+  font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+}
 // .log-bg {
 //   width: 100%;
 //   height: 100%;
@@ -90,7 +99,8 @@ export default {
 //   -moz-background-size: 100% 100%;
 // }
 .form-user {
-  margin: 40px 0;
+  margin: 35px 0;
+  font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
   .item:hover .f-remove {
     display: block;
   }
@@ -129,10 +139,10 @@ export default {
       background-color: transparent;
     }
     input::selection {
-      background: transparent;
+      //background: transparent;
     }
     input::-moz-selection {
-      background: transparent;
+      //background: transparent;
     }
   }
 }

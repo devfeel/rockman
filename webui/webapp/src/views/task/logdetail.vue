@@ -5,15 +5,15 @@
             </el-page-header>
     </div>
     <div class="log">
-        <el-tabs v-model="activeName" @tab-click="onTabClick">
-            <el-tab-pane label="提交日志" name="submitLog">
-                <submitLogs :TaskID="task.TaskID"></submitLogs>
+        <el-tabs v-model="activeName" @tab-click="onTabClick" v-if="show">
+            <el-tab-pane label="提交日志" name="submitLogs" >
+                <submitLogs :TaskID="submitLogTaskID" v-if="submitLogTaskID"></submitLogs>
             </el-tab-pane>
-            <el-tab-pane label="执行日志" name="execLogs">
-                <execLogs :TaskID="task.TaskID"></execLogs>
+            <el-tab-pane label="执行日志" name="execLogs" >
+                <execLogs :TaskID="execLogTaskID" v-if="execLogTaskID"></execLogs>
             </el-tab-pane>
-            <el-tab-pane label="状态日志" name="stateLogs">
-                <stateLogs :TaskID="task.TaskID"></stateLogs>
+            <el-tab-pane label="状态日志" name="stateLogs" lazy>
+                <stateLogs :TaskID="stateLogTaskID" v-if="stateLogTaskID"></stateLogs>
             </el-tab-pane>
         </el-tabs>
     </div>
@@ -27,20 +27,27 @@ import stateLogs from './components/stateLogs.vue';
 export default {
     components: { submitLogs, execLogs, stateLogs },
     data() {
-    return {
-        task: '',
-        activeName: 'submitLog'
-    };
+        return {
+            show: true,
+            task: {},
+            activeName: 'submitLogs',
+            submitLogTaskID: '',
+            execLogTaskID: '',
+            stateLogTaskID: ''
+        };
     },
     activated() {
         this.onInit();
     },
+
     methods: {
         onInit() {
+            this.show = true;
             if (this.$route.query.id) {
                 getTaskOnce({ID: this.$route.query.id}).then(res => {
                     if (res.RetCode === 0) {
                         this.task = res.Message;
+                        this.submitLogTaskID = this.task.TaskID;
                     } else {
                         this.$message.error(res.RetMsg);
                     }
@@ -48,10 +55,26 @@ export default {
             }
         },
         goBack() {
-            this.$router.push({path: '/static/task'})
+            this.show = false;
+            this.$router.push({path: '/static/task'});
         },
         onTabClick(tab, event) {
-
+            this.submitLogTaskID = '';
+            this.execLogTaskID = '';
+            this.stateLogTaskID = '';
+            switch (tab.name) {
+                case 'submitLogs':
+                this.submitLogTaskID = this.task.TaskID;
+                break;
+                case 'execLogs':
+                this.execLogTaskID = this.task.TaskID;
+                break;
+                case 'stateLogs':
+                this.stateLogTaskID = this.task.TaskID;
+                break;
+                default:
+                break;
+            }
         }
     }
 };

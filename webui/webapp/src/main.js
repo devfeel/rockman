@@ -23,20 +23,25 @@ if (process.env.NODE_ENV === 'development') {
 // 页面刷新时，重新赋值
 if (window.sessionStorage.getItem('Token')) {
   // let data = JSON.parse(window.sessionStorage.getItem('Token'));
-  // let token = window.sessionStorage.getItem('Token');
-  // store.commit('SET_TOKEN', token)
+  let token = window.sessionStorage.getItem('Token');
+  store.commit('SET_TOKEN', token)
   // store.dispatch('ChangeTheme', data.theme)
 }
 
 router.beforeEach(({meta, path}, from, next) => {
   // var {auth = true} = meta
   // true用户已登录， false用户未登录
-  // var isLogin = Boolean(store.state.user.token)
-  // if (auth && !isLogin && path !== '/static/login') {
-  //    return next({ path: '/static/login' })
-  // }
-  // router.push({ path: '/static/home' });
-  next()
+  if (window.sessionStorage.getItem('Token') && path === '/static/login') {
+    router.push({ path: '/static/home' });
+  }
+  if (path === '/static/login') {
+    window.sessionStorage.removeItem('Token');
+  }
+  if (!window.sessionStorage.getItem('Token') && path !== '/static/login') {
+     next({ path: '/static/login' });
+  } else {
+    next();
+  }
 })
 
 Vue.config.productionTip = false

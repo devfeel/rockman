@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="tb">
-        <el-table :data="dataSource.PageData" border fit  style="width: 100%">
+        <el-table :data="dataSource.PageData" border fit v-loading="loading" style="width: 100%">
             <el-table-column prop="TaskID" label="任务编码" :show-overflow-tooltip="true"></el-table-column>
             <el-table-column prop="NodeID" label="节点编码" :show-overflow-tooltip="true"></el-table-column>
             <el-table-column prop="NodeEndPoint" label="服务器信息" :show-overflow-tooltip="true"></el-table-column>
@@ -24,11 +24,11 @@
   </div>
 </template>
 <script>
-  import Minix from '@/common/tableminix.js';
+  import tableminix from '@/common/tableminix.js';
   import { dealDate } from '@/common/utils.js';
   import { getTaskStateList } from '@/api/logs.js';
   export default {
-    mixins: [Minix],
+    mixins: [tableminix],
     data() {
       return {
 
@@ -41,6 +41,11 @@
     },
     mounted() {
       this.init();
+    },
+    watch: {
+      TaskID(curVal, oldVal) {
+          this.init();
+      }
     },
     methods: {
       init() {

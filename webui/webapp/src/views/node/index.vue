@@ -23,13 +23,12 @@ export default {
     }
   },
   activated() {
-    this.onInit();
+    // this.onInit();
   },
   methods: {
     onInit() {
       getNodeList().then(res => {
         if (res.RetCode === 0) {
-          debugger;
           for (var index = 0; index < res.Message.length; index++) {
             var row = res.Message[index];
             console.log(row)
