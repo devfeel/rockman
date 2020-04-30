@@ -219,7 +219,7 @@ func (n *Node) becomeLeaderRole() {
 	logger.Node().Debug(logTitle + "become to leader role")
 	n.isLeader = true
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
-	n.cycleLoadExecutorsFromDB()
+	n.loadExecutorsFromDB()
 
 }
 
@@ -230,10 +230,10 @@ func (n *Node) removeLeaderRole() {
 	n.isLeader = false
 }
 
-// loadExecutorsFromDB load executors from db, and submit them
+// cycleLoadExecutorsFromDB cycle load executors from db, and submit them
 // must check init flag on registry
 func (n *Node) cycleLoadExecutorsFromDB() {
-	logTitle := "Node cycleLoadExecutorsFromDB "
+	lt := "Node cycleLoadExecutorsFromDB "
 	if !n.IsLeader() {
 		return
 	}
@@ -241,54 +241,57 @@ func (n *Node) cycleLoadExecutorsFromDB() {
 		return
 	}
 	n.isRunCycleLoadExecutors = true
-
-	var successCount, failureCount int
-	doQuery := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
-			}
-		}()
-		execInfos, err := service.NewExecutorService().QueryAllExecutors()
-		if err != nil {
-			logger.Node().Debug(logTitle + "NewExecutorService error:" + err.Error())
-			return
-		}
-		if execInfos == nil {
-			return
-		}
-		for _, exec := range execInfos {
-			if _, exists := n.Cluster.FindExecutor(exec.TaskID); exists {
-				continue
-			}
-			submit := new(core.ExecutorInfo)
-			submit.TaskConfig = exec.TaskConfig()
-			if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
-				logger.Node().Debug(logTitle + "create submit[" + exec.TaskID + "] error: TaskConfig is nil or target config is nil")
-				failureCount += 1
-				continue
-			}
-			result := n.SubmitExecutor(submit)
-			if result.Error != nil {
-				failureCount += 1
-				continue
-			}
-
-			if !result.IsSuccess() {
-				failureCount += 1
-			} else {
-				successCount += 1
-			}
-		}
-	}
-
+	logger.Node().Debug(lt + "running...")
 	go func() {
 		for {
-			logger.Node().Debug(logTitle + "begin.")
-			doQuery()
-			logger.Node().Debug(logTitle + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
+			n.loadExecutorsFromDB()
 			time.Sleep(time.Minute * time.Duration(n.Config().Node.LeaderCheckExecutorInterval))
 		}
 	}()
+}
+
+// loadExecutorsFromDB load executors from db, and submit them
+func (n *Node) loadExecutorsFromDB() {
+	lt := "Node loadExecutorsFromDB "
+	defer func() {
+		if err := recover(); err != nil {
+			errInfo := errors.New(fmt.Sprintln(err))
+			logger.Cluster().Error(errInfo, lt+"throw unhandled error:"+errInfo.Error())
+		}
+	}()
+	var successCount, failureCount int
+	logger.Node().Debug(lt + "begin.")
+	execInfos, err := service.NewExecutorService().QueryAllExecutors()
+	if err != nil {
+		logger.Node().Debug(lt + "NewExecutorService error:" + err.Error())
+		return
+	}
+	if execInfos == nil {
+		return
+	}
+	for _, exec := range execInfos {
+		if _, exists := n.Cluster.FindExecutor(exec.TaskID); exists {
+			continue
+		}
+		submit := new(core.ExecutorInfo)
+		submit.TaskConfig = exec.TaskConfig()
+		if submit.TaskConfig == nil || submit.TaskConfig.TargetConfig == nil {
+			logger.Node().Debug(lt + "create submit[" + exec.TaskID + "] error: TaskConfig is nil or target config is nil")
+			failureCount += 1
+			continue
+		}
+		result := n.SubmitExecutor(submit)
+		if result.Error != nil {
+			failureCount += 1
+			continue
+		}
+
+		if !result.IsSuccess() {
+			failureCount += 1
+		} else {
+			successCount += 1
+		}
+	}
+	logger.Node().Debug(lt + "finish. Success[" + strconv.Itoa(successCount) + "] Failure[" + strconv.Itoa(failureCount) + "]")
+	return
 }
