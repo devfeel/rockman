@@ -113,7 +113,7 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	}
 	// if become leader, refresh online nodes in cluster
 	c.loadOnlineNodes()
-	c.syncExecutorsFromWorkers()
+	c.initExecutorsFromWorkers()
 	return nil
 }
 
@@ -506,8 +506,8 @@ func (c *Cluster) cycleQueryWorkerResource() {
 	}()
 }
 
-// syncExecutorsFromWorkers sync executors from all worker node
-func (c *Cluster) syncExecutorsFromWorkers() error {
+// initExecutorsFromWorkers init executors from all worker node
+func (c *Cluster) initExecutorsFromWorkers() error {
 	lt := "Cluster.syncExecutorsFromWorkers "
 	executorInfos := make(map[string]*core.ExecutorInfo)
 

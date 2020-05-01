@@ -231,7 +231,6 @@ func (n *Node) removeLeaderRole() {
 }
 
 // cycleLoadExecutorsFromDB cycle load executors from db, and submit them
-// must check init flag on registry
 func (n *Node) cycleLoadExecutorsFromDB() {
 	lt := "Node cycleLoadExecutorsFromDB "
 	if !n.IsLeader() {
@@ -270,6 +269,9 @@ func (n *Node) loadExecutorsFromDB() {
 		return
 	}
 	for _, exec := range execInfos {
+		if !exec.IsRun {
+			continue
+		}
 		if _, exists := n.Cluster.FindExecutor(exec.TaskID); exists {
 			continue
 		}
