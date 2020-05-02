@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/devfeel/dotweb"
+	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/node"
 	_const "github.com/devfeel/rockman/webui/const"
 )
@@ -18,5 +19,9 @@ func (c *NodeController) ShowNodes(ctx dotweb.Context) error {
 	if !isOk {
 		return ctx.WriteJson(NewResponse(-1002, "not exists correct node in app items", nil))
 	}
-	return ctx.WriteJson(NewResponse(0, "", node.Cluster.Nodes))
+	var nodes []*core.NodeInfo
+	for _, n := range node.Cluster.Nodes {
+		nodes = append(nodes, n)
+	}
+	return ctx.WriteJson(NewResponse(0, "", nodes))
 }
