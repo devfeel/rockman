@@ -113,7 +113,7 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	}
 	// if become leader, refresh online nodes in cluster
 	c.loadOnlineNodes()
-	c.initExecutorsFromWorkers()
+	c.queryExecutorsFromWorkers()
 	return nil
 }
 
@@ -295,13 +295,13 @@ func (c *Cluster) loadOnlineNodes() error {
 		return errors.New(logTitle + "error: " + err.Error())
 	}
 	c.nodesLastIndex = meta.LastIndex
-	c.refreshOnlineNodes(nodeKVs)
+	c.refreshNodes(nodeKVs)
 	logger.Cluster().Debug(logTitle + "finish.")
 	return nil
 }
 
-// refreshOnlineNodes
-func (c *Cluster) refreshOnlineNodes(nodeKVs api.KVPairs) int {
+// refreshNodes
+func (c *Cluster) refreshNodes(nodeKVs api.KVPairs) int {
 	lt := "Cluster.refreshOnlineNodes "
 	logger.Cluster().Debug(lt + "begin.")
 	nodes := make(map[string]*core.NodeInfo)
@@ -374,7 +374,7 @@ func (c *Cluster) watchOnlineNodes() {
 		if meta.LastIndex != c.nodesLastIndex {
 			logger.Cluster().Debug(logTitle + "some nodes changed.")
 			c.nodesLastIndex = meta.LastIndex
-			c.refreshOnlineNodes(nodeKVs)
+			c.refreshNodes(nodeKVs)
 			if c.OnNodesChange != nil {
 				c.OnNodesChange()
 			}
@@ -506,9 +506,9 @@ func (c *Cluster) cycleQueryWorkerResource() {
 	}()
 }
 
-// initExecutorsFromWorkers init executors from all worker node
-func (c *Cluster) initExecutorsFromWorkers() error {
-	lt := "Cluster.syncExecutorsFromWorkers "
+// queryExecutorsFromWorkers query executors from all worker node
+func (c *Cluster) queryExecutorsFromWorkers() error {
+	lt := "Cluster.queryExecutorsFromWorkers "
 	executorInfos := make(map[string]*core.ExecutorInfo)
 
 	doQuery := func(remote string) error {
