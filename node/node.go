@@ -93,14 +93,9 @@ func (n *Node) Start() error {
 
 	n.Registry.Start()
 
-	if n.config.Node.IsMaster {
-		err = n.Cluster.Start()
-		if err != nil {
-			return err
-		}
-		if n.IsLeader() {
-			n.cycleLoadExecutorsFromDB()
-		}
+	err = n.Cluster.Start()
+	if err != nil {
+		return err
 	}
 
 	if n.config.Node.IsWorker {
@@ -205,7 +200,7 @@ func (n *Node) registerNode() error {
 	var err error
 	var retryCount int
 	nodeInfo := n.NodeInfo()
-	logger.Cluster().Debug(logTitle + "begin.")
+	logger.Node().Debug(logTitle + "begin.")
 RegisterNode:
 	for {
 		if n.isSTW {

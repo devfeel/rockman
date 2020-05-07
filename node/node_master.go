@@ -220,6 +220,7 @@ func (n *Node) becomeLeaderRole() {
 	n.isLeader = true
 	n.Cluster.OnNodeOffline = n.onWorkerNodeOffline
 	n.loadExecutorsFromDB()
+	n.cycleLoadExecutorsFromDB()
 
 }
 

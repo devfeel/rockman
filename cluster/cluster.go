@@ -75,13 +75,7 @@ func NewCluster(profile *config.Profile, registry *registry.Registry) *Cluster {
 
 func (c *Cluster) Start() error {
 	logger.Default().Debug("Cluster start...")
-	err := c.loadOnlineNodes()
-	if err != nil {
-		return err
-	}
 	c.watchLeader()
-	c.watchOnlineNodes()
-	c.cycleQueryWorkerResource()
 	return nil
 }
 
@@ -93,6 +87,7 @@ func (c *Cluster) Stop() error {
 
 // electionLeader election leader role to registry server
 func (c *Cluster) ElectionLeader(leaderServer string) error {
+	lt := "Cluster.ElectionLeader "
 	opts := &api.LockOptions{
 		Key:   c.LeaderKey,
 		Value: []byte(leaderServer),
@@ -111,9 +106,12 @@ func (c *Cluster) ElectionLeader(leaderServer string) error {
 	if err != nil {
 		return err
 	}
+	logger.Cluster().Debug(lt + "success.")
 	// if become leader, refresh online nodes in cluster
 	c.loadOnlineNodes()
+	c.watchOnlineNodes()
 	c.queryExecutorsFromWorkers()
+	c.cycleQueryWorkerResource()
 	return nil
 }
 
