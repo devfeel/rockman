@@ -39,13 +39,14 @@ func NewRegistry(regServer string) (*Registry, error) {
 	return reg, nil
 }
 
-func (r *Registry) Start() {
+func (r *Registry) Start() error {
 	if r.isStart {
-		return
+		return nil
 	}
 	logger.Default().Debug("Registry start...")
 	r.watchPingRegistry()
 	r.isStart = true
+	return nil
 }
 
 // CreateLocker create locker to registry with key/value

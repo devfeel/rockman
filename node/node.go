@@ -91,7 +91,10 @@ func (n *Node) Start() error {
 		return err
 	}
 
-	n.Registry.Start()
+	err = n.Registry.Start()
+	if err != nil {
+		return err
+	}
 
 	err = n.Cluster.Start()
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// SubmitExecutor
 func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	result := n.submitExecutor(execInfo)
 	if result.IsSuccess() {
@@ -19,6 +20,7 @@ func (n *Node) SubmitExecutor(execInfo *core.ExecutorInfo) *core.Result {
 	return result
 }
 
+// SubmitStopExecutor
 func (n *Node) SubmitStopExecutor(taskId string) *core.Result {
 	result := n.submitStopExecutor(taskId)
 	if result.IsSuccess() {
@@ -27,6 +29,7 @@ func (n *Node) SubmitStopExecutor(taskId string) *core.Result {
 	return result
 }
 
+// SubmitStartExecutor
 func (n *Node) SubmitStartExecutor(taskId string) *core.Result {
 	result := n.submitStartExecutor(taskId)
 	if result.IsSuccess() {
@@ -214,6 +217,7 @@ func (n *Node) electionLeader() {
 	}()
 }
 
+// becomeLeaderRole
 func (n *Node) becomeLeaderRole() {
 	logTitle := "Node.becomeLeaderRole "
 	logger.Node().Debug(logTitle + "become to leader role")
@@ -224,6 +228,7 @@ func (n *Node) becomeLeaderRole() {
 
 }
 
+// removeLeaderRole
 func (n *Node) removeLeaderRole() {
 	logTitle := "Node "
 	logger.Node().Debug(logTitle + "remove leader role")
