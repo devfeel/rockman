@@ -39,7 +39,7 @@ type (
 		lastLoadExecutorsTime  time.Time
 		rpcClients             map[string]*client.RpcClient
 		rpcClientLocker        *sync.RWMutex
-		Scheduler              *scheduler.Scheduler
+		Scheduler              scheduler.Scheduler
 		config                 *config.Profile
 		isSTW                  bool //stop the world flag
 		OnNodesChange          WatchChangeHandle

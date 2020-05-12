@@ -15,7 +15,14 @@ const (
 )
 
 type (
-	Scheduler struct {
+	Scheduler interface {
+		SetResource(resource *core.ResourceInfo)
+		Resources() map[string]*core.ResourceInfo
+		LoadResource(endPoint string) *core.ResourceInfo
+		Schedule(balanceType int) ([]*core.ResourceInfo, error)
+	}
+
+	StandardScheduler struct {
 		resources      map[string]*core.ResourceInfo
 		resourceLocker *sync.RWMutex
 	}
@@ -24,8 +31,8 @@ type (
 var ErrorNotSupportBalanceType = errors.New("not support balance type")
 var ErrorNotExistsEnoughResource = errors.New("not exists enough resource")
 
-func NewScheduler() *Scheduler {
-	scheduler := new(Scheduler)
+func NewScheduler() Scheduler {
+	scheduler := new(StandardScheduler)
 	scheduler.resources = make(map[string]*core.ResourceInfo)
 	scheduler.resourceLocker = new(sync.RWMutex)
 
@@ -33,7 +40,7 @@ func NewScheduler() *Scheduler {
 }
 
 // RefreshResource refresh resource value
-func (s *Scheduler) SetResource(resource *core.ResourceInfo) {
+func (s *StandardScheduler) SetResource(resource *core.ResourceInfo) {
 	defer s.resourceLocker.Unlock()
 	s.resourceLocker.Lock()
 	resource.RefreshLoadValue()
@@ -41,14 +48,14 @@ func (s *Scheduler) SetResource(resource *core.ResourceInfo) {
 }
 
 // GetResources return scheduler's resources
-func (s *Scheduler) Resources() map[string]*core.ResourceInfo {
+func (s *StandardScheduler) Resources() map[string]*core.ResourceInfo {
 	defer s.resourceLocker.RUnlock()
 	s.resourceLocker.RLock()
 	return s.resources
 }
 
 // LoadResource load resource by endPoint
-func (s *Scheduler) LoadResource(endPoint string) *core.ResourceInfo {
+func (s *StandardScheduler) LoadResource(endPoint string) *core.ResourceInfo {
 	defer s.resourceLocker.Unlock()
 	s.resourceLocker.Lock()
 	resource, isExists := s.resources[endPoint]
@@ -61,7 +68,7 @@ func (s *Scheduler) LoadResource(endPoint string) *core.ResourceInfo {
 }
 
 // Schedule
-func (s *Scheduler) Schedule(balanceType int) ([]*core.ResourceInfo, error) {
+func (s *StandardScheduler) Schedule(balanceType int) ([]*core.ResourceInfo, error) {
 	if s.Resources() == nil || len(s.Resources()) <= 0 {
 		return nil, ErrorNotExistsEnoughResource
 	}
@@ -88,7 +95,7 @@ func (s *Scheduler) Schedule(balanceType int) ([]*core.ResourceInfo, error) {
 	return nil, ErrorNotSupportBalanceType
 }
 
-func (s *Scheduler) getSortLoadResources(resources map[string]*core.ResourceInfo) core.LoadResources {
+func (s *StandardScheduler) getSortLoadResources(resources map[string]*core.ResourceInfo) core.LoadResources {
 	var loadResources core.LoadResources
 	for _, resource := range resources {
 		loadResources = append(loadResources, resource)
@@ -97,7 +104,7 @@ func (s *Scheduler) getSortLoadResources(resources map[string]*core.ResourceInfo
 	return loadResources
 }
 
-func (s *Scheduler) getSortCpuResources(resources map[string]*core.ResourceInfo) core.CpuResources {
+func (s *StandardScheduler) getSortCpuResources(resources map[string]*core.ResourceInfo) core.CpuResources {
 	var loadResources core.CpuResources
 	for _, resource := range resources {
 		loadResources = append(loadResources, resource)
@@ -106,7 +113,7 @@ func (s *Scheduler) getSortCpuResources(resources map[string]*core.ResourceInfo)
 	return loadResources
 }
 
-func (s *Scheduler) getSortMemoryResources(resources map[string]*core.ResourceInfo) core.MemoryResources {
+func (s *StandardScheduler) getSortMemoryResources(resources map[string]*core.ResourceInfo) core.MemoryResources {
 	var loadResources core.MemoryResources
 	for _, resource := range resources {
 		loadResources = append(loadResources, resource)
@@ -115,7 +122,7 @@ func (s *Scheduler) getSortMemoryResources(resources map[string]*core.ResourceIn
 	return loadResources
 }
 
-func (s *Scheduler) getSortJobResources(resources map[string]*core.ResourceInfo) core.JobResources {
+func (s *StandardScheduler) getSortJobResources(resources map[string]*core.ResourceInfo) core.JobResources {
 	var loadResources core.JobResources
 	for _, resource := range resources {
 		loadResources = append(loadResources, resource)
