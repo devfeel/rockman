@@ -44,8 +44,14 @@ func (r *Registry) Start() error {
 		return nil
 	}
 	logger.Default().Debug("Registry start...")
-	r.watchPingRegistry()
 	r.isStart = true
+	r.watchPingRegistry()
+	return nil
+}
+
+func (r *Registry) Stop() error {
+	logger.Default().Debug("Registry Stop...")
+	r.isStart = false
 	return nil
 }
 
@@ -86,6 +92,10 @@ func (r *Registry) watchPingRegistry() {
 		var retryCount int
 		limit := defaultRetryPingLimit
 		for {
+			if !r.isStart {
+				logger.Default().DebugS(lt + "registry is not start, now stop watch.")
+				return
+			}
 			time.Sleep(time.Second * 10)
 			result := doQuery()
 			if !result {

@@ -51,26 +51,37 @@ func NewNode(profile *config.Profile, shutdown chan string) (*Node, error) {
 		logLogic:     service.NewLogService(),
 	}
 
-	registry, err := registry.NewRegistry(profile.Cluster.RegistryServer)
+	err := node.init()
+
 	if err != nil {
-		return nil, err
+		logger.Node().Debug("Node init error: " + err.Error())
+	} else {
+		logger.Node().Debug("Node init success.")
 	}
-	registry.OnServerOnline = node.onRegistryOnline
-	registry.OnServerOffline = node.onRegistryOffline
-	node.Registry = registry
-
-	//init cluster
-	cluster := cluster.NewCluster(profile, registry)
-	cluster.OnLeaderChange = node.onLeaderChange
-	cluster.OnLeaderChangeFailed = node.onLeaderChangeFailed
-
-	node.Cluster = cluster
-	if node.config.Node.IsWorker {
-		node.Runtime = runtime.NewRuntime(node.NodeInfo(), profile)
-	}
-
-	logger.Node().Debug("Node init success.")
 	return node, err
+}
+
+func (n *Node) init() error {
+	// init registry
+	registry, err := registry.NewRegistry(n.config.Cluster.RegistryServer)
+	if err != nil {
+		return err
+	}
+	registry.OnServerOnline = n.onRegistryOnline
+	registry.OnServerOffline = n.onRegistryOffline
+	n.Registry = registry
+
+	// init cluster
+	cluster := cluster.NewCluster(n.config, registry)
+	cluster.OnLeaderChange = n.onLeaderChange
+	cluster.OnLeaderChangeFailed = n.onLeaderChangeFailed
+
+	// init runtime
+	n.Cluster = cluster
+	if n.config.Node.IsWorker {
+		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.config)
+	}
+	return nil
 }
 
 func (n *Node) Start() error {
@@ -164,8 +175,19 @@ func (n *Node) stopTheWorld() {
 	logger.Node().Debug(lt + "begin.")
 	logger.Node().Debug(lt + "set SWT flag true.")
 	n.isSTW = true
-	n.Cluster.Stop()
-	n.Runtime.Stop()
+	if n.Cluster != nil {
+		n.Cluster.Stop()
+	}
+	if n.Runtime != nil {
+		n.Runtime.Stop()
+	}
+	if n.Registry != nil {
+		n.Registry.Stop()
+	}
+
+	n.Registry = nil
+	n.Cluster = nil
+	n.Runtime = nil
 	logger.Node().Debug(lt + "success.")
 }
 
@@ -176,24 +198,21 @@ func (n *Node) startTheWorld() {
 	logger.Node().Debug(lt + "set SWT flag false.")
 	n.isSTW = false
 
-	if n.config.Node.IsMaster {
-		cluster := cluster.NewCluster(n.config, n.Registry)
-		cluster.OnLeaderChange = n.onLeaderChange
-		cluster.OnLeaderChangeFailed = n.onLeaderChangeFailed
-		n.Cluster = cluster
-	}
-
-	if n.config.Node.IsWorker {
-		n.Runtime = runtime.NewRuntime(n.NodeInfo(), n.config)
-	}
-
-	err := n.Start()
+	err := n.init()
 	if err != nil {
-		logger.Node().Debug(lt + "failed, error: " + err.Error())
+		logger.Node().Debug(lt + "node init failed, error: " + err.Error())
 		n.Shutdown()
-	} else {
-		logger.Node().Debug(lt + "success.")
+		return
 	}
+
+	err = n.Start()
+	if err != nil {
+		logger.Node().Debug(lt + "node start failed, error: " + err.Error())
+		n.Shutdown()
+		return
+	}
+
+	logger.Node().Debug(lt + "success.")
 }
 
 // registerNode register node to cluster
