@@ -5,6 +5,7 @@ import (
 	"github.com/devfeel/rockman/logger"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/rpc/packet"
+	"github.com/devfeel/rockman/util/sysx"
 	"strconv"
 )
 
@@ -33,8 +34,8 @@ func (h *RpcHandler) QueryResource(content string, reply *packet.RpcReply) error
 	resource := &core.ResourceInfo{}
 	resource.EndPoint = h.node.NodeInfo().EndPoint()
 	resource.TaskCount = h.node.Runtime.TaskService.Count()
-	resource.CpuRate = 1
-	resource.MemoryRate = 1
+	resource.CpuRate = sysx.GetCpuUsedPercent()
+	resource.MemoryRate = sysx.GetMemoryUsedPercent()
 
 	logger.Rpc().DebugS("RpcServer.QueryResource success", *resource)
 	*reply = packet.SuccessRpcReply(resource)
