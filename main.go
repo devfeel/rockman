@@ -70,7 +70,7 @@ func main() {
 		err := CurRpcServer.Listen()
 		if err != nil {
 			logger.Default().Error(err, "RpcServer start error")
-			panic(errors.New("RpcServer start error"))
+			panic(errors.New("RpcServer start error: " + err.Error()))
 		}
 	}()
 
@@ -79,7 +79,7 @@ func main() {
 			err := CurWebServer.ListenAndServe(profile.WebUI.HttpHost + ":" + profile.WebUI.HttpPort)
 			if err != nil {
 				logger.Default().Error(err, "WebUI start error")
-				panic(errors.New("WebUI start error"))
+				panic(errors.New("WebUI start error: " + err.Error()))
 			}
 		}()
 	}
