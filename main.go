@@ -26,7 +26,8 @@ const (
 	cmdCluster   = "cluster"
 	cmdEnableTls = "enabletls"
 
-	version = "2020.419"
+	version  = "2020.519"
+	confName = "app.conf"
 )
 
 func main() {
@@ -43,7 +44,12 @@ func main() {
 	var err error
 
 	// load config file
-	profile := config.DefaultProfile()
+	//profile := config.DefaultProfile()
+	profile, err := config.LoadConfig(confName)
+	if err != nil {
+		logger.Default().Error(err, "LoadConfig error")
+		return
+	}
 
 	parseFlag(profile)
 
