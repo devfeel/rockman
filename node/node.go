@@ -6,6 +6,7 @@ import (
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/core"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/metrics"
 	"github.com/devfeel/rockman/protected/service"
 	"github.com/devfeel/rockman/registry"
 	"github.com/devfeel/rockman/rpc/client"
@@ -86,6 +87,7 @@ func (n *Node) init() error {
 
 func (n *Node) Start() error {
 	logger.Default().Debug("Node start...")
+	metrics.Default().GetCounter(metrics.LabelNodeStart).Inc(1)
 	// create session with node info
 	err := n.createSession(n.NodeInfo().GetNodeKey(n.Cluster.ClusterId))
 	if err != nil {
@@ -173,6 +175,7 @@ func (n *Node) NodeInfo() *core.NodeInfo {
 func (n *Node) stopTheWorld() {
 	lt := "Node stopTheWorld "
 	logger.Node().Debug(lt + "begin.")
+	metrics.Default().GetCounter(metrics.LabelStopTheWorld).Inc(1)
 	logger.Node().Debug(lt + "set SWT flag true.")
 	n.isSTW = true
 	if n.Cluster != nil {
@@ -194,7 +197,7 @@ func (n *Node) stopTheWorld() {
 func (n *Node) startTheWorld() {
 	lt := "Node startTheWorld "
 	logger.Node().Debug(lt + "begin.")
-
+	metrics.Default().GetCounter(metrics.LabelStartTheWorld).Inc(1)
 	logger.Node().Debug(lt + "set SWT flag false.")
 	n.isSTW = false
 
@@ -289,6 +292,7 @@ func (n *Node) createSession(nodeKey string) error {
 
 // onLeaderChange do something when leader is changed
 func (n *Node) onLeaderChange() {
+	metrics.GetCounter(metrics.LabelLeaderChange).Inc(1)
 	err := n.registerNode()
 	if err != nil {
 		logger.Node().DebugS("Node.onLeaderChange registerNode error:", err.Error())
@@ -310,6 +314,7 @@ func (n *Node) onLeaderChange() {
 
 // onLeaderChangeFailed
 func (n *Node) onLeaderChangeFailed() {
+	metrics.GetCounter(metrics.LabelLeaderChangeFailed).Inc(1)
 	logger.Node().DebugS("Node.onLeaderChangeFailed, now will shutdown node.")
 	n.Shutdown()
 }
@@ -321,6 +326,7 @@ func (n *Node) onWorkerNodeOffline(nodeInfo *core.NodeInfo) {
 		logger.Node().Warn(logTitle + "is be called, but it's not leader")
 		return
 	}
+	metrics.GetCounter(metrics.LabelWorkerNodeOffline).Inc(1)
 	var needReSubmits []*core.ExecutorInfo
 	for _, v := range n.Cluster.ExecutorInfos {
 		if v.Worker.NodeID == nodeInfo.NodeID {
@@ -336,6 +342,7 @@ func (n *Node) onWorkerNodeOffline(nodeInfo *core.NodeInfo) {
 
 func (n *Node) onRegistryOnline() {
 	logger.Node().DebugS("Node.onRegistryOnline registry online, now start the world.")
+	metrics.GetCounter(metrics.LabelRegistryOnline).Inc(1)
 	if n.isSTW {
 		n.startTheWorld()
 	}
@@ -343,6 +350,7 @@ func (n *Node) onRegistryOnline() {
 
 func (n *Node) onRegistryOffline() {
 	logger.Node().DebugS("Node.onRegistryOffline registry offline, now stop the world.")
+	metrics.GetCounter(metrics.LabelRegistryOffline).Inc(1)
 	n.stopTheWorld()
 }
 

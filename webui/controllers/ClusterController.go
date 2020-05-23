@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/devfeel/dotweb"
+	"github.com/devfeel/rockman/metrics"
 	"html/template"
 )
 
 type ClusterController struct {
+}
+
+func (c *ClusterController) ShowMetrics(ctx dotweb.Context) error {
+	return ctx.WriteJson(SuccessResponse(metrics.GetAllCountInfo()))
 }
 
 func (c *ClusterController) ShowClusterInfo(ctx dotweb.Context) error {

@@ -5,25 +5,63 @@ import (
 )
 
 const (
-	CounterKeyNode    = "node"
-	CounterKeyCluster = "cluster"
-	CounterKeyRuntime = "runtime"
-	CounterKeyDefault = "default"
+	LabelNodeStart          = "NodeStart"
+	LabelStartTheWorld      = "StartTheWorld"
+	LabelStopTheWorld       = "StopTheWorld"
+	LabelTaskExec           = "TaskExec"
+	LabelLeaderChange       = "LeaderChange"
+	LabelLeaderChangeFailed = "LeaderChangeFailed"
+	LabelWorkerNodeOffline  = "WorkerNodeOffline"
+	LabelRegistryOnline     = "RegistryOnline"
+	LabelRegistryOffline    = "RegistryOffline"
 )
 
 type (
 	Metrics interface {
 		GetCounter(key string) Counter
-		GetNodeCounter() Counter
-		GetClusterCounter() Counter
-		GetRuntimeCounter() Counter
-		GetDefaultCounter() Counter
 	}
 
 	StandardMetrics struct {
 		counters *sync.Map
 	}
 )
+
+var (
+	defaultMetrics Metrics
+	labelMap       map[string]string
+)
+
+func init() {
+	defaultMetrics = NewMetrics()
+	labelMap = make(map[string]string)
+	labelMap[LabelNodeStart] = LabelNodeStart
+	labelMap[LabelStartTheWorld] = LabelStartTheWorld
+	labelMap[LabelStopTheWorld] = LabelStopTheWorld
+	labelMap[LabelTaskExec] = LabelTaskExec
+	labelMap[LabelLeaderChange] = LabelLeaderChange
+	labelMap[LabelLeaderChangeFailed] = LabelLeaderChangeFailed
+	labelMap[LabelWorkerNodeOffline] = LabelWorkerNodeOffline
+	labelMap[LabelRegistryOnline] = LabelRegistryOnline
+	labelMap[LabelRegistryOffline] = LabelRegistryOffline
+}
+
+func Default() Metrics {
+	return defaultMetrics
+}
+
+// GetCounter is a shortcut for Default().GetCounter
+func GetCounter(key string) Counter {
+	return Default().GetCounter(key)
+}
+
+// GetAllCountInfo get all counter's count for map[string]int64
+func GetAllCountInfo() map[string]int64 {
+	m := make(map[string]int64)
+	for _, label := range labelMap {
+		m[label] = GetCounter(label).Count()
+	}
+	return m
+}
 
 func NewMetrics() Metrics {
 	metrics := new(StandardMetrics)
@@ -42,20 +80,4 @@ func (m *StandardMetrics) GetCounter(key string) Counter {
 		counter = loadCounter.(Counter)
 	}
 	return counter
-}
-
-func (m *StandardMetrics) GetNodeCounter() Counter {
-	return m.GetCounter(CounterKeyNode)
-}
-
-func (m *StandardMetrics) GetClusterCounter() Counter {
-	return m.GetCounter(CounterKeyCluster)
-}
-
-func (m *StandardMetrics) GetRuntimeCounter() Counter {
-	return m.GetCounter(CounterKeyRuntime)
-}
-
-func (m *StandardMetrics) GetDefaultCounter() Counter {
-	return m.GetCounter(CounterKeyDefault)
 }

@@ -70,6 +70,7 @@ func (s *WebServer) initRoute() {
 	g.GET("/resources", clusterController.ShowResources)
 	g.GET("/executors", clusterController.ShowExecutors)
 	g.GET("/info", clusterController.ShowClusterInfo)
+	g.GET("/metrics", clusterController.ShowMetrics)
 
 	g = s.webApp.HttpServer.Group("/api/user")
 	g.GET("/login", userController.Login)
