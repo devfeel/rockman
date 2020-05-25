@@ -2,8 +2,11 @@ package prometheus
 
 import "github.com/prometheus/client_golang/prometheus"
 
+var NodeStartCounter *prometheus.CounterVec
+
 func init() {
-	prometheus.MustRegister(createCounterVec("NodeStart"))
+	NodeStartCounter = createCounterVec("NodeStart")
+	prometheus.MustRegister(NodeStartCounter)
 }
 
 func createCounterVec(name string) *prometheus.CounterVec {
