@@ -1,6 +1,17 @@
 package prometheus
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/devfeel/rockman/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+)
+
+func StartMetricsWeb(addr string) error {
+	http.Handle("/metrics", promhttp.Handler())
+	logger.Default().Debug("MetricsWeb begin listen " + addr)
+	return http.ListenAndServe(addr, nil)
+}
 
 var NodeStartCounter *prometheus.CounterVec
 

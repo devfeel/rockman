@@ -11,13 +11,14 @@ const ConfigPath = "./conf/"
 
 type (
 	Profile struct {
-		Global  *GlobalSection
-		Node    *NodeSection
-		Rpc     *RpcSection
-		WebUI   *WebUISection
-		Runtime *RuntimeSection
-		Logger  *LoggerSection
-		Cluster *ClusterSection
+		Global     *GlobalSection
+		Node       *NodeSection
+		Rpc        *RpcSection
+		WebUI      *WebUISection
+		Runtime    *RuntimeSection
+		Logger     *LoggerSection
+		Cluster    *ClusterSection
+		Prometheus *PrometheusSection
 	}
 
 	GlobalSection struct {
@@ -58,6 +59,12 @@ type (
 		ClientKeyFile  string
 	}
 
+	PrometheusSection struct {
+		IsRun    bool
+		HttpHost string
+		HttpPort string
+	}
+
 	WebUISection struct {
 		HttpHost string
 		HttpPort string
@@ -90,6 +97,7 @@ func DefaultProfile() *Profile {
 	p.Logger = &LoggerSection{LogPath: "./logs"}
 	p.Runtime = &RuntimeSection{IsRun: true, LogPath: "./logs/runtime", EnableShellScript: false}
 	p.Cluster = &ClusterSection{RegistryServer: "116.62.16.66:8500", ClusterId: "dev-rock", WatchLeaderRetryLimit: 10, QueryResourceInterval: 60}
+	p.Prometheus = &PrometheusSection{IsRun: true, HttpHost: "", HttpPort: "8081"}
 
 	CurrentProfile = p
 	return p

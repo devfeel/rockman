@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -23,6 +24,15 @@ type (
 
 	StandardMetrics struct {
 		counters *sync.Map
+	}
+
+	Opts struct {
+		// Namespace, Subsystem, and Name are components of the fully-qualified
+		// name of the Metric (created by joining these components with
+		// "_").
+		Namespace string
+		Subsystem string
+		Name      string
 	}
 )
 
@@ -49,9 +59,14 @@ func Default() Metrics {
 	return defaultMetrics
 }
 
+// GetCounterByOpts return Counter by Opts
+func GetCounterByOpts(opts *Opts) Counter {
+	return Default().GetCounter(buildFQName(opts.Namespace, opts.Subsystem, opts.Name))
+}
+
 // GetCounter is a shortcut for Default().GetCounter
-func GetCounter(key string) Counter {
-	return Default().GetCounter(key)
+func GetCounter(label string) Counter {
+	return Default().GetCounter(label)
 }
 
 // GetAllCountInfo get all counter's count for map[string]int64
@@ -70,14 +85,29 @@ func NewMetrics() Metrics {
 }
 
 // GetCounter get Counter by key
-func (m *StandardMetrics) GetCounter(key string) Counter {
+func (m *StandardMetrics) GetCounter(label string) Counter {
 	var counter Counter
-	loadCounter, exists := m.counters.Load(key)
+	loadCounter, exists := m.counters.Load(label)
 	if !exists {
 		counter = NewCounter()
-		m.counters.Store(key, counter)
+		m.counters.Store(label, counter)
 	} else {
 		counter = loadCounter.(Counter)
 	}
 	return counter
+}
+
+func buildFQName(namespace, subsystem, name string) string {
+	if name == "" {
+		return ""
+	}
+	switch {
+	case namespace != "" && subsystem != "":
+		return strings.Join([]string{namespace, subsystem, name}, "_")
+	case namespace != "":
+		return strings.Join([]string{namespace, name}, "_")
+	case subsystem != "":
+		return strings.Join([]string{subsystem, name}, "_")
+	}
+	return name
 }

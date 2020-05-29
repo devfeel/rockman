@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/devfeel/rockman/config"
 	"github.com/devfeel/rockman/logger"
+	"github.com/devfeel/rockman/metrics/prometheus"
 	"github.com/devfeel/rockman/node"
 	"github.com/devfeel/rockman/rpc"
 	"github.com/devfeel/rockman/util/exception"
@@ -26,7 +27,7 @@ const (
 	cmdCluster   = "cluster"
 	cmdEnableTls = "enabletls"
 
-	version  = "2020.519"
+	version  = "2020.529"
 	confName = "app.conf"
 )
 
@@ -89,8 +90,19 @@ func main() {
 			}
 		}()
 	}
-
 	time.Sleep(time.Second)
+
+	if profile.Prometheus.IsRun {
+		go func() {
+			err := prometheus.StartMetricsWeb(profile.Prometheus.HttpHost + ":" + profile.Prometheus.HttpPort)
+			if err != nil {
+				logger.Default().Error(err, "Prometheus metrics start error")
+				panic(errors.New("Prometheus metrics start error: " + err.Error()))
+			}
+		}()
+	}
+	time.Sleep(time.Second)
+
 	//start node
 	err = CurNode.Start()
 	if err != nil {

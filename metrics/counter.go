@@ -5,14 +5,16 @@ import (
 	"time"
 )
 
-// Counter incremented and decremented base on int64 value.
-type Counter interface {
-	StartTime() time.Time
-	Clear()
-	Count() int64
-	Dec(int64)
-	Inc(int64)
-}
+type (
+	// Counter incremented and decremented base on int64 value.
+	Counter interface {
+		StartTime() time.Time
+		Clear()
+		Count() int64
+		Dec(int64)
+		Inc(int64)
+	}
+)
 
 // NewCounter constructs a new StandardCounter.
 func NewCounter() Counter {
