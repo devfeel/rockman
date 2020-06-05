@@ -13,15 +13,18 @@ func StartMetricsWeb(addr string) error {
 	return http.ListenAndServe(addr, nil)
 }
 
-var NodeStartCounter *prometheus.CounterVec
+var DefaultCounter *prometheus.CounterVec
 
 func init() {
-	NodeStartCounter = createCounterVec("NodeStart")
-	prometheus.MustRegister(NodeStartCounter)
+	DefaultCounter = createCounterVec("Default")
+	prometheus.MustRegister(DefaultCounter)
 }
 
 func createCounterVec(name string) *prometheus.CounterVec {
-	opt := prometheus.CounterOpts{Name: name}
-	labelName := []string{}
+	opt := prometheus.CounterOpts{
+		Namespace: "Rockman",
+		Subsystem: "",
+		Name:      name}
+	labelName := []string{"Label"}
 	return prometheus.NewCounterVec(opt, labelName)
 }

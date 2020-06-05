@@ -9,8 +9,8 @@ import (
 )
 
 func TestNodeStartCounter(t *testing.T) {
-	NodeStartCounter.With(nil).Inc()
+	DefaultCounter.WithLabelValues("NodeStart").Inc()
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:8081", nil))
 	time.Sleep(time.Hour)
 }
