@@ -27,7 +27,7 @@ const (
 	cmdCluster   = "cluster"
 	cmdEnableTls = "enabletls"
 
-	version  = "2020.529"
+	version  = "2020.0606 For Birthday on 2020"
 	confName = "app.conf"
 )
 
@@ -155,5 +155,5 @@ func printLogo() {
 	fmt.Println("|      /   |  |  |  | |  |     |    <   |  |\\/|  |   /  /_\\  \\   |  . `  | ")
 	fmt.Println("|  |\\  \\--.|  `--'  | |  `----.|  .  \\  |  |  |  |  /  _____  \\  |  |\\   | ")
 	fmt.Println("| _| `.___| \\______/   \\______||__|\\__\\ |__|  |__| /__/     \\__\\ |__| \\__| ")
-	fmt.Printf("%c[1m%s%c[0m\n", 0x1B, "                                                  Version: Beta."+version, 0x1B)
+	fmt.Printf("%c[1m%s%c[0m\n", 0x1B, "                              Version: Beta."+version, 0x1B)
 }

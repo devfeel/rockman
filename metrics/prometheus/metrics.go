@@ -13,11 +13,10 @@ func StartMetricsWeb(addr string) error {
 	return http.ListenAndServe(addr, nil)
 }
 
-var DefaultCounter *prometheus.CounterVec
-
-func init() {
-	DefaultCounter = createCounterVec("Default")
-	prometheus.MustRegister(DefaultCounter)
+func InitCounter() *prometheus.CounterVec {
+	defaultCounter := createCounterVec("Default")
+	prometheus.MustRegister(defaultCounter)
+	return defaultCounter
 }
 
 func createCounterVec(name string) *prometheus.CounterVec {

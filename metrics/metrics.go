@@ -1,8 +1,12 @@
 package metrics
 
 import (
+	"github.com/devfeel/rockman/metrics/prometheus"
+	"github.com/devfeel/rockman/metrics/standard"
+	promclient "github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -19,11 +23,25 @@ const (
 
 type (
 	Metrics interface {
-		GetCounter(key string) Counter
+		GetStandardCounter(label string) Counter
+		Inc(label string)
+		Dec(label string)
+		Add(label string, value int64)
+	}
+
+	// Counter incremented and decremented base on int64 value.
+	Counter interface {
+		StartTime() time.Time
+		Clear()
+		Count() int64
+		Dec()
+		Inc()
+		Add(int64)
 	}
 
 	StandardMetrics struct {
-		counters *sync.Map
+		counters    *sync.Map
+		promCounter *promclient.CounterVec
 	}
 
 	Opts struct {
@@ -59,21 +77,16 @@ func Default() Metrics {
 	return defaultMetrics
 }
 
-// GetCounterByOpts return Counter by Opts
-func GetCounterByOpts(opts *Opts) Counter {
-	return Default().GetCounter(buildFQName(opts.Namespace, opts.Subsystem, opts.Name))
-}
-
-// GetCounter is a shortcut for Default().GetCounter
-func GetCounter(label string) Counter {
-	return Default().GetCounter(label)
+// NewCounter constructs a new StandardCounter.
+func NewCounter() Counter {
+	return standard.NewStandardCounter()
 }
 
 // GetAllCountInfo get all counter's count for map[string]int64
 func GetAllCountInfo() map[string]int64 {
 	m := make(map[string]int64)
 	for _, label := range labelMap {
-		m[label] = GetCounter(label).Count()
+		m[label] = Default().GetStandardCounter(label).Count()
 	}
 	return m
 }
@@ -81,11 +94,12 @@ func GetAllCountInfo() map[string]int64 {
 func NewMetrics() Metrics {
 	metrics := new(StandardMetrics)
 	metrics.counters = new(sync.Map)
+	metrics.promCounter = prometheus.InitCounter()
 	return metrics
 }
 
 // GetCounter get Counter by key
-func (m *StandardMetrics) GetCounter(label string) Counter {
+func (m *StandardMetrics) GetStandardCounter(label string) Counter {
 	var counter Counter
 	loadCounter, exists := m.counters.Load(label)
 	if !exists {
@@ -95,6 +109,24 @@ func (m *StandardMetrics) GetCounter(label string) Counter {
 		counter = loadCounter.(Counter)
 	}
 	return counter
+}
+
+// Inc increments the counter by 1.
+func (m *StandardMetrics) Inc(label string) {
+	m.GetStandardCounter(label).Inc()
+	m.promCounter.WithLabelValues(label).Inc()
+}
+
+//Dec decrements the counter by 1.
+func (m *StandardMetrics) Dec(label string) {
+	m.GetStandardCounter(label).Dec()
+	m.promCounter.WithLabelValues(label).Add(-1)
+}
+
+// Add increments the counter by the given value.
+func (m *StandardMetrics) Add(label string, value int64) {
+	m.GetStandardCounter(label).Add(value)
+	m.promCounter.WithLabelValues(label).Add(float64(value))
 }
 
 func buildFQName(namespace, subsystem, name string) string {

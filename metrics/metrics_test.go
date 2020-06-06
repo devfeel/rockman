@@ -5,9 +5,9 @@ import "testing"
 func TestStandardMetrics_GetDefaultCounter(t *testing.T) {
 	var needVal int64 = 1
 	m := NewMetrics()
-	c := m.GetDefaultCounter()
-	c.Inc(1)
-	c2 := m.GetDefaultCounter()
+	c := m.GetStandardCounter("test")
+	c.Inc()
+	c2 := m.GetStandardCounter("test")
 	if c2.Count() == needVal {
 		t.Log("success")
 	} else {

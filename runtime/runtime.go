@@ -44,7 +44,7 @@ func NewRuntime(nodeInfo *core.NodeInfo, profile *config.Profile) *Runtime {
 	r.TaskService.SetLogger(logger.Task())
 	r.TaskService.SetOnBeforeHandler(func(ctx *task.TaskContext) error {
 		ctx.Header[TaskHeader_StartTime] = time.Now()
-		metrics.Default().GetCounter(metrics.LabelTaskExec).Inc(1)
+		metrics.Default().Inc(metrics.LabelTaskExec)
 		return nil
 	})
 	r.TaskService.SetOnEndHandler(func(ctx *task.TaskContext) error {

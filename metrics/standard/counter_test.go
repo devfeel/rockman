@@ -1,4 +1,4 @@
-package metrics
+package standard
 
 import (
 	"testing"
@@ -6,8 +6,8 @@ import (
 
 func TestStandardCounter_Inc(t *testing.T) {
 	var wantCount int64 = 1
-	counter := NewCounter()
-	counter.Inc(1)
+	counter := NewStandardCounter()
+	counter.Inc()
 	realCount := counter.Count()
 	if realCount != wantCount {
 		t.Error("count not correct:", wantCount, realCount)
@@ -18,8 +18,8 @@ func TestStandardCounter_Inc(t *testing.T) {
 
 func TestStandardCounter_Dec(t *testing.T) {
 	var wantCount int64 = -1
-	counter := NewCounter()
-	counter.Dec(1)
+	counter := NewStandardCounter()
+	counter.Dec()
 	realCount := counter.Count()
 	if realCount != wantCount {
 		t.Error("count not correct:", wantCount, realCount)
@@ -30,10 +30,10 @@ func TestStandardCounter_Dec(t *testing.T) {
 
 func TestStandardCounter_Clear(t *testing.T) {
 	var wantCount int64 = 0
-	counter := NewCounter()
-	counter.Inc(1)
-	counter.Inc(1)
-	counter.Inc(1)
+	counter := NewStandardCounter()
+	counter.Inc()
+	counter.Inc()
+	counter.Inc()
 	counter.Clear()
 	realCount := counter.Count()
 	if realCount != wantCount {
