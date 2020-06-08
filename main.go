@@ -45,7 +45,6 @@ func main() {
 	var err error
 
 	// load config file
-	//profile := config.DefaultProfile()
 	profile, err := config.LoadConfig(confName)
 	if err != nil {
 		logger.Default().Error(err, "LoadConfig error")

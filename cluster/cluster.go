@@ -510,6 +510,13 @@ func (c *Cluster) queryExecutorsFromWorkers() error {
 	executorInfos := make(map[string]*core.ExecutorInfo)
 
 	doQuery := func(remote string) error {
+		defer func(remote string) {
+			if err := recover(); err != nil {
+				errInfo := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errInfo, lt+"["+remote+"] throw unhandled error:"+errInfo.Error())
+			}
+		}(remote)
+
 		client := c.GetRpcClient(remote)
 		if client == nil {
 			return core.ErrorRpcClientCreate
