@@ -177,18 +177,25 @@ func (n *Node) submitStartExecutor(taskId string) *core.Result {
 
 // electionLeader
 func (n *Node) electionLeader() {
-	logTitle := "Node election leader "
-	logger.Node().Debug(logTitle + "begin.")
+	lt := "Node election leader "
+	logger.Node().Debug(lt + "begin.")
 
-	doQuery := func() error {
+	doQuery := func() (errResult error) {
+		defer func() {
+			if err := recover(); err != nil {
+				errResult = errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errResult, lt+" throw unhandled error:"+errResult.Error())
+			}
+		}()
+
 		err := n.Cluster.ElectionLeader(n.NodeInfo().EndPoint())
 		if err != nil {
-			logger.Node().DebugS(logTitle + "error: " + err.Error() + ", will retry 10 seconds after")
-			logger.Node().Error(err, logTitle+"error")
+			logger.Node().DebugS(lt + "error: " + err.Error() + ", will retry 10 seconds after")
+			logger.Node().Error(err, lt+"error")
 			time.Sleep(time.Second * 10)
 			return err
 		} else {
-			logger.Node().Debug(logTitle + "success with key {" + n.Cluster.LeaderKey + "}")
+			logger.Node().Debug(lt + "success with key {" + n.Cluster.LeaderKey + "}")
 			n.becomeLeaderRole()
 			return nil
 		}
@@ -206,7 +213,7 @@ func (n *Node) electionLeader() {
 				retryCount += 1
 				if retryCount > limit {
 					err := errors.New("retry count bigger than " + strconv.Itoa(limit) + ", now will stop node.")
-					logger.Node().DebugS(logTitle + "error:" + err.Error())
+					logger.Node().DebugS(lt + "error:" + err.Error())
 					n.Shutdown()
 					return
 				}

@@ -353,11 +353,11 @@ func (c *Cluster) refreshNodes(nodeKVs api.KVPairs) int {
 func (c *Cluster) watchOnlineNodes() {
 	logTitle := "Cluster.watchOnlineNodes "
 	logger.Cluster().Debug(logTitle + "running...")
-	doQuery := func() error {
+	doQuery := func() (errResult error) {
 		defer func() {
 			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
+				errResult := errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errResult, logTitle+"throw unhandled error:"+errResult.Error())
 			}
 		}()
 
@@ -399,11 +399,11 @@ func (c *Cluster) watchLeader() {
 	logTitle := "Cluster.watchLeader "
 	logger.Cluster().Debug(logTitle + "running...")
 
-	doQuery := func() error {
+	doQuery := func() (errResult error) {
 		defer func() {
 			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, logTitle+"throw unhandled error:"+errInfo.Error())
+				errResult = errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errResult, logTitle+"throw unhandled error:"+errResult.Error())
 			}
 		}()
 
@@ -509,11 +509,11 @@ func (c *Cluster) queryExecutorsFromWorkers() error {
 	lt := "Cluster.queryExecutorsFromWorkers "
 	executorInfos := make(map[string]*core.ExecutorInfo)
 
-	doQuery := func(remote string) error {
+	doQuery := func(remote string) (errResult error) {
 		defer func(remote string) {
 			if err := recover(); err != nil {
-				errInfo := errors.New(fmt.Sprintln(err))
-				logger.Cluster().Error(errInfo, lt+"["+remote+"] throw unhandled error:"+errInfo.Error())
+				errResult = errors.New(fmt.Sprintln(err))
+				logger.Cluster().Error(errResult, lt+"["+remote+"] throw unhandled error:"+errResult.Error())
 			}
 		}(remote)
 
