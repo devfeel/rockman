@@ -71,6 +71,19 @@ func (repo *ExecutorRepo) DeleteOnce(id int64) error {
 	return nil
 }
 
+// UpdateSubmitFlag
+func (repo *ExecutorRepo) UpdateSubmitFlag(id int64, flag bool) error {
+	n, err := repo.Delete("UPDATE Task SET IsSubmitToCluster = ? WHERE Id=?;", id, flag)
+	if err != nil {
+		return err
+	}
+
+	if n <= 0 {
+		return database.ErrorNoRowsAffected
+	}
+	return nil
+}
+
 // GetExecutorById
 func (repo *ExecutorRepo) GetExecutorById(id int64) (*model.ExecutorInfo, error) {
 	result := &model.ExecutorInfo{}

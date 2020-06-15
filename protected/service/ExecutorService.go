@@ -64,11 +64,17 @@ func (service *ExecutorService) UpdateExecutor(model *model.ExecutorInfo) *core.
 	err = service.repo.UpdateOnce(model)
 	if err != nil {
 		return core.FailedResult(-3001, "UpdateOnce error: "+err.Error())
-	} else {
-		//TODO remove executor to leader node
-		//TODO submit executor to leader node
-		return core.SuccessResult()
 	}
+	return core.SuccessResult()
+}
+
+// UpdateSubmitFlag
+func (service *ExecutorService) UpdateSubmitFlag(id int64, flag bool) *core.Result {
+	err := service.repo.UpdateSubmitFlag(id, flag)
+	if err != nil {
+		return core.FailedResult(-3001, "UpdateSubmitFlag error: "+err.Error())
+	}
+	return core.SuccessResult()
 }
 
 // SetExecutorRunInfo
@@ -95,7 +101,6 @@ func (service *ExecutorService) SetExecutorRunInfo(model *model.ExecutorRunInfo)
 // RemoveExecutor
 func (service *ExecutorService) RemoveExecutor(id int64) error {
 	// TODO check data
-	// TODO remove executor to leader node
 	// TODO remove log?
 	return service.repo.DeleteOnce(id)
 }
