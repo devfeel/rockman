@@ -47,7 +47,7 @@ func main() {
 	// load config file
 	profile, err := config.LoadConfig(confName)
 	if err != nil {
-		logger.Default().Error(err, "LoadConfig error")
+		logger.Default().Error(err, "load config error")
 		return
 	}
 
@@ -61,7 +61,7 @@ func main() {
 	//start worker node
 	CurNode, err = node.NewNode(profile, shutdownChan)
 	if err != nil {
-		logger.Default().Error(err, "New Node error")
+		logger.Default().Error(err, "new node error")
 		return
 	}
 
