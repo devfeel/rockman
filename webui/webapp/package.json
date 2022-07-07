@@ -15,7 +15,7 @@
     "element-ui": "^2.4.11",
     "echarts": "^4.2.1",
     "mockjs": "^1.0.1-beta3",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "vue": "^2.5.16",
     "vue-bus": "^1.2.0",
     "vue-router": "^3.0.1",
